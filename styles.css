@@ -338,6 +338,17 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 700; line-height: 1.06; letter-
 .proc-step h4 { font-size: 1.3rem; margin-bottom: var(--s2); }
 .proc-step p { color: var(--text-dim); max-width: 54ch; }
 
+/* ---------- Long-form prose (approach / company) ---------- */
+.prose { max-width: 720px; margin: 0 auto; }
+.prose > p { font-size: var(--fz-lead); color: var(--text); margin-bottom: var(--s4); }
+.prose h3 { font-size: 1.4rem; color: var(--ink); letter-spacing: -0.012em; margin: var(--s7) 0 var(--s3); }
+.prose h3:first-child { margin-top: 0; }
+.prose ul.clean { list-style: none; margin: var(--s4) 0; padding: 0; }
+.prose ul.clean li { position: relative; padding-left: 28px; margin-bottom: 11px; color: var(--text); }
+.prose ul.clean li::before { content: "✓"; position: absolute; left: 0; top: 1px; color: var(--gold); font-weight: 700; }
+.prose ul.clean li strong { color: var(--ink); }
+.prose .tile-links { justify-content: flex-start; margin-top: var(--s6); }
+
 @media (max-width: 900px) {
   .panel { grid-template-columns: 1fr; text-align: center; gap: 30px; }
   .panel.reverse .panel-media { order: 0; }
