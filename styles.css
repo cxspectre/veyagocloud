@@ -108,8 +108,18 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 .section .actions { margin-top: 26px; }
 
 /* hero variant — taller, larger */
-.hero { padding-top: clamp(110px, 15vh, 170px); }
+.hero { padding-top: clamp(110px, 15vh, 170px); background: radial-gradient(115% 85% at 50% -10%, #fafbfc 0%, #ffffff 55%); }
 .hero .headline { max-width: 16ch; }
+
+/* hero touch — staggered entrance on load */
+.hero .wrap > * { animation: heroIn .85s var(--ease) both; }
+.hero .wrap > *:nth-child(1) { animation-delay: .05s; }
+.hero .wrap > *:nth-child(2) { animation-delay: .13s; }
+.hero .wrap > *:nth-child(3) { animation-delay: .23s; }
+.hero .wrap > *:nth-child(4) { animation-delay: .33s; }
+.hero .wrap > *:nth-child(5) { animation-delay: .41s; }
+.hero .media { animation: heroIn 1s var(--ease) both .5s; }
+@keyframes heroIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
 /* media under a section */
 .media { margin: clamp(40px, 6vw, 72px) auto 0; display: flex; justify-content: center; }
