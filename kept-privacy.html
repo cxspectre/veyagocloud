@@ -5,35 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kept — Privacy Policy</title>
   <meta name="description" content="Kept keeps your data on your own devices and your private iCloud. We don't collect it, we can't see it, and we never sell it." />
-  <meta name="theme-color" content="#09111F" />
+  <meta name="theme-color" content="#09111f" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <header class="nav">
-    <div class="container">
-      <a class="brand" href="/"><img src="assets/favicon.svg" alt="Veyago" /> Veyago</a>
-      <nav class="nav-links">
-        <a href="/#kept">Kept</a>
-        <a href="/#apps">Apps</a>
+  <header class="nav scrolled">
+    <div class="wrap">
+      <a class="nav-brand" href="index.html"><img src="assets/veyago-icon.png" alt="Veyago" /><span class="wordmark">veyag<span class="o">o</span></span></a>
+      <nav class="nav-menu">
+        <a href="index.html#kept">Kept</a>
         <a href="privacy.html">Company Privacy</a>
-        <a class="cta" href="/">Home</a>
+        <a class="btn btn-ghost btn-sm" href="index.html">Home</a>
       </nav>
     </div>
   </header>
 
   <section class="policy-hero">
-    <div class="container" style="max-width:780px;">
+    <div class="wrap" style="max-width:760px;">
       <p class="eyebrow">Kept · Legal</p>
-      <h1>Kept Privacy Policy</h1>
+      <h1 class="display">Kept Privacy Policy</h1>
       <p class="updated">Last updated 4 June 2026</p>
     </div>
   </section>
 
   <section class="policy">
-    <div class="container">
-
+    <div class="wrap">
       <div class="tldr">
         <p><strong>The short version.</strong> Kept keeps your data on your own devices and your private iCloud. We don't collect it, we can't see it, we don't track you, and we never sell anything. There are no accounts and no Veyago servers.</p>
       </div>
@@ -84,18 +86,17 @@
       <p>Questions? Email <a href="mailto:hello@veyago.app?subject=Kept%20Privacy">hello@veyago.app</a>.</p>
 
       <p class="muted" style="margin-top:30px;">Kept is a product of Veyago Inc. · New York, USA · operating from Belgium</p>
-
     </div>
   </section>
 
   <footer class="footer">
-    <div class="container">
-      <div class="legal-line">
+    <div class="wrap">
+      <div class="footer-base">
         <span>© <span id="year">2026</span> Veyago Inc. All rights reserved.</span>
-        <span><a href="/" style="color:var(--text-dim);">veyago.cloud</a></span>
+        <span><a href="index.html" style="color:var(--text-dim);">veyago.cloud</a></span>
       </div>
     </div>
   </footer>
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="app.js" defer></script>
 </body>
 </html>

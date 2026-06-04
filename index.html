@@ -3,211 +3,203 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Veyago — a studio for calm, private software</title>
-  <meta name="description" content="Veyago is an independent studio crafting calm, private, on-device software. Makers of Kept and the Veyago travel discovery app." />
-  <meta name="theme-color" content="#09111F" />
+  <title>Veyago — software for the journey</title>
+  <meta name="description" content="Veyago is an independent studio building calm, private, on-device software. Makers of Kept and the Veyago travel app." />
+  <meta name="theme-color" content="#09111f" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="styles.css" />
-  <meta property="og:title" content="Veyago — a studio for calm, private software" />
-  <meta property="og:description" content="Makers of Kept and the Veyago travel discovery app." />
+  <meta property="og:title" content="Veyago — software for the journey" />
+  <meta property="og:description" content="Makers of Kept and the Veyago travel app." />
+  <meta property="og:image" content="assets/og.png" />
   <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
 </head>
 <body>
 
   <!-- NAV -->
   <header class="nav">
-    <div class="container">
-      <a class="brand" href="/"><img src="assets/favicon.svg" alt="Veyago" /> Veyago</a>
-      <nav class="nav-links">
-        <a href="#apps">Apps</a>
+    <div class="wrap">
+      <a class="nav-brand" href="#top" aria-label="Veyago home">
+        <img src="assets/veyago-icon.png" alt="Veyago" />
+        <span class="wordmark">veyag<span class="o">o</span></span>
+      </a>
+      <nav class="nav-menu">
         <a href="#kept">Kept</a>
+        <a href="#veyago">Veyago</a>
+        <a href="#studio">Studio</a>
         <a href="privacy.html">Privacy</a>
-        <a class="cta" href="#apps">Explore</a>
+        <a class="btn btn-primary btn-sm" href="#kept">Get Kept</a>
       </nav>
     </div>
   </header>
 
   <!-- HERO -->
-  <section class="hero">
-    <div class="container">
-      <p class="eyebrow">Veyago&nbsp;Inc. · Independent Studio</p>
-      <h1>Calm, private software <span class="accent">worth keeping.</span></h1>
-      <p class="lead">We're a small studio that builds thoughtful apps — fast, focused, and private by design. From discovering where you'll go next to keeping track of everything that matters along the way.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#apps">See our apps →</a>
-        <a class="btn btn-ghost" href="#kept">Meet Kept</a>
+  <section class="hero" id="top">
+    <div class="hero-bg"></div>
+    <div class="hero-grid"></div>
+    <img class="hero-icon" src="assets/veyago-icon.png" alt="Veyago icon" />
+    <h1 class="wordmark">veyag<span class="o">o</span></h1>
+    <p class="hero-tagline">Your next voyage starts with a swipe.</p>
+    <div class="hero-rule"></div>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#kept">Meet Kept</a>
+      <a class="btn btn-ghost" href="#veyago">Explore Veyago</a>
+    </div>
+    <div class="scroll-cue" aria-hidden="true"></div>
+    <div class="hero-chips">
+      <span>New York C‑Corp</span><span class="dot">·</span>
+      <span>Incorporated April 2026</span><span class="dot">·</span>
+      <span>Launching Q3 2026</span><span class="dot">·</span>
+      <span>veyago.app</span>
+    </div>
+  </section>
+
+  <!-- KEPT — INTRO -->
+  <section class="section kept-intro center" id="kept">
+    <div class="wrap">
+      <div class="section-intro center reveal">
+        <span class="kept-badge"><span class="ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Introducing Kept · Coming to the App Store</span>
+        <h2 class="h2 grad-text" style="margin-top:22px;">Never lose track of<br/>what matters again.</h2>
+        <p class="lead center">Warranties, documents, subscriptions, food, medicine — anything with a date. Snap a photo and Kept reads the details, then quietly reminds you before they lapse. No account. No servers. Entirely on your device.</p>
+      </div>
+      <div class="kept-hero-shot reveal" data-delay="1">
+        <div class="phone"><img src="assets/kept-upcoming.png" alt="Kept — Upcoming timeline" loading="lazy" /></div>
       </div>
     </div>
   </section>
 
-  <!-- APPS -->
-  <section class="section" id="apps">
-    <div class="container">
-      <div class="section-head">
-        <p class="eyebrow">Our Apps</p>
-        <h2>Two apps, one principle: your data is yours.</h2>
+  <!-- KEPT — ALTERNATING PANELS -->
+  <section class="section">
+    <div class="wrap">
+
+      <div class="panel reveal">
+        <div class="panel-copy">
+          <span class="eyebrow">Upcoming</span>
+          <h3 class="h3">See what needs you first.</h3>
+          <p>A living timeline ranks every deadline by urgency — overdue, this week, this month. Confirm a renewal or mute the noise with a tap, and Kept handles the rest.</p>
+        </div>
+        <div class="panel-media"><div class="phone"><img src="assets/kept-upcoming.png" alt="Kept Upcoming" loading="lazy" /></div></div>
       </div>
-      <div class="apps-grid">
 
-        <a class="app-card" href="#kept">
-          <div class="app-icon kept">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <h3>Kept</h3>
-          <p class="role">Never lose track of a warranty, document, subscription, or expiry date again. Scan it once — Kept reminds you before it matters. Fully on-device.</p>
-          <div class="app-meta">
-            <span class="tag">iOS</span>
-            <span class="badge-live">● Launching on the App Store</span>
-          </div>
-          <span class="arrow">Take a look ↓</span>
-        </a>
+      <div class="panel reverse reveal">
+        <div class="panel-copy">
+          <span class="eyebrow">Library</span>
+          <h3 class="h3">Everything you keep, organized.</h3>
+          <p>Receipts, IDs, warranties and subscriptions, grouped and searchable. The things that need attention rise to the top — the rest stay calmly out of the way.</p>
+        </div>
+        <div class="panel-media"><div class="phone"><img src="assets/kept-items.png" alt="Kept Items" loading="lazy" /></div></div>
+      </div>
 
-        <a class="app-card" href="https://veyago.app" target="_blank" rel="noopener">
-          <div class="app-icon veyago">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#D4C9A8" stroke-width="1.6" opacity="0.7"/><path d="M12 4l2.2 7L12 20l-2.2-9z" fill="#D4C9A8"/></svg>
-          </div>
-          <h3>Veyago</h3>
-          <p class="role">Discover your next destination. A travel discovery app and website that helps you find where to go — and fall in love with the journey.</p>
-          <div class="app-meta">
-            <span class="tag">iOS</span>
-            <span class="tag">Android</span>
-            <span class="tag">Web</span>
-          </div>
-          <span class="arrow">Visit veyago.app ↗</span>
-        </a>
+      <div class="panel reveal">
+        <div class="panel-copy">
+          <span class="eyebrow">Insights</span>
+          <h3 class="h3">Know what it's all worth.</h3>
+          <p>See the value you're tracking, what you spend each month on subscriptions, and where it goes — at a glance, beautifully laid out.</p>
+        </div>
+        <div class="panel-media"><div class="phone"><img src="assets/kept-insights.png" alt="Kept Insights" loading="lazy" /></div></div>
+      </div>
 
+    </div>
+  </section>
+
+  <!-- KEPT — FEATURE GRID -->
+  <section class="section" style="padding-top:0;">
+    <div class="wrap">
+      <div class="section-intro center reveal">
+        <span class="eyebrow">Why Kept</span>
+        <h2 class="h2" style="margin-top:14px;">Powerful. Private. Effortless.</h2>
+      </div>
+      <div class="feature-grid">
+        <div class="f-card reveal" data-delay="1"><div class="fi">📸</div><h4>Scan &amp; auto-fill</h4><p>On-device intelligence reads a receipt or document and fills in the store, total, dates and category for you.</p></div>
+        <div class="f-card reveal" data-delay="2"><div class="fi">🔔</div><h4>Reminders that fit</h4><p>Category-aware nudges before a warranty ends, a passport expires, or a subscription renews.</p></div>
+        <div class="f-card reveal" data-delay="3"><div class="fi">✨</div><h4>Ask Kept</h4><p>A private assistant powered by Apple Intelligence — answers about your items, entirely on-device.</p></div>
+        <div class="f-card reveal" data-delay="1"><div class="fi">🔒</div><h4>Private by design</h4><p>No account, no servers. Your data syncs only through your own private iCloud.</p></div>
+        <div class="f-card reveal" data-delay="2"><div class="fi">🧩</div><h4>Widgets &amp; travel</h4><p>Home-screen widgets for what's due, plus a trip-readiness check before you fly.</p></div>
+        <div class="f-card reveal" data-delay="3"><div class="fi">📄</div><h4>Polished exports</h4><p>Generate a clean, branded PDF of any item — perfect for expenses and claims.</p></div>
+      </div>
+      <div class="center reveal" style="margin-top:54px;">
+        <a class="link-arrow" href="kept-privacy.html">Read the Kept privacy policy →</a>
       </div>
     </div>
   </section>
 
-  <!-- KEPT SHOWCASE -->
-  <section class="section showcase" id="kept">
-    <div class="container">
-      <div class="showcase-head">
-        <div class="kept-line">
-          <div class="app-icon kept">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-          <div>
-            <h2>Kept</h2>
-            <p class="sub">The quiet keeper of everything with a deadline.</p>
-          </div>
+  <!-- VEYAGO APP TEASER -->
+  <section class="section teaser" id="veyago">
+    <div class="wrap">
+      <div class="reveal">
+        <img class="veyago-mark" src="assets/veyago-icon.png" alt="Veyago" />
+        <span class="pill">The travel app · Coming Q3 2026</span>
+        <h2 class="h2 grad-text">Your next voyage<br/>starts with a swipe.</h2>
+        <p class="lead center" style="margin-top:18px;">Veyago is a travel destination discovery app — find where to go next, fall for the journey, and plan it without the noise. Crafted with the same care as everything we make.</p>
+        <div class="hero-cta" style="justify-content:center;">
+          <a class="btn btn-primary" href="https://veyago.app" target="_blank" rel="noopener">Visit veyago.app ↗</a>
         </div>
-        <span class="badge-live">● Coming soon to the App Store</span>
-      </div>
-
-      <p class="lead" style="margin-bottom:8px;">Warranties, receipts, passports and IDs, subscriptions, food and medicine — anything with a date. Snap a photo and Kept reads the details, then nudges you before they lapse. No account, no servers, no tracking: everything lives on your device and your private iCloud.</p>
-
-      <div class="shots">
-        <figure class="shot-wrap">
-          <div class="shot"><img src="assets/kept-upcoming.png" alt="Kept Upcoming timeline" loading="lazy" /></div>
-          <figcaption class="shot-cap">A timeline of what needs you first</figcaption>
-        </figure>
-        <figure class="shot-wrap">
-          <div class="shot"><img src="assets/kept-items.png" alt="Kept Items library" loading="lazy" /></div>
-          <figcaption class="shot-cap">Everything you keep, organized</figcaption>
-        </figure>
-        <figure class="shot-wrap">
-          <div class="shot"><img src="assets/kept-insights.png" alt="Kept Insights" loading="lazy" /></div>
-          <figcaption class="shot-cap">Insights into value &amp; spend</figcaption>
-        </figure>
-      </div>
-
-      <div class="features">
-        <div class="feature">
-          <div class="fi">📸</div>
-          <h4>Scan &amp; auto-fill</h4>
-          <p>Photograph a receipt or document — on-device intelligence pulls out the store, total, dates, and category.</p>
-        </div>
-        <div class="feature">
-          <div class="fi">🔔</div>
-          <h4>Reminders that fit</h4>
-          <p>Category-aware nudges before a warranty ends, a passport expires, or a subscription renews.</p>
-        </div>
-        <div class="feature">
-          <div class="fi">✨</div>
-          <h4>Ask Kept</h4>
-          <p>A private assistant powered by Apple Intelligence — it answers about your items entirely on-device.</p>
-        </div>
-        <div class="feature">
-          <div class="fi">🔒</div>
-          <h4>Private by design</h4>
-          <p>No account and no servers. Your data syncs only through your own private iCloud.</p>
-        </div>
-        <div class="feature">
-          <div class="fi">🧩</div>
-          <h4>Widgets &amp; travel</h4>
-          <p>Home-screen widgets for what's due, plus a trip-readiness check before you fly.</p>
-        </div>
-        <div class="feature">
-          <div class="fi">📄</div>
-          <h4>Polished exports</h4>
-          <p>Generate a clean, branded PDF of any item — perfect for expense reports and claims.</p>
-        </div>
-      </div>
-
-      <div class="showcase-foot">
-        <span class="coming">Built for iOS 17+ · AI features on Apple-Intelligence devices.</span>
-        <a class="btn btn-ghost" href="kept-privacy.html">Kept privacy policy →</a>
       </div>
     </div>
   </section>
 
   <!-- STUDIO -->
   <section class="section" id="studio">
-    <div class="container">
-      <div class="section-head">
-        <p class="eyebrow">The Studio</p>
-        <h2>Small team. High standards. No dark patterns.</h2>
-        <p class="lead" style="margin-top:14px;">Veyago Inc. is an independent software studio. We build the kind of apps we want to use ourselves: quick, beautiful, and respectful of your time and your data.</p>
+    <div class="wrap">
+      <div class="section-intro reveal">
+        <span class="eyebrow">The Studio</span>
+        <h2 class="h2" style="margin-top:14px;">Small team. High standards.<br/>No dark patterns.</h2>
+        <p class="lead" style="margin-top:16px;">Veyago Inc. is an independent software studio. We build the kind of apps we want to use ourselves — quick, beautiful, and respectful of your time and your data.</p>
       </div>
       <div class="values">
-        <div class="value">
-          <h4>Private by default</h4>
-          <p>We design so your data stays with you. The less we collect, the less there is to lose.</p>
-        </div>
-        <div class="value">
-          <h4>On-device intelligence</h4>
-          <p>We lean on Apple's on-device models so smart features never mean shipping your life to a server.</p>
-        </div>
-        <div class="value">
-          <h4>Calm, considered craft</h4>
-          <p>Every screen earns its place. We sweat the details so the app gets out of your way.</p>
-        </div>
+        <div class="value reveal" data-delay="1"><div class="vn">Private by default</div><p>The less we collect, the less there is to lose. We design so your data stays with you.</p></div>
+        <div class="value reveal" data-delay="2"><div class="vn">On-device intelligence</div><p>We lean on Apple's on-device models, so smart features never mean shipping your life to a server.</p></div>
+        <div class="value reveal" data-delay="3"><div class="vn">Considered craft</div><p>Every screen earns its place. We sweat the details so the app gets out of your way.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section cta-strip" style="padding-top:0;">
+    <div class="wrap reveal">
+      <h2 class="h2 grad-text">Built for the things<br/>worth keeping.</h2>
+      <div class="hero-cta" style="justify-content:center;">
+        <a class="btn btn-primary" href="#kept">Meet Kept</a>
+        <a class="btn btn-ghost" href="mailto:hello@veyago.app">Get in touch</a>
       </div>
     </div>
   </section>
 
   <!-- FOOTER -->
   <footer class="footer">
-    <div class="container">
-      <div class="f-about">
-        <a class="brand" href="/"><img src="assets/favicon.svg" alt="Veyago" /> Veyago</a>
-        <p>An independent studio crafting calm, private software. Makers of Kept and the Veyago travel discovery app.</p>
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <a class="nav-brand" href="#top"><img src="assets/veyago-icon.png" alt="Veyago" /><span class="wordmark" style="font-size:1.25rem;">veyag<span class="o">o</span></span></a>
+          <p class="about">An independent studio crafting calm, private software. Makers of Kept and the Veyago travel app.</p>
+        </div>
+        <div>
+          <h5>Products</h5>
+          <a class="fl" href="#kept">Kept</a>
+          <a class="fl" href="https://veyago.app" target="_blank" rel="noopener">Veyago ↗</a>
+        </div>
+        <div>
+          <h5>Legal</h5>
+          <a class="fl" href="privacy.html">Privacy Policy</a>
+          <a class="fl" href="kept-privacy.html">Kept Privacy</a>
+        </div>
+        <div>
+          <h5>Company</h5>
+          <a class="fl" href="mailto:hello@veyago.app">hello@veyago.app</a>
+          <a class="fl" href="#studio">About the studio</a>
+        </div>
       </div>
-      <div class="f-col">
-        <h5>Apps</h5>
-        <a href="#kept">Kept</a>
-        <a href="https://veyago.app" target="_blank" rel="noopener">Veyago ↗</a>
-      </div>
-      <div class="f-col">
-        <h5>Legal</h5>
-        <a href="privacy.html">Privacy Policy</a>
-        <a href="kept-privacy.html">Kept Privacy</a>
-      </div>
-      <div class="f-col">
-        <h5>Contact</h5>
-        <a href="mailto:hello@veyago.app">hello@veyago.app</a>
-      </div>
-    </div>
-    <div class="container">
-      <div class="legal-line">
-        <span>© <span id="year">2026</span> Veyago Inc. All rights reserved.</span>
-        <span>New York, USA · operating from Belgium</span>
+      <div class="footer-base">
+        <span>© <span id="year">2026</span> Veyago Inc. · New York C‑Corp · Operating from Belgium</span>
+        <span>Incorporated April 2026 · Launching Q3 2026</span>
       </div>
     </div>
   </footer>
 
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="app.js" defer></script>
 </body>
 </html>

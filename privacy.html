@@ -5,35 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy — Veyago</title>
   <meta name="description" content="How Veyago Inc. handles personal data across its apps and website." />
-  <meta name="theme-color" content="#09111F" />
+  <meta name="theme-color" content="#09111f" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <header class="nav">
-    <div class="container">
-      <a class="brand" href="/"><img src="assets/favicon.svg" alt="Veyago" /> Veyago</a>
-      <nav class="nav-links">
-        <a href="/#apps">Apps</a>
-        <a href="/#kept">Kept</a>
+  <header class="nav scrolled">
+    <div class="wrap">
+      <a class="nav-brand" href="index.html"><img src="assets/veyago-icon.png" alt="Veyago" /><span class="wordmark">veyag<span class="o">o</span></span></a>
+      <nav class="nav-menu">
+        <a href="index.html#kept">Kept</a>
         <a href="kept-privacy.html">Kept Privacy</a>
-        <a class="cta" href="/">Home</a>
+        <a class="btn btn-ghost btn-sm" href="index.html">Home</a>
       </nav>
     </div>
   </header>
 
   <section class="policy-hero">
-    <div class="container" style="max-width:780px;">
+    <div class="wrap" style="max-width:760px;">
       <p class="eyebrow">Legal</p>
-      <h1>Privacy Policy</h1>
+      <h1 class="display">Privacy Policy</h1>
       <p class="updated">Veyago travel app &amp; website · Last updated 4 June 2026</p>
     </div>
   </section>
 
   <section class="policy">
-    <div class="container">
-
+    <div class="wrap">
       <div class="tldr">
         <p><strong>In short.</strong> Veyago is a travel destination discovery app and website. We collect only what we need to help you discover and plan trips, we never sell your personal data, and you can ask us to access or delete your information at any time. Looking for our standalone <a href="kept-privacy.html">Kept app privacy policy</a>? Kept stores everything on your own device and collects nothing.</p>
       </div>
@@ -108,18 +110,17 @@
       <p>Questions about this policy or your data? Email <a href="mailto:hello@veyago.app">hello@veyago.app</a>.</p>
 
       <p class="muted" style="margin-top:30px;">Veyago Inc. · New York, USA · operating from Belgium</p>
-
     </div>
   </section>
 
   <footer class="footer">
-    <div class="container">
-      <div class="legal-line">
+    <div class="wrap">
+      <div class="footer-base">
         <span>© <span id="year">2026</span> Veyago Inc. All rights reserved.</span>
-        <span><a href="/" style="color:var(--text-dim);">veyago.cloud</a></span>
+        <span><a href="index.html" style="color:var(--text-dim);">veyago.cloud</a></span>
       </div>
     </div>
   </footer>
-  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="app.js" defer></script>
 </body>
 </html>
