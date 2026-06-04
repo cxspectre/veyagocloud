@@ -230,6 +230,12 @@ h3 { letter-spacing: -0.014em; }
 .half .tile-media { margin-top: var(--s6); }
 .half-value .tile-media svg { opacity: 0.92; }
 
+/* Compact "Our Apps" portfolio teaser (home) */
+.apps-teaser .tile.half { padding: clamp(28px, 3vw, 40px); }
+.apps-teaser .tile-media { margin-top: var(--s5); }
+.apps-teaser .tile-media img.shot { width: clamp(150px, 17vw, 200px); }
+.apps-teaser .tile-icon { width: clamp(64px, 7vw, 88px); }
+
 /* ---------- Workflow / how it works ---------- */
 .section { padding-block: clamp(64px, 8vw, 104px); }
 .section-head { text-align: center; max-width: 720px; margin: 0 auto clamp(40px, 6vw, 64px); padding-top: clamp(8px, 2vw, 24px); }
