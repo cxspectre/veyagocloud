@@ -153,6 +153,12 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 .tile .tile-media img.shot { width: clamp(180px, 22vw, 230px); }
 .tile .tile-media .art { width: 100%; max-width: 340px; }
 
+/* Compact 'Our Apps' tiles (home) — a tidy device peek, matched heights */
+.tiles2 .tile { min-height: 0; }
+.tiles2 .tile-media { margin-top: clamp(22px, 3vw, 30px); padding-top: 0; height: clamp(236px, 26vw, 272px); overflow: hidden; align-items: flex-start; }
+.tiles2 .tile-media img.shot { width: clamp(200px, 21vw, 226px); border-radius: 30px; }
+.tiles2 .tile-media .art { width: 100%; max-width: 300px; align-self: center; }
+
 /* ---------- Card grid (features / values / services) ---------- */
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: var(--maxw-wide); margin: clamp(40px, 6vw, 64px) auto 0; padding-inline: var(--gutter); text-align: left; }
 .cards.two { grid-template-columns: repeat(2, 1fr); max-width: var(--maxw); }
