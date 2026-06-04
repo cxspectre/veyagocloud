@@ -1,0 +1,55 @@
+<svg viewBox="0 0 560 420" xmlns="http://www.w3.org/2000/svg" fill="none" role="img" aria-label="A stylised map with a travel route and a compass">
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#13243f"/>
+      <stop offset="1" stop-color="#0a1626"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="38%" r="60%">
+      <stop offset="0" stop-color="#d4c9a8" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#d4c9a8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- map panel -->
+  <rect x="24" y="24" width="512" height="372" rx="30" fill="url(#panel)"/>
+  <rect x="24.5" y="24.5" width="511" height="371" rx="29.5" stroke="#d4c9a8" stroke-opacity="0.18"/>
+  <rect x="24" y="24" width="512" height="372" rx="30" fill="url(#glow)"/>
+
+  <!-- faint land masses -->
+  <g fill="#ffffff" fill-opacity="0.04">
+    <path d="M70 250c30-40 90-30 120-60s10-70 60-72 70 30 64 70-44 40-30 78-60 44-110 30-104-26-104-54z"/>
+    <path d="M360 110c40-14 96 6 110 44s-20 64-58 60-58-22-78-44-14-46 26-60z"/>
+  </g>
+
+  <!-- contour / latitude curves -->
+  <g stroke="#ffffff" stroke-opacity="0.06" stroke-width="1.5">
+    <path d="M40 150C150 110 250 180 360 130s140 24 160 0"/>
+    <path d="M40 210C160 176 250 240 370 190s130 28 150 6"/>
+    <path d="M40 270C150 240 260 300 360 252s150 28 160 4"/>
+  </g>
+
+  <!-- dotted route -->
+  <path d="M120 320C180 250 210 290 256 222S360 150 412 110" stroke="#d4c9a8" stroke-width="2.6"
+        stroke-linecap="round" stroke-dasharray="0.5 11"/>
+
+  <!-- waypoints -->
+  <g>
+    <circle cx="120" cy="320" r="9" fill="#0a1626" stroke="#d4c9a8" stroke-width="2.6"/>
+    <circle cx="256" cy="222" r="6" fill="#d4c9a8"/>
+  </g>
+
+  <!-- destination pin -->
+  <path d="M412 78c17 0 30 13 30 30 0 20-30 50-30 50s-30-30-30-50c0-17 13-30 30-30z"
+        fill="#d4c9a8"/>
+  <circle cx="412" cy="108" r="9" fill="#0a1626"/>
+
+  <!-- compass rose -->
+  <g transform="translate(98,108)">
+    <circle r="26" stroke="#d4c9a8" stroke-opacity="0.45" stroke-width="1.5"/>
+    <circle r="3.2" fill="#d4c9a8"/>
+    <path d="M0 -34 6 -4 0 -8 -6 -4Z" fill="#d4c9a8"/>
+    <path d="M0 34 6 4 0 8 -6 4Z" fill="#d4c9a8" fill-opacity="0.5"/>
+    <path d="M-34 0 -4 -6 -8 0 -4 6Z" fill="#d4c9a8" fill-opacity="0.5"/>
+    <path d="M34 0 4 -6 8 0 4 6Z" fill="#d4c9a8" fill-opacity="0.5"/>
+  </g>
+</svg>

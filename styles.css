@@ -124,12 +124,10 @@ h3 { letter-spacing: -0.014em; }
 .lead strong, .lead b { color: var(--ink); font-weight: 560; }
 
 /* ---------- Wordmark ---------- */
-.wordmark { font-family: var(--display); font-weight: 600; letter-spacing: -0.025em; color: var(--navy); line-height: 1; display: inline-block; font-feature-settings: "ss01" 1, "tnum" 1, "lnum" 1; }
-.wordmark .o { color: var(--gold); position: relative; }
-.wordmark .o::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; box-shadow: 0 0 0 1.5px rgba(156,133,74,0.18); pointer-events: none; }
+.wordmark { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; color: var(--navy); line-height: 1; display: inline-block; }
+.wordmark .o { color: var(--gold); }
 .on-dark .wordmark, .tile-dark .wordmark { color: #fff; }
 .on-dark .wordmark .o, .tile-dark .wordmark .o { color: var(--parchment); }
-.on-dark .wordmark .o::after, .tile-dark .wordmark .o::after { box-shadow: 0 0 0 1.5px rgba(212,201,168,0.3); }
 
 /* ---------- Buttons / links ---------- */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); padding: 12px 22px; border-radius: 980px; font-size: 1rem; font-weight: 500; border: 1px solid transparent; cursor: pointer; transition: transform .25s var(--ease), background .25s var(--ease), border-color .25s var(--ease); }
@@ -235,6 +233,10 @@ h3 { letter-spacing: -0.014em; }
 .apps-teaser .tile-media { margin-top: var(--s5); }
 .apps-teaser .tile-media img.shot { width: clamp(150px, 17vw, 200px); }
 .apps-teaser .tile-icon { width: clamp(64px, 7vw, 88px); }
+
+/* Travel illustration */
+.travel-art { width: 100%; max-width: 400px; height: auto; border-radius: 18px; filter: drop-shadow(0 30px 60px rgba(0,0,0,0.4)); }
+.subhero .hero-art { max-width: min(560px, 92%); margin: var(--s7) auto 0; }
 
 /* ---------- Workflow / how it works ---------- */
 .section { padding-block: clamp(64px, 8vw, 104px); }
