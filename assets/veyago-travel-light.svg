@@ -1,42 +1,42 @@
-<svg viewBox="0 0 560 420" xmlns="http://www.w3.org/2000/svg" fill="none" role="img" aria-label="A stylised map with a travel route and a compass">
+<svg viewBox="0 0 560 420" xmlns="http://www.w3.org/2000/svg" fill="none" role="img" aria-label="A travel route flowing across a stylised map toward a destination">
   <defs>
     <filter id="ds" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#1d1d1f" flood-opacity="0.10"/>
     </filter>
   </defs>
+  <style>
+    /* Pure enhancement: the route's dots drift toward the pin. Everything is fully
+       visible without it, so the graphic never depends on animation running. */
+    @keyframes vyMarch { to { stroke-dashoffset: -23; } }
+    .vy-route { animation: vyMarch 1.6s linear infinite; }
+    @media (prefers-reduced-motion: reduce) { .vy-route { animation: none; } }
+  </style>
 
-  <!-- map panel -->
   <g filter="url(#ds)">
     <rect x="26" y="26" width="508" height="368" rx="30" fill="#ffffff"/>
     <rect x="26.5" y="26.5" width="507" height="367" rx="29.5" stroke="#e3e3e8"/>
   </g>
 
-  <!-- faint land masses -->
   <g fill="#1d1d1f" fill-opacity="0.035">
     <path d="M72 252c30-40 90-30 120-60s10-70 60-72 70 30 64 70-44 40-30 78-60 44-110 30-104-26-104-54z"/>
     <path d="M360 112c40-14 96 6 110 44s-20 64-58 60-58-22-78-44-14-46 26-60z"/>
   </g>
 
-  <!-- contour curves -->
   <g stroke="#dcdce3" stroke-width="1.5">
     <path d="M44 152C152 112 252 182 360 132s138 24 158 0"/>
     <path d="M44 212C162 178 252 242 370 192s128 28 148 6"/>
     <path d="M44 272C152 242 262 302 360 254s148 28 158 4"/>
   </g>
 
-  <!-- dotted route -->
-  <path d="M122 322C182 252 212 292 258 224S362 152 412 112" stroke="#0071e3" stroke-width="2.6"
+  <path class="vy-route" d="M122 322C182 252 212 292 258 224S362 152 412 112" stroke="#0071e3" stroke-width="2.6"
         stroke-linecap="round" stroke-dasharray="0.5 11"/>
 
-  <!-- waypoints -->
   <circle cx="122" cy="322" r="9" fill="#fff" stroke="#0071e3" stroke-width="2.6"/>
   <circle cx="258" cy="224" r="6" fill="#0071e3"/>
 
-  <!-- destination pin -->
   <path d="M412 80c17 0 30 13 30 30 0 20-30 50-30 50s-30-30-30-50c0-17 13-30 30-30z" fill="#1d1d1f"/>
   <circle cx="412" cy="110" r="9" fill="#fff"/>
 
-  <!-- compass rose -->
   <g transform="translate(100,110)" fill="#86868b" stroke="#c8c8cf" stroke-width="1.4">
     <circle r="25" fill="none"/>
     <circle r="3" stroke="none"/>

@@ -127,7 +127,12 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 .media.contain { max-width: 980px; }
 
 /* device screenshot */
-.device { width: clamp(240px, 30vw, 300px); border-radius: 44px; padding: 9px; background: #1d1d1f; box-shadow: 0 30px 70px -28px rgba(0,0,0,0.35); }
+.device { width: clamp(240px, 30vw, 300px); border-radius: 44px; padding: 9px; background: #1d1d1f; box-shadow: 0 30px 70px -28px rgba(0,0,0,0.35); transition: transform .55s var(--ease), box-shadow .55s var(--ease); }
+.media:hover .device, .device:hover { transform: translateY(-10px); box-shadow: 0 48px 95px -30px rgba(0,0,0,0.42); }
+
+/* product media — a touch richer reveal (fade + slight scale) */
+.media.reveal { opacity: 0; transform: translateY(34px) scale(.97); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+.media.reveal.in { opacity: 1; transform: none; }
 .device img { border-radius: 36px; width: 100%; }
 .devices { display: flex; justify-content: center; align-items: flex-end; gap: clamp(14px, 2vw, 26px); flex-wrap: wrap; }
 .devices .device:nth-child(2) { margin-bottom: clamp(16px, 3vw, 34px); }
