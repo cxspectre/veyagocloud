@@ -3,30 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy — Veyago</title>
+  <title>Privacy Policy - Veyago</title>
   <meta name="description" content="How Veyago Inc. handles personal data across its apps and website." />
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css" />
-  <meta property="og:title" content="Privacy Policy — Veyago" />
+  <meta property="og:title" content="Privacy Policy - Veyago" />
   <meta property="og:description" content="How Veyago Inc. handles personal data across its apps and website." />
   <meta property="og:image" content="assets/og.png" />
   <meta property="og:type" content="website" />
 </head>
 <body>
-  <header class="nav">
+  <header class="nav" id="site-nav">
     <div class="wrap">
-      <a class="brand" href="index.html"><img src="assets/veyago-icon.png" alt="Veyago" width="1024" height="1024" /> Veyago</a>
+      <a class="brand" href="index.html"><img src="assets/veyago-icon.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
       <nav class="nav-links">
         <a href="apps.html">Apps</a>
-        <a href="approach.html">Approach</a>
         <a href="services.html">Services</a>
-        <a href="company.html">Company</a>
-        <a class="cta" href="mailto:hello@veyago.app">Contact</a>
+        <div class="nav-item" id="company-nav">
+          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="company.html"><span class="dd-title">About</span><span class="dd-sub">The studio and our story</span></a>
+            <a href="team.html"><span class="dd-title">Team</span><span class="dd-sub">The people building it</span></a>
+            <a href="approach.html"><span class="dd-title">Approach</span><span class="dd-sub">How we think and build</span></a>
+          </div>
+        </div>
       </nav>
+      <div class="nav-right">
+        <a class="nav-cta" href="mailto:hello@veyago.app">Contact</a>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </div>
   </header>
+
+  <!-- Mobile navigation drawer -->
+  <div class="nav-scrim" id="nav-scrim"></div>
+  <aside class="nav-drawer" id="nav-drawer" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
+    <div class="nav-drawer-top">
+      <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <nav class="nav-drawer-links" aria-label="Primary">
+      <a href="apps.html">Apps</a>
+      <a href="services.html">Services</a>
+      <p class="nm-label">Company</p>
+      <a class="nm-sub" href="company.html">About</a>
+      <a class="nm-sub" href="team.html">Team</a>
+      <a class="nm-sub" href="approach.html">Approach</a>
+      <a class="nav-cta nm-cta" href="mailto:hello@veyago.app">Contact</a>
+    </nav>
+  </aside>
 
 <main class="policy"><div class="wrap">
 <p class="eyebrow">Legal</p>
@@ -34,38 +64,39 @@
 <p class="updated">Veyago travel app &amp; website · Last updated 4 June 2026</p>
 <div class="tldr"><p><strong>In short.</strong> Veyago is a travel destination discovery app and website. We collect only what we need, never sell your personal data, and you can access or delete your information at any time. Looking for the <a href="kept-privacy.html">Kept privacy policy</a>? Kept stores everything on your device and collects nothing.</p></div>
 <p>Veyago is a travel destination discovery app and website. This policy explains how Veyago Inc. (“Veyago”, “we”, “us”) handles personal data when you use our mobile apps (iOS and Android) and our website at veyago.app (together, the “Service”).</p>
-<h2>Data controller</h2><p>Veyago Inc., a New York corporation with its operational headquarters in Belgium. Contact: <a href="mailto:hello@veyago.app">hello@veyago.app</a>.</p>
+<h2>Data controller</h2><p>Veyago Inc., a New York corporation. Contact: <a href="mailto:hello@veyago.app">hello@veyago.app</a>.</p>
 <h2>Data protection contact</h2><p>Until we appoint a formal Data Protection Officer, all privacy questions are handled directly by our CEO and founder, Cassian Drefke, at <a href="mailto:hello@veyago.app">hello@veyago.app</a>.</p>
 <h2>UK representative (Article 27 UK GDPR)</h2><p>If you are in the United Kingdom and wish to contact our UK representative, email <a href="mailto:hello@veyago.app?subject=UK%20Representative">hello@veyago.app</a> with “UK Representative” in the subject line and we will route your request accordingly.</p>
-<h2>The company</h2><p>Veyago Inc. is a New York business corporation, incorporated April 2026 (DOS ID 7899587). Registered agent for service of process in Albany, NY. Sole founder and 100% shareholder: Cassian Drefke.</p>
+<h2>The company</h2><p>Veyago Inc. is a New York business corporation, incorporated April 28, 2026 (DOS ID 7899587). Registered agent for service of process in Albany, NY. Founder and CEO: Cassian Drefke.</p>
 <h2>Information we collect</h2><p>We aim to collect as little as possible. Depending on how you use the Service, this may include:</p>
-<ul><li><strong>Account &amp; contact details</strong> — such as your name and email address.</li><li><strong>Travel preferences &amp; activity</strong> — destinations, searches, saved places, and lists, to personalize discovery.</li><li><strong>Approximate or precise location</strong> — only with your permission; you can turn it off anytime.</li><li><strong>Device &amp; usage data</strong> — app version, device type, language, and anonymised analytics.</li><li><strong>Communications</strong> — messages you send us and our replies.</li></ul>
+<ul><li><strong>Account &amp; contact details</strong> - such as your name and email address.</li><li><strong>Travel preferences &amp; activity</strong> - destinations, searches, saved places, and lists, to personalize discovery.</li><li><strong>Approximate or precise location</strong> - only with your permission; you can turn it off anytime.</li><li><strong>Device &amp; usage data</strong> - app version, device type, language, and anonymised analytics.</li><li><strong>Communications</strong> - messages you send us and our replies.</li></ul>
 <p>We do not knowingly collect special categories of personal data, and we do not use your data for third-party advertising.</p>
 <h2>How we use your information</h2><ul><li>To provide and operate the Service.</li><li>To personalize recommendations and remember your preferences.</li><li>To respond to your messages and provide support.</li><li>To keep the Service secure and debug issues.</li><li>To comply with legal obligations.</li></ul>
-<h2>Legal bases (GDPR / UK GDPR)</h2><ul><li><strong>Contract</strong> — to deliver features you ask for.</li><li><strong>Consent</strong> — for optional things like precise location; withdraw anytime.</li><li><strong>Legitimate interests</strong> — to improve and secure the Service.</li><li><strong>Legal obligation</strong> — where the law requires it.</li></ul>
-<h2>Sharing your information</h2><p>We do not sell your personal data. We share it only with trusted service providers under contract — cloud hosting, mapping and place data, and analytics — and only as needed. We may disclose information if required by law. None of our providers may buy your identity.</p>
-<h2>International transfers</h2><p>We operate from the United States and Belgium, so your data may be processed in either region, with appropriate safeguards such as Standard Contractual Clauses.</p>
+<h2>Legal bases (GDPR / UK GDPR)</h2><ul><li><strong>Contract</strong> - to deliver features you ask for.</li><li><strong>Consent</strong> - for optional things like precise location; withdraw anytime.</li><li><strong>Legitimate interests</strong> - to improve and secure the Service.</li><li><strong>Legal obligation</strong> - where the law requires it.</li></ul>
+<h2>Sharing your information</h2><p>We do not sell your personal data. We share it only with trusted service providers under contract - cloud hosting, mapping and place data, and analytics - and only as needed. We may disclose information if required by law. None of our providers may buy your identity.</p>
+<h2>International transfers</h2><p>We operate from the United States, so your data is processed in the United States, with appropriate safeguards such as Standard Contractual Clauses where applicable.</p>
 <h2>Data retention</h2><p>We keep personal data only as long as needed or as required by law. When you delete your account, we delete or anonymize the associated data within a reasonable period.</p>
-<h2>Your rights</h2><p>Subject to your location, you may access, correct, delete, export, or restrict processing of your data, object to certain processing, and withdraw consent — email <a href="mailto:hello@veyago.app">hello@veyago.app</a>. EEA/UK residents may complain to a supervisory authority. California residents may exercise CCPA/CPRA rights; we do not sell or “share” personal information under California law.</p>
+<h2>Your rights</h2><p>Subject to your location, you may access, correct, delete, export, or restrict processing of your data, object to certain processing, and withdraw consent - email <a href="mailto:hello@veyago.app">hello@veyago.app</a>. EEA/UK residents may complain to a supervisory authority. California residents may exercise CCPA/CPRA rights; we do not sell or “share” personal information under California law.</p>
 <h2>Cookies &amp; analytics</h2><p>Our website may use essential cookies and privacy-respecting analytics. You can control cookies in your browser.</p>
 <h2>Children</h2><p>The Service is not directed to children under 16, and we do not knowingly collect their data.</p>
 <h2>Security</h2><p>We use reasonable technical and organizational measures to protect personal data. No method is perfectly secure, but we work to safeguard your information.</p>
 <h2>Changes to this policy</h2><p>We may update this policy and will post the revised version here with a new “Last updated” date.</p>
 <h2>Contact</h2><p>Questions? Email <a href="mailto:hello@veyago.app">hello@veyago.app</a>.</p>
-<p class="muted">Veyago Inc. · New York, USA · operating from Belgium</p>
+<p class="muted">Veyago Inc. · New York, USA</p>
 </div></main>
 
   <footer class="footer">
     <div class="wrap">
-      <p class="legal-top">Veyago is an independent software studio. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
+      <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
         <div><h5>Apps</h5><a href="veyago.html">Veyago travel</a><a href="kept.html">Kept</a></div>
-        <div><h5>Company</h5><a href="company.html">About</a><a href="approach.html">Approach</a><a href="services.html">Services</a><a href="mailto:hello@veyago.app">Contact</a></div>
-        <div><h5>Legal</h5><a href="privacy.html">Privacy Policy</a><a href="kept-privacy.html">Kept Privacy</a><a href="terms.html">Terms</a></div>
-        <div><h5>Get in touch</h5><a href="mailto:hello@veyago.app">hello@veyago.app</a><a href="support.html">Support</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
+        <div><h5>Company</h5><a href="company.html">About</a><a href="team.html">Team</a><a href="approach.html">Approach</a><a href="services.html">Services</a><a href="mailto:hello@veyago.app">Contact</a></div>
+        <div><h5>Legal</h5><a href="privacy.html">Privacy Policy</a><a href="kept-privacy.html">Kept Privacy</a><a href="terms.html">Terms</a><a href="legal.html">Legal / Imprint</a></div>
+        <div><h5>Get in touch</h5><a href="mailto:hello@veyago.app">hello@veyago.app</a><a href="support.html">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
+      <p class="footer-press">Press &amp; investors: <a href="mailto:hello@veyago.app?subject=Press%20%26%20investors">hello@veyago.app</a> · <a href="https://wefunder.com/veyago" target="_blank" rel="noopener">Invest on Wefunder ↗</a></p>
       <div class="footer-base">
-        <span>© <span id="year">2026</span> Veyago Inc · New York C‑Corp · Operating from Belgium</span>
+        <span>© <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
         <span>Incorporated April 2026 · Launching Q3 2026</span>
       </div>
     </div>

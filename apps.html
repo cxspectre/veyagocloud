@@ -3,50 +3,81 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Our Apps — Veyago</title>
+  <title>Our Apps - Veyago</title>
   <meta name="description" content="A small, focused catalogue from Veyago. Each app does one thing genuinely well and treats your data with respect. Meet Kept and Veyago." />
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="styles.css" />
-  <meta property="og:title" content="Our Apps — Veyago" />
+  <meta property="og:title" content="Our Apps - Veyago" />
   <meta property="og:description" content="A small, focused catalogue from Veyago. Each app does one thing genuinely well and treats your data with respect. Meet Kept and Veyago." />
   <meta property="og:image" content="assets/og.png" />
   <meta property="og:type" content="website" />
 </head>
 <body>
-  <header class="nav">
+  <header class="nav" id="site-nav">
     <div class="wrap">
-      <a class="brand" href="index.html"><img src="assets/veyago-icon.png" alt="Veyago" width="1024" height="1024" /> Veyago</a>
+      <a class="brand" href="index.html"><img src="assets/veyago-icon.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
       <nav class="nav-links">
         <a href="apps.html">Apps</a>
-        <a href="approach.html">Approach</a>
         <a href="services.html">Services</a>
-        <a href="company.html">Company</a>
-        <a class="cta" href="mailto:hello@veyago.app">Contact</a>
+        <div class="nav-item" id="company-nav">
+          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="company.html"><span class="dd-title">About</span><span class="dd-sub">The studio and our story</span></a>
+            <a href="team.html"><span class="dd-title">Team</span><span class="dd-sub">The people building it</span></a>
+            <a href="approach.html"><span class="dd-title">Approach</span><span class="dd-sub">How we think and build</span></a>
+          </div>
+        </div>
       </nav>
+      <div class="nav-right">
+        <a class="nav-cta" href="mailto:hello@veyago.app">Contact</a>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </div>
   </header>
 
+  <!-- Mobile navigation drawer -->
+  <div class="nav-scrim" id="nav-scrim"></div>
+  <aside class="nav-drawer" id="nav-drawer" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
+    <div class="nav-drawer-top">
+      <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <nav class="nav-drawer-links" aria-label="Primary">
+      <a href="apps.html">Apps</a>
+      <a href="services.html">Services</a>
+      <p class="nm-label">Company</p>
+      <a class="nm-sub" href="company.html">About</a>
+      <a class="nm-sub" href="team.html">Team</a>
+      <a class="nm-sub" href="approach.html">Approach</a>
+      <a class="nav-cta nm-cta" href="mailto:hello@veyago.app">Contact</a>
+    </nav>
+  </aside>
+
 <section class="section hero"><div class="wrap"><p class="eyebrow">Our Apps</p><h1 class="headline">A small, focused catalogue.</h1><p class="subhead muted">Each app does one thing genuinely well and treats your data with respect.</p></div></section>
 
-<section class="section"><div class="wrap"><div class="app-grid"><div class="app-card reveal"><p class="eyebrow">Kept · On the App Store</p><h3>Kept</h3><p class="ac-sub">Everything important, kept safe and on time: warranties, documents, IDs, subscriptions, events, and expiry dates — sorted by what's next and reminded before anything lapses.</p><div class="actions"><a class="link" href="kept.html">View Kept</a></div><div class="ac-media"><img class="shot" src="assets/kept-upcoming.png" alt="The Kept app showing upcoming items sorted by what's next" width="1320" height="2868" decoding="async" loading="lazy"></div></div><div class="app-card reveal"><p class="eyebrow">Veyago travel · Coming Q3 2026</p><h3>Veyago</h3><p class="ac-sub">Your next voyage starts with a swipe — a private way to discover where to go, plan the trip, and carry it with you.</p><div class="actions"><a class="link" href="veyago.html">Learn more</a></div><div class="ac-media"><img class="art" src="assets/veyago-travel-light.svg" alt="A travel route on a stylised map" decoding="async"></div></div></div></div></section>
+<section class="section"><div class="wrap"><div class="app-grid"><div class="app-card reveal"><p class="eyebrow">Kept · Coming the week of June 8</p><h3>Kept</h3><p class="ac-sub">Everything important, kept safe and on time: warranties, documents, IDs, subscriptions, events, and expiry dates - sorted by what's next and reminded before anything lapses.</p><div class="actions"><a class="link" href="kept.html">View Kept</a></div><div class="ac-media"><div class="device"><img src="assets/kept-upcoming.png" alt="The Kept app showing upcoming items sorted by what's next" width="1320" height="2868" decoding="async" loading="lazy"></div></div></div><div class="app-card reveal"><p class="eyebrow">Veyago travel · Coming Q3 2026</p><h3>Veyago</h3><p class="ac-sub">Swipe, bracket, and let Veyago Intelligence decide - the travel app that turns "where should we go?" into a planned trip, solo or with your whole group.</p><div class="actions"><a class="link" href="veyago.html">Learn more</a></div><div class="ac-media"><div class="device"><img src="assets/veyago-discover.jpg" alt="The Veyago Discover screen - an editorial feature on Tokyo with time-sensitive in-season picks" width="720" height="1565" decoding="async" loading="lazy"></div></div></div></div></div></section>
 
-<section class="section"><div class="wrap"><p class="eyebrow">What unites them</p><h2 class="section-headline">Different jobs. The same principles.</h2><div class="cards"><div class="card reveal"><div class="ic ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg></div><h3>Private by default</h3><p>No accounts, no tracking, no servers holding your life. Your data stays with you.</p></div><div class="card reveal"><div class="ic ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"/><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"/></svg></div><h3>On-device intelligence</h3><p>The smart parts run where your data already lives — on your iPhone, not in the cloud.</p></div><div class="card reveal"><div class="ic ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-7 5-12 14-12 0 9-5 14-14 12z"/><path d="M9 15c2-3 4-5 7-6"/></svg></div><h3>Calm by design</h3><p>No noise, no dark patterns. Each app does one thing with restraint, and stays out of the way.</p></div></div></div></section>
+<section class="section"><div class="wrap"><p class="eyebrow">What unites them</p><h2 class="section-headline">Different jobs. The same principles.</h2><div class="cards"><div class="card reveal"><div class="ic ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg></div><h3>Private by default</h3><p>No ad trackers, nothing sold, no dark patterns. We collect as little as the job needs - and never the rest.</p></div><div class="card reveal"><div class="ic ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"/><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"/></svg></div><h3>Intelligence that respects you</h3><p>Smart features that work for you, not on you - running on your device wherever they can, grounded in real data, never tracking.</p></div><div class="card reveal"><div class="ic ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13 6l-2 12"/></svg></div><h3>Built to last</h3><p>Native, fast, and quietly obsessive about craft. We'd rather make two apps we're proud of than ten we're not.</p></div></div></div></section>
 
 <section class="section"><div class="wrap"><h2 class="section-headline">Two apps in flight. More to come.</h2><p class="lead">Have a question, a partnership idea, or just want to say hello? We read every message.</p><div class="actions"><a class="btn btn-blue" href="mailto:hello@veyago.app">Get in touch</a></div></div></section>
 
   <footer class="footer">
     <div class="wrap">
-      <p class="legal-top">Veyago is an independent software studio. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
+      <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
         <div><h5>Apps</h5><a href="veyago.html">Veyago travel</a><a href="kept.html">Kept</a></div>
-        <div><h5>Company</h5><a href="company.html">About</a><a href="approach.html">Approach</a><a href="services.html">Services</a><a href="mailto:hello@veyago.app">Contact</a></div>
-        <div><h5>Legal</h5><a href="privacy.html">Privacy Policy</a><a href="kept-privacy.html">Kept Privacy</a><a href="terms.html">Terms</a></div>
-        <div><h5>Get in touch</h5><a href="mailto:hello@veyago.app">hello@veyago.app</a><a href="support.html">Support</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
+        <div><h5>Company</h5><a href="company.html">About</a><a href="team.html">Team</a><a href="approach.html">Approach</a><a href="services.html">Services</a><a href="mailto:hello@veyago.app">Contact</a></div>
+        <div><h5>Legal</h5><a href="privacy.html">Privacy Policy</a><a href="kept-privacy.html">Kept Privacy</a><a href="terms.html">Terms</a><a href="legal.html">Legal / Imprint</a></div>
+        <div><h5>Get in touch</h5><a href="mailto:hello@veyago.app">hello@veyago.app</a><a href="support.html">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
+      <p class="footer-press">Press &amp; investors: <a href="mailto:hello@veyago.app?subject=Press%20%26%20investors">hello@veyago.app</a> · <a href="https://wefunder.com/veyago" target="_blank" rel="noopener">Invest on Wefunder ↗</a></p>
       <div class="footer-base">
-        <span>© <span id="year">2026</span> Veyago Inc · New York C‑Corp · Operating from Belgium</span>
+        <span>© <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
         <span>Incorporated April 2026 · Launching Q3 2026</span>
       </div>
     </div>
