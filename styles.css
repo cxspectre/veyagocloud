@@ -121,7 +121,7 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 .dd-sub { font-size: 0.75rem; color: var(--muted); display: block; margin-top: 1px; }
 
 /* Right side: contact pill + hamburger */
-.nav-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.nav-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
 .nav-cta { background: var(--blue-2) !important; color: #fff !important; opacity: 1 !important; padding: 6px 15px; border-radius: 980px; font-size: 0.8rem !important; font-weight: 500 !important; transition: background .18s var(--ease), transform .18s var(--ease) !important; white-space: nowrap; }
 .nav-cta:hover { background: var(--blue-press) !important; }
 .nav-cta:active { transform: scale(0.97); }
@@ -168,17 +168,10 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 html.menu-open { overflow: hidden; }
 html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 
-/* Desktop hover + keyboard open */
-@media (min-width: 861px) {
-  .nav-item:hover .nav-dropdown { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); pointer-events: auto; }
-  .nav-item:hover .nav-chev { transform: rotate(180deg); }
-  .nav-scrim, .nav-drawer { display: none; }
-}
-@media (max-width: 860px) {
-  .nav-links { display: none; }
-  .nav-right .nav-cta { display: none; }
-  .nav-toggle { display: flex; }
-}
+/* Hamburger + drawer at ALL widths (brand left, hamburger right) */
+.nav-links { display: none; }
+.nav-right .nav-cta { display: none; }
+.nav-toggle { display: flex; }
 @media (prefers-reduced-motion: reduce) {
   .nav-drawer, .nav-scrim { transition: visibility .01s; }
   .nav-drawer-links > *,

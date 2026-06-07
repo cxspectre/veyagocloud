@@ -154,10 +154,5 @@
         }
       }
     });
-
-    /* If the viewport grows to desktop while open, dismiss cleanly */
-    window.addEventListener('resize', function () {
-      if (drawerOpen() && window.innerWidth > 860) closeDrawer();
-    });
   }
 })();
