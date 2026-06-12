@@ -291,6 +291,29 @@
   var y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();
 
+  /* Research-paper table-of-contents scroll-spy */
+  (function paperToc() {
+    var toc = document.querySelector('.paper-toc');
+    if (!toc) return;
+    var links = {};
+    toc.querySelectorAll('a[href^="#"]').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+    var heads = [].slice.call(document.querySelectorAll('.paper-body h2[id]'));
+    if (!heads.length) return;
+    var current = null;
+    function setActive(id) {
+      if (id === current || !links[id]) return;
+      if (current && links[current]) links[current].classList.remove('active');
+      links[id].classList.add('active');
+      current = id;
+    }
+    setActive(heads[0].id);
+    if (reduced || !('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) setActive(e.target.id); });
+    }, { rootMargin: '-72px 0px -78% 0px', threshold: 0 });
+    heads.forEach(function (h) { io.observe(h); });
+  })();
+
   /* Scroll reveals */
   var reveals = document.querySelectorAll('.reveal');
   if (reduced || !('IntersectionObserver' in window)) {

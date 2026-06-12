@@ -40,6 +40,18 @@ export const projects = [
     lastUpdated: '2026-06-12',
   },
   {
+    id: 'newcomer-academy',
+    name: 'Newcomer Academy',
+    stage: 'prototyping',
+    question: 'Can a story-driven, narrative path take a true beginner to real coding fluency where reference-style courses lose them?',
+    finding:
+      'Foundations is built and running - proving the story-driven approach with real learners. The rest of the curriculum is early and phased, with no launch date and no research paper yet. It sits here, rather than on the Apps page, until it has a firm date.',
+    essay: null,
+    related: null,  // not launch-dated, so not on the Apps page
+    published: true,
+    lastUpdated: '2026-06-12',
+  },
+  {
     id: 'spatiback',
     name: 'Spätiback',
     stage: 'prototyping',

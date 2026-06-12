@@ -133,11 +133,13 @@
             <li><a href="#on-device-intelligence">On-device intelligence</a></li>
           </ul>
         </div>
-        <div class="pl-stage pl-empty" style="--st:#a1a1a8">
+        <div class="pl-stage" style="--st:#b07d0b">
           <span class="pl-node"><span class="pl-num">02</span></span>
           <h3 class="pl-label">Prototyping</h3>
           <p class="pl-note">Testing an approach in a rough build to see if it holds.</p>
-          <p class="pl-none">Nothing here right now.</p>
+          <ul class="pl-items">
+            <li><a href="#newcomer-academy">Newcomer Academy</a></li>
+          </ul>
         </div>
         <div class="pl-stage" style="--st:#0071e3">
           <span class="pl-node"><span class="pl-num">03</span></span>
@@ -163,48 +165,90 @@
       <p class="eyebrow">In the pipeline</p>
       <h2 class="section-headline">What we're working on, and why.</h2>
     </div>
-    <div class="wrap">
+    <div class="proj-features">
 
-      <article class="proj reveal" id="on-device-intelligence">
-        <div class="proj-top">
-          <span class="chip chip-research"><span class="chip-dot"></span>Researching</span>
-          <span class="proj-becomes">Informs the whole catalogue</span>
+      <article class="proj-feature reveal" id="on-device-intelligence">
+        <div class="pf-body">
+          <div class="pf-head">
+            <span class="chip chip-research"><span class="chip-dot"></span>Researching</span>
+            <span class="proj-becomes">Informs the whole catalogue</span>
+          </div>
+          <p class="proj-kicker">The question</p>
+          <h3 class="proj-q">Is the old trade-off between intelligent and private still real - or is it collapsing?</h3>
+          <p class="proj-kicker">What we found</p>
+          <p class="proj-find">For most of the cloud era you could build software that was intelligent or private, not both. That trade-off is now narrowing for a specific class of work - latency-sensitive, privacy-critical, structured around your own data - so a privacy-first product can finally offer understanding, not just storage, without sending anything anywhere.</p>
         </div>
-        <p class="proj-kicker">The question</p>
-        <h3 class="proj-q">Is the old trade-off between intelligent and private still real - or is it collapsing?</h3>
-        <p class="proj-kicker">What we found</p>
-        <p class="proj-find">For most of the cloud era you could build software that was intelligent or private, not both. That trade-off is now narrowing for a specific class of work - latency-sensitive, privacy-critical, structured around your own data - so a privacy-first product can finally offer understanding, not just storage, without sending anything anywhere.</p>
-        <div class="proj-actions actions">
-          <a class="btn btn-line" href="/projects/the-edge-moves-in/">Read the paper · The Edge Moves In</a>
+        <a class="paper-tile" style="--st:#0a8d7c" href="/projects/the-edge-moves-in/">
+          <span class="pt-kicker">Working paper · June 2026</span>
+          <span class="pt-title">The Edge Moves In</span>
+          <span class="pt-dek">How intelligence is migrating to the device, and what it means for privacy-first software.</span>
+          <span class="pt-read">Read the paper ›</span>
+        </a>
+      </article>
+
+      <article class="proj-feature flip reveal" id="newcomer-academy">
+        <div class="pf-body">
+          <div class="pf-head">
+            <span class="chip chip-proto"><span class="chip-dot"></span>Prototyping</span>
+            <span class="proj-becomes">Early development</span>
+          </div>
+          <p class="proj-kicker">The question</p>
+          <h3 class="proj-q">Can a story-driven, narrative path take a true beginner to real coding fluency where reference-style courses lose them?</h3>
+          <p class="proj-kicker">Where it stands</p>
+          <p class="proj-find">Foundations is built and running - proving the story-driven approach with real learners. The rest of the curriculum is early and phased, with no launch date and no research paper yet. We'd rather prove the idea than rush the rest, which is why it sits here rather than on the Apps page.</p>
+          <div class="proj-actions actions">
+            <a class="btn btn-line" href="mailto:hello@veyago.cloud?subject=Newcomer%20Academy%20interest">Follow along</a>
+          </div>
+        </div>
+        <div class="paper-tile is-pending" style="--st:#b07d0b">
+          <span class="pt-kicker">Working paper</span>
+          <span class="pt-title">Story-driven learning</span>
+          <span class="pt-dek">How a narrative path can teach a beginner to code - being written up.</span>
+          <span class="pt-pending">In progress</span>
         </div>
       </article>
 
-      <article class="proj reveal" id="kept">
-        <div class="proj-top">
-          <span class="chip chip-building"><span class="chip-dot"></span>Building</span>
-          <span class="proj-becomes">Becomes <a href="/apps/#kept">Kept</a></span>
+      <article class="proj-feature reveal" id="kept">
+        <div class="pf-body">
+          <div class="pf-head">
+            <span class="chip chip-building"><span class="chip-dot"></span>Building</span>
+            <span class="proj-becomes">Becomes <a href="/apps/#kept">Kept</a></span>
+          </div>
+          <p class="proj-kicker">The question</p>
+          <h3 class="proj-q">Why does so much life admin - warranties, receipts, documents, subscriptions, expiry dates - slip through the cracks?</h3>
+          <p class="proj-kicker">What we found</p>
+          <p class="proj-find">The failure is not discipline, it is architecture: the records that govern your obligations are scattered with no trusted home, the consequences of losing track arrive late, and nothing watches a deadline before it lapses. The analysis points to a single, private, on-device system of record that does the watching - and prepares the action for you to approve.</p>
+          <div class="proj-actions actions">
+            <a class="link" href="/kept/">View Kept</a>
+          </div>
         </div>
-        <p class="proj-kicker">The question</p>
-        <h3 class="proj-q">Why does so much life admin - warranties, receipts, documents, subscriptions, expiry dates - slip through the cracks?</h3>
-        <p class="proj-kicker">What we found</p>
-        <p class="proj-find">The failure is not discipline, it is architecture: the records that govern your obligations are scattered with no trusted home, the consequences of losing track arrive late, and nothing watches a deadline before it lapses. The analysis points to a single, private, on-device system of record that does the watching - and prepares the action for you to approve.</p>
-        <div class="proj-actions actions">
-          <a class="btn btn-line" href="/projects/the-unkept-life/">Read the paper · The Unkept Life</a>
-          <a class="link" href="/kept/">View Kept</a>
-        </div>
+        <a class="paper-tile" style="--st:#0071e3" href="/projects/the-unkept-life/">
+          <span class="pt-kicker">Working paper · June 2026</span>
+          <span class="pt-title">The Unkept Life</span>
+          <span class="pt-dek">The cognitive burden of life admin, and the case for a private, on-device system of record.</span>
+          <span class="pt-read">Read the paper ›</span>
+        </a>
       </article>
 
-      <article class="proj reveal" id="veyago-travel">
-        <div class="proj-top">
-          <span class="chip chip-building"><span class="chip-dot"></span>Building</span>
-          <span class="proj-becomes">Becomes <a href="/apps/#veyago">Veyago travel</a></span>
+      <article class="proj-feature flip reveal" id="veyago-travel">
+        <div class="pf-body">
+          <div class="pf-head">
+            <span class="chip chip-building"><span class="chip-dot"></span>Building</span>
+            <span class="proj-becomes">Becomes <a href="/apps/#veyago">Veyago travel</a></span>
+          </div>
+          <p class="proj-kicker">The question</p>
+          <h3 class="proj-q">Why do group trips stall in decision paralysis - and could a swipe-and-eliminate mechanic turn that into a shared decision?</h3>
+          <p class="proj-kicker">Where it stands</p>
+          <p class="proj-find">Group trips stall not on logistics but on the decision: where do we even go? The working thesis is that a four-round elimination bracket turns paralysis into a decision a group can actually reach together. The full research write-up is in progress.</p>
+          <div class="proj-actions actions">
+            <a class="link" href="/veyago/">Learn about Veyago travel</a>
+          </div>
         </div>
-        <p class="proj-kicker">The question</p>
-        <h3 class="proj-q">Why do group trips stall in decision paralysis - and could a swipe-and-eliminate mechanic turn that into a shared decision?</h3>
-        <p class="proj-kicker">Where it stands</p>
-        <p class="proj-find">Group trips stall not on logistics but on the decision: where do we even go? The working thesis is that a four-round elimination bracket turns paralysis into a decision a group can actually reach together. The full research write-up is in progress.</p>
-        <div class="proj-actions actions">
-          <a class="link" href="/veyago/">Learn about Veyago travel</a>
+        <div class="paper-tile is-pending" style="--st:#0071e3">
+          <span class="pt-kicker">Working paper</span>
+          <span class="pt-title">The decision problem</span>
+          <span class="pt-dek">Why group trips stall, and the bracket thesis - being written up.</span>
+          <span class="pt-pending">In progress</span>
         </div>
       </article>
 

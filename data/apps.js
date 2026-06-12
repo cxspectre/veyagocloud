@@ -88,8 +88,10 @@ export const apps = [
     badges: [VALUES.payOnce, VALUES.noTrack, VALUES.noAds],
     cta: { label: 'Follow along', href: 'mailto:hello@veyago.cloud?subject=Newcomer%20Academy%20interest' },
     deeper: null,
-    visual: null, // no shippable build yet -> honest labelled placeholder, never a staged shot
-    published: true,
+    visual: null,
+    // Not launch-dated -> kept off the catalogue. Lives on /projects/ as an early-development
+    // entry instead. Flip to true (and add a launch window) once it has a firm date.
+    published: false,
     lastUpdated: '2026-06-12',
   },
   {
