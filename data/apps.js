@@ -98,17 +98,17 @@ export const apps = [
     category: 'local-retail',
     positioning: 'Your Späti, rewarded.',
     description:
-      'Berlin-focused convenience-store discovery, deals and loyalty. The earliest project in the studio - currently explored on the Projects page.',
+      'Berlin-focused convenience-store discovery, deals and loyalty. The earliest project in the studio - held until it is further along.',
     status: 'in-development',
     window: null,
     platforms: 'iOS',
     pricing: 'Free',
     badges: [VALUES.noDark],
     cta: { label: 'Follow along', href: 'mailto:hello@veyago.cloud?subject=Sp%C3%A4tiback%20interest' },
-    deeper: { label: 'See the research', href: '/projects/#spatiback' },
+    deeper: null,
     visual: null,
-    // Held off the catalogue for now (surfaced on the Projects page instead).
-    // Flip to true when it is further along - the page renders published apps only.
+    // Held entirely for now - too early to be public (off both the catalogue and Projects).
+    // Flip published to true (and re-add a Projects entry) when it is further along.
     published: false,
     lastUpdated: '2026-06-12',
   },

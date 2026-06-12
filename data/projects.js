@@ -48,7 +48,7 @@ export const projects = [
       'The earliest project in the studio, in early prototyping. We are testing whether the idea holds before committing to a build; there is no research paper yet, and we would rather show it honestly as exploration than dress it up.',
     essay: null,
     related: null,
-    published: true,
+    published: false,  // held - too early to be public; restore the pipeline chip + entry on /projects/ to bring back
     lastUpdated: '2026-06-12',
   },
   {
