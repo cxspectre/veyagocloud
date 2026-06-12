@@ -59,6 +59,180 @@
     bar.querySelector('.lb-close').addEventListener('click', dismiss);
   })();
 
+  /* ---------------------------------------------------------------------------
+     Lightweight i18n - 6-language* client-side switcher (*EN + 4 locales today).
+     English is the source of truth in the HTML; non-English locales are applied
+     at runtime by matching the live text against a dictionary loaded from
+     /i18n/<code>.js. The picker (nav + drawer) is injected here so one source of
+     truth covers every page. Legal-page bodies stay English simply by not being
+     in the dictionaries. To add a language: add it to LANGS and drop in a
+     matching /i18n/<code>.js. See styles.css ".lang" for the picker styling.
+  --------------------------------------------------------------------------- */
+  (function i18n() {
+    var LANGS = [
+      { code: 'en', name: 'English' },
+      { code: 'nl', name: 'Nederlands' },
+      { code: 'fr', name: 'Français' },
+      { code: 'de', name: 'Deutsch' },
+      { code: 'es', name: 'Español' }
+    ];
+    var SUP = {}; LANGS.forEach(function (l) { SUP[l.code] = l.name; });
+    var LS = 'veyago.lang';
+
+    function stored() { try { return localStorage.getItem(LS); } catch (e) { return null; } }
+    function detect() {
+      var n = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+      var two = String(n).slice(0, 2).toLowerCase();
+      return SUP[two] ? two : 'en';
+    }
+    var lang = stored() || detect();
+    if (!SUP[lang]) lang = 'en';
+    document.documentElement.lang = lang;
+
+    function setLang(code) {
+      if (!SUP[code]) return;
+      try { localStorage.setItem(LS, code); } catch (e) {}
+      if (code === lang) return;
+      location.reload();   // English source + dict-on-load makes reload the clean path
+    }
+
+    /* ---- Picker UI (injected into the nav and the mobile drawer) ---- */
+    var GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/></svg>';
+
+    function buildNavPicker() {
+      var navRight = document.querySelector('.nav-right');
+      var toggle = document.getElementById('nav-toggle');
+      if (!navRight || !toggle) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'lang'; wrap.id = 'lang-switch';
+      var menu = LANGS.map(function (l) {
+        return '<button role="menuitem" type="button" class="lang-opt' + (l.code === lang ? ' active' : '') +
+          '" data-setlang="' + l.code + '" lang="' + l.code + '">' + l.name + '</button>';
+      }).join('');
+      wrap.innerHTML =
+        '<button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Change language">' +
+          GLOBE + '<span class="lang-cur">' + lang.toUpperCase() + '</span>' +
+        '</button>' +
+        '<div class="lang-menu" role="menu">' + menu + '</div>';
+      navRight.insertBefore(wrap, toggle);
+
+      var btn = wrap.querySelector('.lang-btn');
+      var pop = wrap.querySelector('.lang-menu');
+      function close() { wrap.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = wrap.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(open));
+      });
+      document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) close(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+      pop.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-setlang]'); if (b) setLang(b.getAttribute('data-setlang'));
+      });
+    }
+
+    function buildDrawerPicker() {
+      var links = document.querySelector('.nav-drawer-links');
+      if (!links) return;
+      var label = document.createElement('p');
+      label.className = 'nm-label'; label.textContent = 'Language';
+      label.setAttribute('data-i18n-skip', '');
+      links.appendChild(label);
+      LANGS.forEach(function (l) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'nm-sub lang-opt' + (l.code === lang ? ' active' : '');
+        b.setAttribute('data-setlang', l.code);
+        b.setAttribute('lang', l.code);
+        b.setAttribute('data-i18n-skip', '');
+        b.textContent = l.name;
+        b.addEventListener('click', function () { setLang(l.code); });
+        links.appendChild(b);
+      });
+    }
+
+    buildNavPicker();
+    buildDrawerPicker();
+
+    /* ---- Apply a dictionary to the live DOM ---- */
+    var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1 };
+    function squish(s) { return s.replace(/\s+/g, ' ').trim(); }
+
+    function applyDict(dict) {
+      var strings = dict.strings || {};
+      var attrsMap = dict.attrs || {};
+      var htmlMap = dict.html || {};
+
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode: function (node) {
+          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          var el = node.parentNode;
+          while (el && el.nodeType === 1 && el !== document.body) {
+            if (SKIP_TAGS[el.tagName]) return NodeFilter.FILTER_REJECT;
+            if (el.namespaceURI && el.namespaceURI.indexOf('svg') !== -1) return NodeFilter.FILTER_REJECT;
+            if (el.hasAttribute('data-i18n') || el.hasAttribute('data-i18n-skip')) return NodeFilter.FILTER_REJECT;
+            if (el.classList && (el.classList.contains('brand') || el.classList.contains('lang'))) return NodeFilter.FILTER_REJECT;
+            el = el.parentNode;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      var nodes = [], n;
+      while ((n = walker.nextNode())) nodes.push(n);
+      nodes.forEach(function (node) {
+        var raw = node.nodeValue;
+        var lead = (raw.match(/^\s*/) || [''])[0];
+        var trail = (raw.match(/\s*$/) || [''])[0];
+        var core = squish(raw);
+        var t = strings[core];
+        if (t != null && t !== core) node.nodeValue = lead + t + trail;
+      });
+
+      var richEls = document.querySelectorAll('[data-i18n]');
+      for (var i = 0; i < richEls.length; i++) {
+        var key = richEls[i].getAttribute('data-i18n');
+        if (htmlMap[key]) richEls[i].innerHTML = htmlMap[key];
+      }
+
+      var attrEls = document.querySelectorAll('[alt],[aria-label],[title]');
+      for (var j = 0; j < attrEls.length; j++) {
+        ['alt', 'aria-label', 'title'].forEach(function (a) {
+          var el = attrEls[j];
+          if (!el.hasAttribute(a) || el.hasAttribute('data-i18n-skip')) return;
+          var v = squish(el.getAttribute(a) || '');
+          if (!v) return;
+          var t = (attrsMap[v] != null ? attrsMap[v] : strings[v]);
+          if (t != null && t !== v) el.setAttribute(a, t);
+        });
+      }
+
+      if (dict.meta) {
+        var path = location.pathname.replace(/index\.html$/, '');
+        if (path === '') path = '/';
+        var m = dict.meta[path];
+        if (m) {
+          if (m.title) document.title = m.title;
+          if (m.description) {
+            var md = document.querySelector('meta[name="description"]');
+            if (md) md.setAttribute('content', m.description);
+          }
+        }
+      }
+    }
+
+    /* ---- Load + apply the active locale ---- */
+    window.__veyagoI18n = {
+      lang: lang,
+      register: function (code, dict) { if (code === lang) { try { applyDict(dict); } catch (e) {} } }
+    };
+    if (lang !== 'en') {
+      var s = document.createElement('script');
+      s.src = '/i18n/' + lang + '.js';
+      s.onerror = function () { document.documentElement.lang = 'en'; };
+      document.head.appendChild(s);
+    }
+  })();
+
   /* Year */
   var y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();

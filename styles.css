@@ -596,3 +596,46 @@ body.lb-anim { transition: padding-top .45s var(--ease); }
   body.lb-anim { transition: none; }
   .lb-dot { animation: none; }
 }
+
+/* ---------- Language picker (i18n, injected by app.js) ---------- */
+.lang { position: relative; display: flex; align-items: center; }
+.lang-btn {
+  display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 9px;
+  border: none; background: none; cursor: pointer; color: var(--ink); opacity: 0.76;
+  border-radius: 9px; font-family: var(--font); font-size: 0.8125rem; font-weight: 500;
+  letter-spacing: 0.02em; -webkit-tap-highlight-color: transparent;
+  transition: opacity .18s var(--ease), background .18s var(--ease);
+}
+.lang-btn:hover { opacity: 1; background: rgba(0,0,0,0.05); }
+.lang-btn svg { width: 16px; height: 16px; }
+.lang-cur { line-height: 1; }
+
+.lang-menu {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,0,0,0.09); border-radius: 16px;
+  box-shadow: 0 20px 56px -12px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(0,0,0,0.05);
+  padding: 5px; min-width: 184px; opacity: 0; visibility: hidden; transform: translateY(-8px);
+  transition: opacity .22s var(--ease), transform .22s var(--ease), visibility .22s;
+  pointer-events: none; z-index: 200;
+}
+.lang.open .lang-menu { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
+.lang-menu .lang-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  padding: 10px 13px; border: none; background: none; cursor: pointer; font-family: var(--font);
+  font-size: 0.875rem; font-weight: 500; color: var(--ink); text-align: left; border-radius: 11px;
+  transition: background .12s;
+}
+.lang-menu .lang-opt:hover { background: rgba(0,0,0,0.04); }
+.lang-menu .lang-opt.active { color: var(--blue); }
+.lang-menu .lang-opt.active::after { content: "✓"; font-size: 0.82em; }
+
+/* Drawer language section (buttons styled to match .nm-sub links) */
+.nav-drawer-links .lang-opt {
+  display: block; width: 100%; text-align: left; font-family: var(--font);
+  font-size: 0.95rem; font-weight: 500; color: var(--muted); background: none; border: none;
+  cursor: pointer; padding: 11px 0 11px 14px; -webkit-tap-highlight-color: transparent;
+  transition: color .15s;
+}
+.nav-drawer-links .lang-opt:hover,
+.nav-drawer-links .lang-opt.active { color: var(--blue); }
