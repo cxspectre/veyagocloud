@@ -538,3 +538,61 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
   .reveal { opacity: 1; transform: none; transition: none; }
   .fact-strip-inner { animation: none; }
 }
+
+/* ---------- Launch announcement bar ----------
+   Temporary notice for the Kept launch slip (injected by app.js).
+   To retire it after Kept ships: delete this block, delete the
+   setupLaunchBar() block in app.js, and bump LB_KEY if reusing later.
+   --lb-h is the bar's measured height; it shifts the page + nav down so
+   the bar reserves space uniformly on every page type (hero / policy / legal). */
+:root { --lb-h: 0px; }
+body { padding-top: var(--lb-h); }
+body.lb-anim { transition: padding-top .45s var(--ease); }
+.nav { top: var(--lb-h); }
+
+.launch-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: center;
+  padding: 8px clamp(14px, 4vw, 24px);
+  background: rgba(234, 242, 255, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(0, 80, 200, 0.12);
+  opacity: 0; transition: opacity .45s var(--ease);
+}
+.launch-bar.in { opacity: 1; }
+.lb-inner { display: flex; align-items: center; gap: 12px; width: 100%; max-width: var(--maxw-wide); }
+.lb-dot {
+  flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--blue-2); animation: lbPulse 2.6s var(--ease) infinite;
+}
+.lb-text { margin: 0; flex: 1; min-width: 0; font-size: 0.8125rem; line-height: 1.45; color: var(--ink); letter-spacing: -0.006em; }
+.lb-text strong { font-weight: 600; }
+.lb-link { color: var(--blue); font-weight: 500; white-space: nowrap; }
+.lb-link:hover { text-decoration: underline; }
+.lb-close {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; margin: -3px -6px -3px 0; padding: 0;
+  border: none; background: none; color: var(--muted-2); cursor: pointer;
+  border-radius: 7px; -webkit-tap-highlight-color: transparent;
+  transition: background .15s var(--ease), color .15s var(--ease);
+}
+.lb-close:hover { background: rgba(0,0,0,0.06); color: var(--ink); }
+.lb-close svg { width: 15px; height: 15px; }
+
+@keyframes lbPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0,113,227,.45); }
+  70%  { box-shadow: 0 0 0 7px rgba(0,113,227,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,113,227,0); }
+}
+
+@media (max-width: 760px) {
+  .lb-dot { display: none; }
+  .lb-text { font-size: 0.75rem; }
+  .lb-inner { gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .launch-bar { transition: none; }
+  body.lb-anim { transition: none; }
+  .lb-dot { animation: none; }
+}

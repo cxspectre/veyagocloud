@@ -3,6 +3,62 @@
   'use strict';
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---------------------------------------------------------------------------
+     Launch announcement bar - temporary notice for the Kept launch slip.
+     Injected here so one source of truth covers every page. To retire it once
+     Kept ships, delete this block and the matching ".launch-bar" CSS block.
+     Bump LB_KEY when the copy materially changes (re-shows for past dismissers).
+     The fixed bar reserves space via --lb-h, which shifts the page + nav down
+     uniformly on every page type (hero / policy / legal). See styles.css.
+  --------------------------------------------------------------------------- */
+  (function launchBar() {
+    var LB_KEY = 'veyago.lb.kept-2026-06';
+    try { if (localStorage.getItem(LB_KEY) === '1') return; } catch (e) {}
+    if (!document.body) return;
+
+    var bar = document.createElement('div');
+    bar.className = 'launch-bar';
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', 'Launch update');
+    bar.innerHTML =
+      '<div class="lb-inner">' +
+        '<span class="lb-dot" aria-hidden="true"></span>' +
+        '<p class="lb-text"><strong>Launch update</strong> - We\'d aimed to launch Kept the week of June 8; ' +
+        'it now arrives within two weeks of June 15 as we finish Apple\'s move to an organization developer ' +
+        'account and final certification. We\'d rather get it right - updates to follow. ' +
+        '<a class="lb-link" href="mailto:hello@veyago.cloud?subject=Notify%20me%20when%20Kept%20launches">Get updates ›</a></p>' +
+        '<button class="lb-close" type="button" aria-label="Dismiss launch update">' +
+          '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
+        '</button>' +
+      '</div>';
+    document.body.insertBefore(bar, document.body.firstChild);
+
+    var root = document.documentElement;
+    function measure() { root.style.setProperty('--lb-h', bar.offsetHeight + 'px'); }
+
+    /* Reserve the height as a snap (no slide on load), then allow eased changes. */
+    measure();
+    void document.body.offsetHeight;
+    document.body.classList.add('lb-anim');
+    requestAnimationFrame(function () { bar.classList.add('in'); });
+
+    /* Keep the reserved height correct as the bar re-wraps (resize, font swap). */
+    var ro = null;
+    if ('ResizeObserver' in window) { ro = new ResizeObserver(measure); ro.observe(bar); }
+    else { window.addEventListener('resize', measure, { passive: true }); }
+
+    function dismiss() {
+      try { localStorage.setItem(LB_KEY, '1'); } catch (e) {}
+      if (ro) ro.disconnect();
+      root.style.setProperty('--lb-h', '0px');  /* content eases back up */
+      bar.classList.remove('in');               /* bar fades out         */
+      var remove = function () { if (bar && bar.parentNode) bar.parentNode.removeChild(bar); bar = null; };
+      bar.addEventListener('transitionend', function (e) { if (e.propertyName === 'opacity') remove(); }, { once: true });
+      setTimeout(remove, 700);
+    }
+    bar.querySelector('.lb-close').addEventListener('click', dismiss);
+  })();
+
   /* Year */
   var y = document.getElementById('year');
   if (y) y.textContent = new Date().getFullYear();
