@@ -78,14 +78,29 @@
     ];
     var SUP = {}; LANGS.forEach(function (l) { SUP[l.code] = l.name; });
     var LS = 'veyago.lang';
+    var SUGGEST_LS = 'veyago.lang.suggest';   // '1' once the suggestion has been dismissed
+    /* Suggestion toast copy, shown in the target language so a speaker recognises it. */
+    var SUGGEST = {
+      nl: { msg: 'Veyago is ook beschikbaar in het Nederlands.', yes: 'Naar Nederlands', no: 'Niet nu' },
+      fr: { msg: 'Veyago est aussi disponible en français.', yes: 'Passer en français', no: 'Pas maintenant' },
+      de: { msg: 'Veyago ist auch auf Deutsch verfügbar.', yes: 'Auf Deutsch wechseln', no: 'Nicht jetzt' },
+      es: { msg: 'Veyago también está disponible en español.', yes: 'Cambiar a español', no: 'Ahora no' }
+    };
 
     function stored() { try { return localStorage.getItem(LS); } catch (e) { return null; } }
+    /* First supported language in the visitor's locale preference order. On-device only -
+       no IP-geolocation lookup, in keeping with the privacy-first brand. Drives the suggestion. */
     function detect() {
-      var n = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
-      var two = String(n).slice(0, 2).toLowerCase();
-      return SUP[two] ? two : 'en';
+      var ls = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || 'en'];
+      for (var i = 0; i < ls.length; i++) {
+        var two = String(ls[i]).slice(0, 2).toLowerCase();
+        if (SUP[two]) return two;
+      }
+      return 'en';
     }
-    var lang = stored() || detect();
+    /* Default to English unless the visitor explicitly chose a language - we suggest
+       their locale (see the toast at the end), never force it. */
+    var lang = stored() || 'en';
     if (!SUP[lang]) lang = 'en';
     document.documentElement.lang = lang;
 
@@ -98,6 +113,7 @@
 
     /* ---- Picker UI (injected into the nav and the mobile drawer) ---- */
     var GLOBE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18"/></svg>';
+    var CLOSE = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 
     function buildNavPicker() {
       var navRight = document.querySelector('.nav-right');
@@ -231,6 +247,44 @@
       s.onerror = function () { document.documentElement.lang = 'en'; };
       document.head.appendChild(s);
     }
+
+    /* ---- Locale suggestion: offer the visitor's language, don't force it ---- */
+    (function suggest() {
+      if (stored()) return;                          // an explicit choice wins, no nagging
+      var code = detect();
+      if (code === 'en' || !SUGGEST[code]) return;   // English preferred (or unsupported) - nothing to offer
+      try { if (localStorage.getItem(SUGGEST_LS) === '1') return; } catch (e) {}  // already dismissed
+
+      var copy = SUGGEST[code];
+      var el = document.createElement('div');
+      el.className = 'lang-suggest'; el.lang = code;
+      el.setAttribute('role', 'region');
+      el.setAttribute('aria-label', copy.msg);
+      el.innerHTML =
+        '<span class="ls-globe" aria-hidden="true">' + GLOBE + '</span>' +
+        '<div class="ls-body">' +
+          '<p class="ls-msg">' + copy.msg + '</p>' +
+          '<div class="ls-actions">' +
+            '<button type="button" class="ls-yes">' + copy.yes + '</button>' +
+            '<button type="button" class="ls-no">' + copy.no + '</button>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="ls-close" aria-label="' + copy.no + '">' + CLOSE + '</button>';
+
+      function close() {
+        try { localStorage.setItem(SUGGEST_LS, '1'); } catch (e) {}
+        el.classList.remove('in');
+        var rm = function () { if (el.parentNode) el.parentNode.removeChild(el); };
+        el.addEventListener('transitionend', function (ev) { if (ev.propertyName === 'opacity') rm(); }, { once: true });
+        setTimeout(rm, 500);
+      }
+      el.querySelector('.ls-yes').addEventListener('click', function () { setLang(code); });
+      el.querySelector('.ls-no').addEventListener('click', close);
+      el.querySelector('.ls-close').addEventListener('click', close);
+
+      document.body.appendChild(el);
+      setTimeout(function () { el.classList.add('in'); }, 600);   // a beat after load, so it's noticed
+    })();
   })();
 
   /* Year */
