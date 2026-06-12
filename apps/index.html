@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Our iOS apps - Kept &amp; Veyago travel | Veyago</title>
-  <meta name="description" content="Two focused iOS apps from Veyago: Kept, a private on-device tracker for warranties, receipts and expiry dates, and Veyago travel, the group trip decision app." />
+  <title>Our apps - Kept, Veyago travel &amp; Newcomer Academy | Veyago</title>
+  <meta name="description" content="The Veyago app catalogue - Kept, Veyago travel and Newcomer Academy. Private, intelligent apps you own, not software that owns you. Honest, in-progress launch status." />
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="/styles.css" />
-  <meta property="og:title" content="Our iOS apps - Kept &amp; Veyago travel | Veyago" />
-  <meta property="og:description" content="Two focused iOS apps from Veyago: Kept, a private on-device tracker for warranties, receipts and expiry dates, and Veyago travel, the group trip decision app." />
+  <meta property="og:title" content="Our apps - Kept, Veyago travel &amp; Newcomer Academy | Veyago" />
+  <meta property="og:description" content="The Veyago app catalogue - Kept, Veyago travel and Newcomer Academy. Private, intelligent apps you own, not software that owns you. Honest, in-progress launch status." />
   <meta property="og:image" content="https://www.veyago.cloud/assets/og.png" />
   <meta property="og:type" content="website" />
 
@@ -22,8 +22,8 @@
   <meta property="og:image:alt" content="Veyago - calm, private apps for iOS" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@veyago_cloud" />
-  <meta name="twitter:title" content="Our iOS apps - Kept &amp; Veyago travel | Veyago" />
-  <meta name="twitter:description" content="Two focused iOS apps from Veyago: Kept, a private on-device tracker for warranties, receipts and expiry dates, and Veyago travel, the group trip decision app." />
+  <meta name="twitter:title" content="Our apps - Kept, Veyago travel &amp; Newcomer Academy | Veyago" />
+  <meta name="twitter:description" content="The Veyago app catalogue - Kept, Veyago travel and Newcomer Academy. Private, intelligent apps you own, not software that owns you." />
   <meta name="twitter:image" content="https://www.veyago.cloud/assets/og.png" />
   <meta name="twitter:image:alt" content="Veyago - calm, private apps for iOS" />
   <script type="application/ld+json">
@@ -50,20 +50,7 @@
           "@id": "https://www.veyago.cloud/team/#cassian-drefke",
           "name": "Cassian Drefke"
         },
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "54 State Street, Ste 804 #17055",
-          "addressLocality": "Albany",
-          "addressRegion": "NY",
-          "postalCode": "12207",
-          "addressCountry": "US"
-        },
         "email": "hello@veyago.cloud",
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "email": "hello@veyago.cloud",
-          "contactType": "customer support"
-        },
         "sameAs": [
           "https://instagram.com/veyago_cloud",
           "https://wefunder.com/veyago"
@@ -74,8 +61,58 @@
         "@id": "https://www.veyago.cloud/#website",
         "url": "https://www.veyago.cloud/",
         "name": "Veyago",
-        "publisher": {
-          "@id": "https://www.veyago.cloud/#organization"
+        "publisher": { "@id": "https://www.veyago.cloud/#organization" }
+      },
+      {
+        "@type": "CollectionPage",
+        "@id": "https://www.veyago.cloud/apps/#catalogue",
+        "url": "https://www.veyago.cloud/apps/",
+        "name": "Veyago app catalogue",
+        "isPartOf": { "@id": "https://www.veyago.cloud/#website" },
+        "about": { "@id": "https://www.veyago.cloud/#organization" },
+        "mainEntity": {
+          "@type": "ItemList",
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "item": {
+                "@type": "MobileApplication",
+                "name": "Veyago",
+                "applicationCategory": "TravelApplication",
+                "operatingSystem": "iOS, Android",
+                "url": "https://www.veyago.cloud/veyago/",
+                "description": "A travel OS that turns deciding where to go into a swipe-and-bracket decision, then plans the trip.",
+                "publisher": { "@id": "https://www.veyago.cloud/#organization" }
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "item": {
+                "@type": "MobileApplication",
+                "name": "Kept",
+                "applicationCategory": "UtilitiesApplication",
+                "operatingSystem": "iOS",
+                "url": "https://www.veyago.cloud/kept/",
+                "description": "A private, on-device tracker for warranties, receipts, documents, subscriptions and expiry dates.",
+                "releaseDate": "2026-06-29",
+                "publisher": { "@id": "https://www.veyago.cloud/#organization" }
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "item": {
+                "@type": "MobileApplication",
+                "name": "Newcomer Academy",
+                "applicationCategory": "EducationalApplication",
+                "operatingSystem": "iOS, iPadOS, macOS",
+                "description": "A story-driven path to learn to code, built in phases. Foundations is built and running.",
+                "publisher": { "@id": "https://www.veyago.cloud/#organization" }
+              }
+            }
+          ]
         }
       }
     ]
@@ -126,13 +163,119 @@
     </nav>
   </aside>
 
-<section class="section hero"><div class="wrap"><p class="eyebrow">Our Apps</p><h1 class="headline">A small, focused catalogue.</h1><p class="subhead muted">Each app does one thing genuinely well and treats your data with respect.</p></div></section>
+  <section class="section hero">
+    <div class="wrap">
+      <p class="eyebrow">Our Apps</p>
+      <h1 class="headline">Built by a studio. Owned by you.</h1>
+      <p class="subhead muted">Private, intelligent, beautifully made apps - a small catalogue held to one high bar, and yours to keep rather than software that keeps you.</p>
+    </div>
+  </section>
 
-<section class="section"><div class="wrap"><div class="app-grid"><div class="app-card reveal"><p class="eyebrow">Kept · Coming late June 2026</p><h3>Kept</h3><p class="ac-sub">Everything important, kept safe and on time: warranties, documents, IDs, subscriptions, events, and expiry dates - sorted by what's next and reminded before anything lapses.</p><div class="actions"><a class="link" href="/kept/">View Kept</a></div><div class="ac-media"><div class="device"><img src="/assets/kept-upcoming.png" alt="The Kept app showing upcoming items sorted by what's next" width="1320" height="2868" decoding="async" loading="lazy"></div></div></div><div class="app-card reveal"><p class="eyebrow">Veyago travel · Coming Q3 2026</p><h3>Veyago</h3><p class="ac-sub">Swipe, bracket, and let Veyago Intelligence decide - the travel app that turns "where should we go?" into a planned trip, solo or with your whole group.</p><div class="actions"><a class="link" href="/veyago/">Learn more</a></div><div class="ac-media"><div class="device"><img src="/assets/veyago-discover.jpg" alt="The Veyago Discover screen - an editorial feature on Tokyo with time-sensitive in-season picks" width="720" height="1565" decoding="async" loading="lazy"></div></div></div></div></div></section>
+  <section class="section">
+    <div class="wrap">
+      <p class="eyebrow">The catalogue</p>
+      <h2 class="section-headline">A small, focused catalogue.</h2>
+      <p class="subhead muted">None of these are on the App Store yet. We're mid-build and we'd rather show you exactly where each one stands than pretend otherwise.</p>
+    </div>
+    <div class="catalogue">
 
-<section class="section"><div class="wrap"><p class="eyebrow">What unites them</p><h2 class="section-headline">Different jobs. The same principles.</h2><div class="cards"><div class="card reveal"><div class="ic ic-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg></div><h3>Private by default</h3><p>No ad trackers, nothing sold, no dark patterns. We collect as little as the job needs - and never the rest.</p></div><div class="card reveal"><div class="ic ic-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"/><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"/></svg></div><h3>Intelligence that respects you</h3><p>Smart features that work for you, not on you - running on your device wherever they can, grounded in real data, never tracking.</p></div><div class="card reveal"><div class="ic ic-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8l-4 4 4 4"/><path d="M16 8l4 4-4 4"/><path d="M13 6l-2 12"/></svg></div><h3>Built to last</h3><p>Native, fast, and quietly obsessive about craft. We'd rather make two apps we're proud of than ten we're not.</p></div></div></div></section>
+      <article class="cat-card reveal" id="veyago">
+        <div class="cc-top">
+          <span class="cc-ic ic ic-blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>
+          <span class="chip chip-scheduled"><span class="chip-dot"></span>Scheduled · Q3 2026</span>
+        </div>
+        <h3 class="cc-name">Veyago</h3>
+        <p class="cc-pos">Your next voyage starts with a swipe.</p>
+        <p class="cc-desc">Swipe, bracket, and let Veyago Intelligence decide - a travel OS that turns "where should we go?" into a planned trip, solo or with your whole group.</p>
+        <ul class="cc-badges" aria-label="What holds true of this app">
+          <li>No ad targeting</li>
+          <li>No data sold</li>
+        </ul>
+        <dl class="cc-meta">
+          <div><dt>Platforms</dt><dd>iOS &amp; Android</dd></div>
+          <div><dt>Pricing</dt><dd>Free · optional Premium</dd></div>
+        </dl>
+        <div class="cc-actions actions">
+          <a class="btn btn-blue" href="https://waitlister.me/p/veyago-travel-made-easy" target="_blank" rel="noopener">Join the waitlist</a>
+          <a class="link" href="/veyago/">Learn more</a>
+        </div>
+      </article>
 
-<section class="section"><div class="wrap"><h2 class="section-headline">Two apps in flight. More to come.</h2><p class="lead">Have a question, a partnership idea, or just want to say hello? We read every message.</p><div class="actions"><a class="btn btn-blue" href="mailto:hello@veyago.cloud">Get in touch</a></div></div></section>
+      <article class="cat-card reveal" id="kept">
+        <div class="cc-top">
+          <span class="cc-ic ic ic-green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg></span>
+          <span class="chip chip-scheduled"><span class="chip-dot"></span>Scheduled · late June 2026</span>
+        </div>
+        <h3 class="cc-name">Kept</h3>
+        <p class="cc-pos">Never lose track of what matters.</p>
+        <p class="cc-desc">Warranties, receipts, documents, subscriptions and expiry dates - sorted by what's next and reminded before anything lapses. No account, no servers; everything stays on your device and your iCloud.</p>
+        <ul class="cc-badges" aria-label="What holds true of this app">
+          <li>Privacy by design</li>
+          <li>On-device</li>
+          <li>No tracking</li>
+          <li>Pay once</li>
+        </ul>
+        <dl class="cc-meta">
+          <div><dt>Platforms</dt><dd>iOS</dd></div>
+          <div><dt>Pricing</dt><dd>Free · one-time lifetime unlock</dd></div>
+        </dl>
+        <div class="cc-actions actions">
+          <a class="btn btn-blue" href="mailto:hello@veyago.cloud?subject=Notify%20me%20when%20Kept%20launches">Notify me</a>
+          <a class="link" href="/kept/">View Kept</a>
+        </div>
+      </article>
+
+      <article class="cat-card reveal" id="newcomer-academy">
+        <div class="cc-top">
+          <span class="cc-ic ic ic-purple" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11.5V16c0 1 2.5 2.5 5 2.5s5-1.5 5-2.5v-4.5"/><path d="M21 9v5"/></svg></span>
+          <span class="chip chip-dev"><span class="chip-dot"></span>In development</span>
+        </div>
+        <h3 class="cc-name">Newcomer Academy</h3>
+        <p class="cc-pos">Learn to code, one story at a time.</p>
+        <p class="cc-desc">A story-driven path from your first line of code toward real fluency. Foundations is built and running; the rest of the curriculum arrives in phases.</p>
+        <ul class="cc-badges" aria-label="What holds true of this app">
+          <li>Pay once</li>
+          <li>No tracking</li>
+          <li>No ads</li>
+        </ul>
+        <dl class="cc-meta">
+          <div><dt>Platforms</dt><dd>iPhone · iPad · Mac</dd></div>
+          <div><dt>Pricing</dt><dd>Free Foundations · one-time unlock</dd></div>
+        </dl>
+        <div class="cc-actions actions">
+          <a class="btn btn-blue" href="mailto:hello@veyago.cloud?subject=Newcomer%20Academy%20interest">Follow along</a>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="section soft">
+    <div class="wrap">
+      <p class="eyebrow">Held to the same bar</p>
+      <h2 class="section-headline">What every app is held to.</h2>
+      <p class="subhead muted">Stated once, for the whole catalogue, rather than repeated on every card.</p>
+      <ul class="values-strip">
+        <li>Privacy by design</li>
+        <li>On-device where it can be</li>
+        <li>Zero ad trackers</li>
+        <li>No dark patterns</li>
+        <li>Fair pricing</li>
+        <li>Yours to own</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="section-headline">Built in the open.</h2>
+      <p class="lead">We'd rather show a studio mid-build than a glossy launch that hasn't happened. Follow the build, or be first to know the day each app goes live.</p>
+      <div class="actions">
+        <a class="btn btn-blue" href="mailto:hello@veyago.cloud?subject=Follow%20the%20Veyago%20build">Follow the build</a>
+        <a class="link" href="https://waitlister.me/p/veyago-travel-made-easy" target="_blank" rel="noopener">Join the Veyago waitlist</a>
+      </div>
+    </div>
+  </section>
 
   <footer class="footer">
     <div class="wrap">
