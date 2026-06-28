@@ -241,7 +241,7 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 
 /* Compact 'Our Apps' tiles (home) - a tidy device peek, matched heights */
 .tiles2 .tile { min-height: 0; }
-.tiles2 .tile-media { margin-top: clamp(22px, 3vw, 30px); padding-top: 0; height: clamp(236px, 26vw, 272px); overflow: hidden; align-items: flex-start; }
+.tiles2 .tile-media { margin-top: auto; padding-top: clamp(22px, 3vw, 30px); height: clamp(236px, 26vw, 272px); overflow: hidden; align-items: flex-start; }
 .tiles2 .tile-media img.shot { width: clamp(200px, 21vw, 226px); border-radius: 30px; }
 .tiles2 .tile-media .art { width: 100%; max-width: 300px; align-self: center; }
 
