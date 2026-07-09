@@ -1,0 +1,18 @@
+{
+  "name": "veyago-cloud",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build tooling for the veyago.cloud static site (journal + wallpapers static export). The site itself is plain static HTML/CSS/JS served by GitHub Pages; these dependencies are build-time only and never shipped to the browser.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "python3 -m http.server 8765",
+    "build": "node tools/build.js",
+    "build:essays": "node tools/build-essays.js",
+    "test": "node --test \"tools/lib/*.test.js\""
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "dompurify": "^3.1.6",
+    "jsdom": "^24.1.1"
+  }
+}

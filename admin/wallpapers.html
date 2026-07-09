@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wallpapers · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div><h1>Wallpapers</h1><p>Publish wallpaper sets with per-device download variants.</p></div>
+        <div class="adm-actions">
+          <button class="btn btn-primary" id="new-btn">+ New wallpaper</button>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <ul class="adm-list" id="wp-list"></ul>
+
+      <section class="card-pane" id="wp-form" hidden style="margin-top:24px">
+        <h2 id="form-title">New wallpaper</h2>
+        <div class="row-2">
+          <div class="field"><label for="w-title">Title</label><input class="input" id="w-title" type="text" /></div>
+          <div class="field"><label for="w-category">Category</label><input class="input" id="w-category" type="text" placeholder="Wordmark, Travel…" /></div>
+        </div>
+        <div class="field"><label for="w-desc">Description</label><textarea class="textarea" id="w-desc"></textarea></div>
+        <div class="field">
+          <label for="w-preview">Preview image (thumbnail)</label>
+          <input class="input" id="w-preview" type="text" placeholder="https://… or upload" />
+          <input class="file-input" id="w-preview-file" type="file" accept="image/*" />
+          <span class="hint" id="w-preview-status"></span>
+        </div>
+        <label class="editor-label" style="margin-top:4px">Download variants</label>
+        <div id="variants"></div>
+        <button class="btn btn-sm" id="add-variant" type="button">+ Add variant</button>
+        <div class="form-actions">
+          <span class="badge badge-draft" id="w-status-badge">draft</span>
+          <button class="btn" id="w-save" type="button">Save draft</button>
+          <button class="btn btn-primary" id="w-publish" type="button">Publish</button>
+          <button class="btn" id="w-cancel" type="button">Cancel</button>
+        </div>
+        <p class="hint" style="margin-top:10px">Run <code>npm run build</code> and push to update the live site after publishing.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=4"></script>
+  <script src="/admin/supabase-config.js?v=4"></script>
+  <script src="/admin/js/client.js?v=4"></script>
+  <script src="/admin/js/auth.js?v=4"></script>
+  <script src="/admin/js/nav.js?v=4"></script>
+  <script src="/admin/js/wallpapers.js?v=4"></script>
+</body>
+</html>

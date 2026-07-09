@@ -11,23 +11,31 @@
      The fixed bar reserves space via --lb-h, which shifts the page + nav down
      uniformly on every page type (hero / policy / legal). See styles.css.
   --------------------------------------------------------------------------- */
+  /* Launch bar — reads from window.VEYAGO_SITE_CONFIG (set by /assets/js/site-config.js
+     which the build generates from the active announcement in Supabase). When no
+     config is present the bar simply doesn't show. To update the announcement, edit
+     it in /admin/announcements and run `npm run build`. */
   (function launchBar() {
-    var LB_KEY = 'veyago.lb.kept-2026-06';
+    var cfg = window.VEYAGO_SITE_CONFIG && window.VEYAGO_SITE_CONFIG.announcement;
+    if (!cfg || !cfg.active || !cfg.message) return;
+
+    var LB_KEY = 'veyago.lb.' + (cfg.key || 'default');
     try { if (localStorage.getItem(LB_KEY) === '1') return; } catch (e) {}
     if (!document.body) return;
+
+    var link = (cfg.linkText && cfg.linkHref)
+      ? ' <a class="lb-link" href="' + cfg.linkHref + '">' + cfg.linkText + '</a>'
+      : '';
 
     var bar = document.createElement('div');
     bar.className = 'launch-bar';
     bar.setAttribute('role', 'region');
-    bar.setAttribute('aria-label', 'Launch update');
+    bar.setAttribute('aria-label', 'Site announcement');
     bar.innerHTML =
       '<div class="lb-inner">' +
         '<span class="lb-dot" aria-hidden="true"></span>' +
-        '<p class="lb-text"><strong>Launch update</strong> - We\'d aimed to launch Kept the week of June 8; ' +
-        'it now arrives within two weeks of June 15 as we finish Apple\'s move to an organization developer ' +
-        'account and final certification. We\'d rather get it right - updates to follow. ' +
-        '<a class="lb-link" href="mailto:hello@veyago.cloud?subject=Notify%20me%20when%20Kept%20launches">Get updates ›</a></p>' +
-        '<button class="lb-close" type="button" aria-label="Dismiss launch update">' +
+        '<p class="lb-text">' + cfg.message + link + '</p>' +
+        '<button class="lb-close" type="button" aria-label="Dismiss announcement">' +
           '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
         '</button>' +
       '</div>';
@@ -42,7 +50,6 @@
     document.body.classList.add('lb-anim');
     requestAnimationFrame(function () { bar.classList.add('in'); });
 
-    /* Keep the reserved height correct as the bar re-wraps (resize, font swap). */
     var ro = null;
     if ('ResizeObserver' in window) { ro = new ResizeObserver(measure); ro.observe(bar); }
     else { window.addEventListener('resize', measure, { passive: true }); }
@@ -50,8 +57,8 @@
     function dismiss() {
       try { localStorage.setItem(LB_KEY, '1'); } catch (e) {}
       if (ro) ro.disconnect();
-      root.style.setProperty('--lb-h', '0px');  /* content eases back up */
-      bar.classList.remove('in');               /* bar fades out         */
+      root.style.setProperty('--lb-h', '0px');
+      bar.classList.remove('in');
       var remove = function () { if (bar && bar.parentNode) bar.parentNode.removeChild(bar); bar = null; };
       bar.addEventListener('transitionend', function (e) { if (e.propertyName === 'opacity') remove(); }, { once: true });
       setTimeout(remove, 700);

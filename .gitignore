@@ -4,3 +4,9 @@
 
 # Local Claude Code tooling (not part of the site)
 .claude/
+
+# Build tooling (devDependencies — never shipped to the browser)
+node_modules/
+
+# Local Supabase credentials for the build (anon key + project URL)
+.env

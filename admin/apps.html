@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apps · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div>
+          <h1>Apps</h1>
+          <p>The app catalogue. Open one to compose its product page; changes sync to the live site when you rebuild.</p>
+        </div>
+        <div class="adm-actions">
+          <a class="btn btn-primary" href="/admin/apps-editor.html">+ New app</a>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <ul class="adm-list" id="apps-list"></ul>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=4"></script>
+  <script src="/admin/supabase-config.js?v=4"></script>
+  <script src="/admin/js/client.js?v=4"></script>
+  <script src="/admin/js/auth.js?v=4"></script>
+  <script src="/admin/js/nav.js?v=4"></script>
+  <script src="/admin/js/apps-admin.js?v=4"></script>
+</body>
+</html>

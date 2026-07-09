@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Announcements · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div>
+          <h1>Announcements</h1>
+          <p>The bar shown above the nav on every page. Only one can be active at a time.</p>
+        </div>
+        <div class="adm-actions">
+          <button class="btn btn-primary" id="new-btn" type="button">+ New announcement</button>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <ul class="adm-list" id="ann-list"></ul>
+
+      <section class="card-pane" id="ann-form" hidden style="margin-top:24px">
+        <h2 id="form-title">New announcement</h2>
+
+        <div class="field">
+          <label for="a-key">Dismiss key <span style="font-weight:400;color:var(--muted-2)">(unique slug — changing it re-shows to everyone who dismissed the previous version)</span></label>
+          <input class="input" id="a-key" type="text" placeholder="kept-launch-v2" />
+        </div>
+        <div class="field">
+          <label for="a-msg">Message</label>
+          <textarea class="textarea" id="a-msg" rows="3" placeholder="Plain text shown in the bar. Keep it short — one sentence plus a link."></textarea>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="a-link-text">Link label <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label>
+            <input class="input" id="a-link-text" type="text" placeholder="Get updates ›" />
+          </div>
+          <div class="field">
+            <label for="a-link-href">Link destination</label>
+            <input class="input" id="a-link-href" type="text" placeholder="mailto:hello@veyago.cloud or https://…" />
+          </div>
+        </div>
+
+        <label class="field" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:16px">
+          <input type="checkbox" id="a-active" style="width:16px;height:16px" />
+          <span style="font-size:.9rem;font-weight:500">Make this the active announcement <span style="font-weight:400;color:var(--muted-2)">(deactivates any other active announcement)</span></span>
+        </label>
+
+        <div id="ann-preview-wrap" hidden>
+          <p style="font-size:.82rem;font-weight:600;color:var(--muted-2);margin-bottom:6px">Preview</p>
+          <div class="ann-preview">
+            <span class="ann-dot"></span>
+            <p style="margin:0" id="ann-preview-text"></p>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" id="a-save" type="button">Save</button>
+          <button class="btn" id="a-cancel" type="button">Cancel</button>
+          <button class="btn btn-danger" id="a-delete" type="button" hidden>Delete</button>
+        </div>
+        <p class="hint" style="margin-top:10px">After saving, run <code>npm run build</code> and push — the build writes <code>/assets/js/site-config.js</code> which <code>app.js</code> reads.</p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=4"></script>
+  <script src="/admin/supabase-config.js?v=4"></script>
+  <script src="/admin/js/client.js?v=4"></script>
+  <script src="/admin/js/auth.js?v=4"></script>
+  <script src="/admin/js/nav.js?v=4"></script>
+  <script src="/admin/js/announcements.js?v=4"></script>
+</body>
+</html>

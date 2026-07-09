@@ -1,0 +1,40 @@
+{
+  "articles": [
+    {
+      "slug": "building-the-spine",
+      "title": "Building the spine first",
+      "dek": "Why we built the backbone before the surface — and what that buys us.",
+      "excerpt": "The backbone is yours, which is the only kind worth building. A field note on sequencing the work.",
+      "cover_image_url": "/assets/og.png",
+      "status": "published",
+      "published_at": "2026-06-28T09:00:00Z",
+      "body": [
+        { "type": "section_marker", "text": "Field Notes" },
+        { "type": "heading", "level": 2, "text": "1. Start with what everything else hangs on" },
+        { "type": "text", "html": "<p>This is sanitised rich text with <strong>bold</strong>, <em>italic</em>, a <a href=\"https://veyago.cloud\">link</a>, and a list:</p><ul><li>First the data model.</li><li>Then the renderer.</li><li>Then the surface.</li></ul><script>alert('xss should be stripped')</script>" },
+        { "type": "image", "url": "/assets/og.png", "alt": "Architecture diagram", "caption": "The dependency direction: surface depends on spine, never the reverse." },
+        { "type": "heading", "level": 2, "text": "2. Resist the surface" },
+        { "type": "heading", "level": 3, "text": "A smaller point" },
+        { "type": "text", "html": "<p>The temptation is always to start where it shows.</p>" },
+        { "type": "quote", "text": "The backbone is yours, which is the only kind worth building.", "attribution": "Veyago OS" },
+        { "type": "divider" },
+        { "type": "text", "html": "<p>That is the whole idea.</p>" }
+      ]
+    }
+  ],
+  "wallpapers": [
+    {
+      "slug": "wordmark-aurora",
+      "title": "Wordmark — Aurora",
+      "description": "The Veyago wordmark over a deep night-sky gradient.",
+      "category": "Wordmark",
+      "status": "published",
+      "published_at": "2026-06-28T09:00:00Z",
+      "preview_url": "/assets/og.png",
+      "variants": [
+        { "label": "Desktop", "url": "/assets/og.png", "width": 5120, "height": 2880, "format": "png" },
+        { "label": "iPhone", "url": "/assets/veyago-travel.svg", "width": 1290, "height": 2796, "format": "svg" }
+      ]
+    }
+  ]
+}
