@@ -224,6 +224,15 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .media.reveal { opacity: 0; transform: translateY(34px) scale(.97); transition: opacity .9s var(--ease), transform .9s var(--ease); }
 .media.reveal.in { opacity: 1; transform: none; }
 .device img { border-radius: 36px; width: 100%; }
+
+/* Pre-framed shots: the Apple device bezel is baked into the PNG, so drop our
+   own frame (background, padding, radius) and shadow the artwork's own outline
+   instead of the box - otherwise it reads as a frame inside a frame. */
+.device.framed { background: none; padding: 0; border-radius: 0; box-shadow: none;
+  filter: drop-shadow(0 30px 70px rgba(0,0,0,.35)); }
+.media:hover .device.framed, .device.framed:hover { box-shadow: none;
+  filter: drop-shadow(0 48px 95px rgba(0,0,0,.42)); }
+.device.framed img { border-radius: 0; }
 .devices { display: flex; justify-content: center; align-items: flex-end; gap: clamp(14px, 2vw, 26px); flex-wrap: wrap; }
 .devices .device:nth-child(2) { margin-bottom: clamp(16px, 3vw, 34px); }
 
@@ -466,8 +475,25 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .ic.ic-orange { background: linear-gradient(145deg, #ff9f0a, #e67200) !important; color: #fff !important; box-shadow: 0 4px 18px -4px rgba(230,114,0,.4) !important; }
 .ic.ic-teal   { background: linear-gradient(145deg, #5ac8f5, #32ade6) !important; color: #fff !important; box-shadow: 0 4px 18px -4px rgba(50,173,230,.4) !important; }
 
-/* ---------- App Store badge ---------- */
+/* ---------- App Store badge ----------
+   Apple's official lockup. Per Apple's identity guidelines the artwork is
+   used unmodified - no recolouring, no added background, no cropping - so
+   this rule only sizes and positions it. Minimum height 40px is Apple's. */
 .badge-as {
+  display: inline-block;
+  line-height: 0;
+  text-decoration: none;
+  transition: opacity .2s;
+  flex-shrink: 0;
+}
+.badge-as:hover { opacity: .82; }
+.badge-as img { width: auto; height: 50px; display: block; }
+
+/* Legacy text badge - tools/lib/app-pages.js and the apps editor still emit the
+   old <span class="bas-sub">/<span class="bas-name"> lockup for generated app
+   pages. Keep it styled until that generator is switched to Apple's artwork,
+   otherwise a rebuild ships an unstyled badge. */
+.badge-as:has(.bas-name) {
   display: inline-flex;
   align-items: center;
   gap: 11px;
@@ -475,11 +501,8 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
   color: #fff;
   border-radius: 14px;
   padding: 11px 20px;
-  text-decoration: none;
-  transition: opacity .2s;
-  flex-shrink: 0;
+  line-height: normal;
 }
-.badge-as:hover { opacity: .82; }
 .badge-as svg { width: 24px; height: 24px; fill: #fff; flex-shrink: 0; }
 .bas-sub { font-size: .65rem; text-transform: uppercase; letter-spacing: .06em; opacity: .75; line-height: 1; display: block; }
 .bas-name { font-size: 1.05rem; font-weight: 600; letter-spacing: -.01em; display: block; line-height: 1.2; }
