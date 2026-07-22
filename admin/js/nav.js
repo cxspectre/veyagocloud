@@ -55,8 +55,13 @@
       } else {
         var key = item.href === '/admin/' ? '/admin/' : '/admin/' + item.href.split('/').pop();
         var cls = CURRENT === key ? 'active' : '';
+        /* Manager-only links render immediately when the cached role says
+           manager (no flash); otherwise start hidden and reveal after the
+           async role check. Cosmetic only — RLS guards the data. */
+        var cachedRole = (window.adminRoles && window.adminRoles.cachedRole) ? window.adminRoles.cachedRole() : null;
+        var cachedManager = cachedRole === 'owner' || cachedRole === 'admin';
         var attrs = (cls ? ' class="' + cls + '"' : '') +
-                    (item.managerOnly ? ' data-manager-only hidden' : '');
+                    (item.managerOnly ? ' data-manager-only' + (cachedManager ? '' : ' hidden') : '');
         navHtml += '<a href="' + item.href + '"' + attrs + '>' +
           svgIcon(item.icon) + item.label +
         '</a>';
@@ -120,8 +125,7 @@
       window.adminReady.then(async function (session) {
         if (!session) return;
         var manager = await window.adminRoles.isManager();
-        if (!manager) return;
-        sidebar.querySelectorAll('[data-manager-only]').forEach(function (a) { a.hidden = false; });
+        sidebar.querySelectorAll('[data-manager-only]').forEach(function (a) { a.hidden = !manager; });
       });
     }
   }

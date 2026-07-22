@@ -36,6 +36,7 @@
     },
 
     async signOut() {
+      try { sessionStorage.removeItem('veyago.admin.role'); } catch (e) {}
       await sb.auth.signOut();
       window.location.href = '/admin/';
     },

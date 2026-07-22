@@ -5,6 +5,12 @@
 
   var cached = null; // { role, employee } once resolved
 
+  /* Session-cached role so the sidebar can render correctly on first paint
+     (no flash while queries run). UX only — RLS remains the real boundary. */
+  var ROLE_KEY = 'veyago.admin.role';
+  function readCachedRole()  { try { return sessionStorage.getItem(ROLE_KEY); } catch (e) { return null; } }
+  function writeCachedRole(r) { try { r ? sessionStorage.setItem(ROLE_KEY, r) : sessionStorage.removeItem(ROLE_KEY); } catch (e) {} }
+
   /* Resolve the signed-in user's role. Order: employees row (owner/admin/
      assistant/employee), else legacy admins-allowlist row → 'admin'. */
   async function resolve() {
@@ -18,6 +24,7 @@
       .maybeSingle();
     if (emp.data && emp.data.status !== 'inactive') {
       cached = { role: emp.data.role, employee: emp.data };
+      writeCachedRole(cached.role);
       return cached;
     }
 
@@ -26,11 +33,16 @@
       .eq('user_id', session.user.id)
       .maybeSingle();
     cached = { role: adm.data ? 'admin' : null, employee: emp.data || null };
+    writeCachedRole(cached.role);
     return cached;
   }
 
   window.adminRoles = {
     resolve: resolve,
+
+    /* Synchronous best-guess from the session cache — for first-paint UI
+       decisions only. May be null on the very first page after login. */
+    cachedRole: readCachedRole,
 
     async role() {
       var r = await resolve();
