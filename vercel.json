@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "echo 'No runtime dependencies — the build tooling (journal/wallpapers/essays) runs locally, not on Vercel.'",
   "buildCommand": "echo 'Static site — nothing to build; serving the committed HTML/CSS/JS as-is.'",
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "cleanUrls": true
 }
