@@ -49,6 +49,9 @@
         var o = document.createElement('option'); o.value = e.id; o.textContent = e.full_name;
         filterSel.appendChild(o);
       });
+      /* Deep link from the Team page: /admin/tasks?assignee=<id> */
+      var wanted = new URLSearchParams(window.location.search).get('assignee');
+      if (wanted && filterSel.querySelector('option[value="' + wanted + '"]')) filterSel.value = wanted;
     }
   }
 

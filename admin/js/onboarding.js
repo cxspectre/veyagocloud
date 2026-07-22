@@ -38,6 +38,9 @@
         listEl.innerHTML = '<li class="adm-empty"><p>No team members yet — invite someone on the Team page first.</p></li>';
         return;
       }
+      /* Deep link from the Team page: /admin/onboarding?emp=<id> */
+      var wanted = new URLSearchParams(window.location.search).get('emp');
+      if (wanted && selEl.querySelector('option[value="' + wanted + '"]')) selEl.value = wanted;
     } else if (selfEmployee) {
       selEl.innerHTML = '<option value="' + selfEmployee.id + '">' + selfEmployee.full_name + '</option>';
       selEl.disabled = true;
