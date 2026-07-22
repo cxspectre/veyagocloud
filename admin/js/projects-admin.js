@@ -92,5 +92,7 @@
   document.getElementById('pr-save').addEventListener('click', save);
   document.getElementById('pr-cancel').addEventListener('click', closeForm);
   document.getElementById('pr-delete').addEventListener('click', remove);
-  document.addEventListener('admin:authed', load);
+  /* adminReady is a promise — immune to the event-vs-registration race that
+     left pages blank when Supabase resolved the session early. */
+  window.adminReady.then(function (s) { if (s) load(); });
 })();

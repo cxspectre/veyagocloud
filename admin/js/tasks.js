@@ -183,5 +183,7 @@
 
   document.getElementById('f-status').addEventListener('change', loadTasks);
   document.getElementById('f-assignee').addEventListener('change', loadTasks);
-  document.addEventListener('admin:authed', load);
+  /* adminReady is a promise — immune to the event-vs-registration race that
+     left pages blank when Supabase resolved the session early. */
+  window.adminReady.then(function (s) { if (s) load(); });
 })();
