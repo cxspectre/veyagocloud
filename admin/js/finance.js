@@ -67,11 +67,16 @@
   /* ── Overview: stats + chart, ALWAYS unfiltered so the account filter
      can't silently skew the headline numbers. ───────────────────────── */
 
+  /* Local-time YYYY-MM — toISOString() would shift a local first-of-month
+     back a day in any TZ east of UTC, mis-bucketing the whole chart. */
+  function ym(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
   async function loadOverview() {
     var sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-    sixMonthsAgo.setDate(1);
-    var since = sixMonthsAgo.toISOString().slice(0, 10);
+    var since = ym(sixMonthsAgo) + '-01';
 
     var res = await window.sb.from('finance_transactions')
       .select('posted_at,amount').gte('posted_at', since).limit(5000);
@@ -89,7 +94,7 @@
   function renderStats(outstanding) {
     var wrap = document.getElementById('fin-stats');
     if (!wrap) return;
-    var thisMonth = new Date().toISOString().slice(0, 7);
+    var thisMonth = ym(new Date());
     var income = 0, expense = 0;
     chartRows.forEach(function (t) {
       if (t.posted_at.slice(0, 7) !== thisMonth) return;
@@ -126,7 +131,7 @@
     var months = [];
     var now = new Date();
     for (var i = 5; i >= 0; i--) {
-      months.push(new Date(now.getFullYear(), now.getMonth() - i, 1).toISOString().slice(0, 7));
+      months.push(ym(new Date(now.getFullYear(), now.getMonth() - i, 1)));
     }
     var totals = {};
     months.forEach(function (m) { totals[m] = { income: 0, expense: 0 }; });
