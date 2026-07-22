@@ -15,57 +15,77 @@
       <div class="adm-page-head">
         <div>
           <h1>Finance</h1>
-          <p>Mercury, Stripe, and manual entries in one ledger. Owners and admins only — RLS blocks every other role.</p>
+          <p>Mercury, Stripe, and manual entries in one ledger. Owners and admins only.</p>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn" id="sync-mercury" type="button">Sync Mercury</button>
-          <button class="btn" id="sync-stripe" type="button">Sync Stripe</button>
+        <div class="adm-actions">
+          <button class="btn" id="sync-mercury" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            Sync Mercury
+          </button>
+          <button class="btn" id="sync-stripe" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            Sync Stripe
+          </button>
         </div>
       </div>
       <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
 
-      <div class="adm-stats" id="fin-stats"></div>
+      <div class="dash-stats" id="fin-stats" style="grid-template-columns:repeat(4,1fr)"></div>
 
-      <div class="card-pane" style="margin-top:16px">
-        <h2>Last 6 months</h2>
-        <div id="fin-chart" style="overflow-x:auto"></div>
+      <div class="adm-split adm-split--wide">
+        <div class="card-pane" style="margin-bottom:0">
+          <h2>Last 6 months</h2>
+          <div id="fin-chart"></div>
+        </div>
+        <div class="card-pane" style="margin-bottom:0">
+          <h2>Accounts</h2>
+          <ul class="adm-list" id="fin-accounts"></ul>
+        </div>
       </div>
 
-      <div class="card-pane" style="margin-top:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+      <div class="card-pane" style="margin-top:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
           <h2 style="margin:0">Transactions</h2>
-          <select class="input" id="f-account" style="max-width:220px"><option value="all">All accounts</option></select>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label for="f-account" style="font-size:.78rem;font-weight:600;color:var(--muted-2)">Account</label>
+            <select class="input input-sm" id="f-account"><option value="all">All accounts</option></select>
+          </div>
         </div>
-        <ul class="adm-list" id="tx-list"></ul>
+        <div class="fin-head"><span>Date</span><span>Description</span><span>Category</span><span style="text-align:right">Amount</span></div>
+        <div class="fin-list" id="tx-list"></div>
       </div>
 
-      <div class="card-pane" style="margin-top:16px">
-        <h2>Add manual transaction</h2>
-        <div class="row-2">
-          <div class="field"><label for="m-desc">Description</label><input class="input" id="m-desc" type="text" placeholder="Office rent — July" /></div>
-          <div class="field"><label for="m-amount">Amount <span style="font-weight:400;color:var(--muted-2)">(negative = expense)</span></label><input class="input" id="m-amount" type="number" step="0.01" placeholder="-1200.00" /></div>
+      <div class="adm-split" style="margin-top:20px">
+        <div class="card-pane" style="margin-bottom:0">
+          <h2>Invoices</h2>
+          <ul class="adm-list" id="inv-list"></ul>
         </div>
-        <div class="row-2">
-          <div class="field"><label for="m-date">Date</label><input class="input" id="m-date" type="date" /></div>
-          <div class="field"><label for="m-category">Category</label><select class="input" id="m-category"></select></div>
-        </div>
-        <button class="btn btn-primary" id="m-add-btn" type="button">Add transaction</button>
-      </div>
 
-      <div class="card-pane" style="margin-top:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px">
-          <h2 style="margin:0">Invoices</h2>
+        <div>
+          <div class="card-pane">
+            <h2>Add transaction</h2>
+            <div class="field"><label for="m-desc">Description</label><input class="input" id="m-desc" type="text" placeholder="Office rent — July" /></div>
+            <div class="row-2">
+              <div class="field"><label for="m-amount">Amount <span style="font-weight:400;color:var(--muted-2)">(− = expense)</span></label><input class="input" id="m-amount" type="number" step="0.01" placeholder="-1200.00" /></div>
+              <div class="field"><label for="m-date">Date</label><input class="input" id="m-date" type="date" /></div>
+            </div>
+            <div class="field"><label for="m-category">Category</label><select class="input" id="m-category"></select></div>
+            <div class="form-actions"><button class="btn btn-primary" id="m-add-btn" type="button">Add transaction</button></div>
+          </div>
+
+          <div class="card-pane" style="margin-bottom:0">
+            <h2>New invoice</h2>
+            <div class="row-2">
+              <div class="field"><label for="i-client">Client</label><input class="input" id="i-client" type="text" placeholder="Acme GmbH" /></div>
+              <div class="field"><label for="i-number">Invoice #</label><input class="input" id="i-number" type="text" placeholder="2026-014" /></div>
+            </div>
+            <div class="row-2">
+              <div class="field"><label for="i-amount">Amount</label><input class="input" id="i-amount" type="number" step="0.01" placeholder="2500.00" /></div>
+              <div class="field"><label for="i-due">Due date</label><input class="input" id="i-due" type="date" /></div>
+            </div>
+            <div class="form-actions"><button class="btn btn-primary" id="i-add-btn" type="button">Add invoice</button></div>
+          </div>
         </div>
-        <ul class="adm-list" id="inv-list"></ul>
-        <div class="row-2" style="margin-top:14px">
-          <div class="field"><label for="i-client">Client</label><input class="input" id="i-client" type="text" placeholder="Acme GmbH" /></div>
-          <div class="field"><label for="i-number">Invoice #</label><input class="input" id="i-number" type="text" placeholder="2026-014" /></div>
-        </div>
-        <div class="row-2">
-          <div class="field"><label for="i-amount">Amount</label><input class="input" id="i-amount" type="number" step="0.01" placeholder="2500.00" /></div>
-          <div class="field"><label for="i-due">Due date</label><input class="input" id="i-due" type="date" /></div>
-        </div>
-        <button class="btn btn-primary" id="i-add-btn" type="button">Add invoice</button>
       </div>
     </main>
   </div>
@@ -76,6 +96,6 @@
   <script src="/admin/js/auth.js?v=6"></script>
   <script src="/admin/js/roles.js?v=6"></script>
   <script src="/admin/js/nav.js?v=8"></script>
-  <script src="/admin/js/finance.js?v=7"></script>
+  <script src="/admin/js/finance.js?v=8"></script>
 </body>
 </html>
