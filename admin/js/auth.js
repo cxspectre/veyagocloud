@@ -118,7 +118,10 @@
      only after Supabase has a valid, active JWT. Any queries inside admin:authed
      handlers will therefore run with a correct auth.uid(). */
   window.sb.auth.onAuthStateChange(async function(event, session) {
-    if (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED') return;
+    /* INITIAL_SESSION fires on every page load once the stored session has been
+       fully restored — without it, navigating between admin pages with a live
+       session never reveals the shell (blank page). */
+    if (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED' && event !== 'INITIAL_SESSION') return;
     if (!session) return;
     if (shellShown) return; // already showing — no re-dispatch needed
 
