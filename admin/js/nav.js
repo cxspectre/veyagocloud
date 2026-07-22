@@ -113,13 +113,17 @@
     if (so) so.addEventListener('click', function () { window.admin && window.admin.signOut(); });
 
     /* Reveal manager-only links once the role is known (hidden = UX only;
-       RLS keeps the underlying data locked regardless). */
-    document.addEventListener('admin:authed', async function () {
-      if (!window.adminRoles) return;
-      var manager = await window.adminRoles.isManager();
-      if (!manager) return;
-      sidebar.querySelectorAll('[data-manager-only]').forEach(function (a) { a.hidden = false; });
-    });
+       RLS keeps the underlying data locked regardless). adminReady is a
+       promise, so this works no matter whether auth resolved before or after
+       this code runs — unlike the admin:authed event, which we could miss. */
+    if (window.adminReady && window.adminRoles) {
+      window.adminReady.then(async function (session) {
+        if (!session) return;
+        var manager = await window.adminRoles.isManager();
+        if (!manager) return;
+        sidebar.querySelectorAll('[data-manager-only]').forEach(function (a) { a.hidden = false; });
+      });
+    }
   }
 
   if (document.readyState === 'loading') {
