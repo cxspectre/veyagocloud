@@ -275,7 +275,7 @@
       setMsg('Syncing ' + label + '…');
       try {
         var out = await window.adminRoles.invokeFn(fnName, {});
-        setMsg(label + ' synced — ' + (out.transactions || 0) + ' transactions.', 'ok');
+        setMsg(''); window.admin.toast(label + ' synced — ' + (out.transactions || 0) + ' transactions');
         await load();
       } catch (err) {
         setMsg(label + ' sync failed: ' + err.message, 'err');
@@ -320,7 +320,7 @@
     if (res.error) { setMsg('Add failed: ' + res.error.message, 'err'); return; }
     document.getElementById('m-desc').value = '';
     document.getElementById('m-amount').value = '';
-    setMsg('Transaction added.', 'ok');
+    setMsg(''); window.admin.toast('Transaction added');
     loadOverview();
     loadTransactions();
   });
@@ -408,7 +408,7 @@
     document.getElementById('i-client').value = '';
     document.getElementById('i-number').value = '';
     document.getElementById('i-amount').value = '';
-    setMsg('Invoice added.', 'ok');
+    setMsg(''); window.admin.toast('Invoice added');
     loadOverview();
     loadInvoices();
   });

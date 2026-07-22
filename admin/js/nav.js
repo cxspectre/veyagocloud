@@ -71,6 +71,11 @@
 
     var footHtml =
       '<div class="adm-sidebar-foot">' +
+        '<div class="adm-user" id="adm-user" hidden>' +
+          '<div class="avatar" id="adm-user-avatar"></div>' +
+          '<div style="min-width:0"><div class="adm-user-name" id="adm-user-name"></div>' +
+          '<div class="adm-user-role" id="adm-user-role"></div></div>' +
+        '</div>' +
         '<button class="adm-signout" id="adm-signout" type="button">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>' +
           'Sign out' +
@@ -126,6 +131,20 @@
         if (!session) return;
         var manager = await window.adminRoles.isManager();
         sidebar.querySelectorAll('[data-manager-only]').forEach(function (a) { a.hidden = !manager; });
+
+        /* Signed-in identity chip above the sign-out button. */
+        var r = await window.adminRoles.resolve();
+        var chip = document.getElementById('adm-user');
+        if (chip && r.role) {
+          var name = (r.employee && r.employee.full_name) || session.user.email || 'Signed in';
+          var colors = { owner: '#0071e3', admin: '#5856d6', assistant: '#ff9500', employee: '#86868b' };
+          var av = document.getElementById('adm-user-avatar');
+          av.textContent = name.trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+          av.style.background = colors[r.role] || '#86868b';
+          document.getElementById('adm-user-name').textContent = name;
+          document.getElementById('adm-user-role').textContent = r.role;
+          chip.hidden = false;
+        }
       });
     }
   }

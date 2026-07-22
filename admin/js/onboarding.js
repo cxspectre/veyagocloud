@@ -221,7 +221,7 @@
       if (res.error) { setMsg('Failed: ' + res.error.message, 'err'); return; }
       document.getElementById('ob-new-title').value = '';
       document.getElementById('ob-new-desc').value = '';
-      setMsg('Item added.', 'ok');
+      setMsg(''); window.admin.toast('Checklist item added');
       load();
     });
   }

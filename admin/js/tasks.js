@@ -265,7 +265,7 @@
       document.getElementById('t-title').value = '';
       document.getElementById('t-details').value = '';
       document.getElementById('t-due').value = '';
-      setMsg('Task created.', 'ok');
+      setMsg(''); window.admin.toast('Task created');
       loadStats();
       loadTasks();
     });

@@ -134,13 +134,16 @@
           </div>
           <div><div class="dash-qcard-label">Announcement</div><div class="dash-qcard-sub">Edit the site bar</div></div>
         </a>
-        <a class="dash-qcard" href="/admin/users.html">
+        <a class="dash-qcard" href="/admin/team">
           <div class="dash-qcard-icon" style="background:#f0fdf4">
             <svg viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           </div>
-          <div><div class="dash-qcard-label">Users</div><div class="dash-qcard-sub">Manage access</div></div>
+          <div><div class="dash-qcard-label">Team</div><div class="dash-qcard-sub">Invite & manage</div></div>
         </a>
       </div>
+
+      <!-- Company row — populated by dashboard.js once the role is known -->
+      <div class="dash-stats" id="dash-company" hidden style="grid-template-columns:repeat(4,1fr)"></div>
 
       <!-- Main content area -->
       <div class="dash-body">
@@ -157,7 +160,7 @@
               <a class="btn btn-sm" href="/admin/journal.html">View all</a>
             </div>
           </div>
-          <ul class="adm-list" id="article-list"></ul>
+          <ul class="adm-list" id="article-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
           <div style="margin-top:14px">
             <a class="btn btn-sm" href="/admin/article.html">+ New article</a>
           </div>
@@ -176,10 +179,10 @@
 
   <script src="/admin/vendor/supabase.js?v=5"></script>
   <script src="/admin/supabase-config.js?v=5"></script>
-  <script src="/admin/js/client.js?v=6"></script>
+  <script src="/admin/js/client.js?v=7"></script>
   <script src="/admin/js/auth.js?v=6"></script>
   <script src="/admin/js/roles.js?v=6"></script>
-  <script src="/admin/js/nav.js?v=8"></script>
-  <script src="/admin/js/dashboard.js?v=7"></script>
+  <script src="/admin/js/nav.js?v=9"></script>
+  <script src="/admin/js/dashboard.js?v=8"></script>
 </body>
 </html>

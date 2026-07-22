@@ -148,7 +148,83 @@
     });
   }
 
-  function refresh() { loadStats(); loadArticles(); }
+  /* ── Company row — team, tasks, onboarding, finance-at-a-glance ────── */
+  async function loadCompany() {
+    var wrap = document.getElementById('dash-company');
+    if (!wrap || !window.adminRoles) return;
+
+    var role = await window.adminRoles.role();
+    if (!role) return;   // no employee/admin record — keep the row hidden
+    var manager = role === 'owner' || role === 'admin';
+
+    var t0 = new Date().toISOString().slice(0, 10);
+    var monthStart = t0.slice(0, 8) + '01';
+
+    var queries = [
+      window.sb.from('tasks').select('status,due_date').neq('status', 'done').limit(1000),
+      window.sb.from('employees').select('id,status'),
+      window.sb.from('onboarding_items').select('id').eq('active', true),
+      window.sb.from('onboarding_progress').select('employee_id,item_id,done').eq('done', true)
+    ];
+    if (manager) {
+      queries.push(window.sb.from('finance_transactions').select('amount').gte('posted_at', monthStart).limit(5000));
+    }
+    var rs = await Promise.allSettled(queries);
+    function ok(i) { return rs[i] && rs[i].status === 'fulfilled' && !rs[i].value.error ? (rs[i].value.data || []) : null; }
+
+    var cards = [];
+
+    var tasks = ok(0);
+    if (tasks) {
+      var overdue = tasks.filter(function (r) { return r.due_date && r.due_date < t0; }).length;
+      cards.push({ href: '/admin/tasks', color: '#0071e3', n: tasks.length, label: 'Open tasks',
+        n2: overdue ? overdue + ' overdue' : 'none overdue', n2Color: overdue ? '#b3261e' : null,
+        icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' });
+    }
+
+    var emps = ok(1);
+    if (emps) {
+      var invited = emps.filter(function (e) { return e.status === 'invited'; }).length;
+      cards.push({ href: '/admin/team', color: '#34c759', n: emps.length, label: 'Team',
+        n2: invited ? invited + ' invite' + (invited === 1 ? '' : 's') + ' pending' : 'all aboard',
+        icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' });
+    }
+
+    var items = ok(2), prog = ok(3);
+    if (emps && items && prog && items.length) {
+      var activeIds = emps.filter(function (e) { return e.status !== 'inactive'; }).map(function (e) { return e.id; });
+      var doneBy = {};
+      prog.forEach(function (p) { doneBy[p.employee_id] = (doneBy[p.employee_id] || 0) + 1; });
+      var inProgress = activeIds.filter(function (id) { return (doneBy[id] || 0) < items.length; }).length;
+      cards.push({ href: '/admin/onboarding', color: '#5856d6', n: inProgress, label: 'Onboarding',
+        n2: inProgress ? 'still working through' : 'everyone complete',
+        icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>' });
+    }
+
+    if (manager) {
+      var tx = ok(4);
+      if (tx) {
+        var net = tx.reduce(function (s, r) { return s + Number(r.amount); }, 0);
+        var fmtNet = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(net);
+        cards.push({ href: '/admin/finance', color: net >= 0 ? '#34c759' : '#ff3b30', n: fmtNet, nSmall: true, label: 'Net this month',
+          n2: tx.length + ' transactions',
+          icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' });
+      }
+    }
+
+    if (!cards.length) return;
+    wrap.innerHTML = cards.map(function (c) {
+      return '<a class="dash-stat" href="' + c.href + '" style="--stat-color:' + c.color + '">' +
+        '<div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="' + c.color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + c.icon + '</svg></div>' +
+        '<div class="dash-stat-n"' + (c.nSmall ? ' style="font-size:1.45rem"' : '') + '>' + c.n + '</div>' +
+        '<div class="dash-stat-n2"' + (c.n2Color ? ' style="color:' + c.n2Color + '"' : '') + '>' + c.n2 + '</div>' +
+        '<div class="dash-stat-label">' + c.label + '</div>' +
+      '</a>';
+    }).join('');
+    wrap.hidden = false;
+  }
+
+  function refresh() { loadStats(); loadArticles(); loadCompany(); }
 
   /* Re-fetch when the user switches back to this tab after editing an article. */
   document.addEventListener('visibilitychange', function () {

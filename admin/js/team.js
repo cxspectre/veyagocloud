@@ -200,7 +200,7 @@
     if (idx !== -1) employees = employees.slice(0, idx).concat([Object.assign({}, employees[idx], patch)], employees.slice(idx + 1));
     render();
     loadStats();
-    setMsg('Saved ' + patch.full_name + '.', 'ok');
+    window.admin.toast('Saved ' + patch.full_name);
   }
 
   function cardMsg(wrap, t, k) {
@@ -236,9 +236,10 @@
         var out = await window.adminRoles.invokeFn('invite-employee', {
           email: email, full_name: name, role: role, title: title || null, start_date: start
         });
-        setMsg(out.invited
-          ? 'Invite sent to ' + email + '. They appear as "invited" until they accept.'
-          : email + ' already had an account — employee record created and linked.', 'ok');
+        setMsg('');
+        window.admin.toast(out.invited
+          ? 'Invite sent to ' + email
+          : email + ' linked to existing account');
         document.getElementById('e-name').value = '';
         document.getElementById('e-email').value = '';
         document.getElementById('e-title').value = '';
