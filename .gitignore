@@ -10,3 +10,4 @@ node_modules/
 
 # Local Supabase credentials for the build (anon key + project URL)
 .env
+supabase/.temp/

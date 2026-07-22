@@ -23,8 +23,13 @@
     { label: 'Announcements', href: '/admin/announcements.html',  icon: '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>' },
     { label: 'Apps',          href: '/admin/apps.html',           icon: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>' },
     { label: 'Projects',      href: '/admin/projects.html',       icon: '<polygon points="12 2 2 7 12 12 22 7"/><polyline points="2 17 12 22 22 17"/>' },
+    { section: 'Company' },
+    { label: 'Team',          href: '/admin/team.html',           icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' },
+    { label: 'Onboarding',    href: '/admin/onboarding.html',     icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>' },
+    { label: 'Tasks',         href: '/admin/tasks.html',          icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
+    { label: 'Finance',       href: '/admin/finance.html',        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', managerOnly: true },
     { section: 'Settings' },
-    { label: 'Users',         href: '/admin/users.html',          icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' }
+    { label: 'Users',         href: '/admin/users.html',          icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2.7a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V2.7a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1h.09a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>' }
   ];
 
   function svgIcon(d) {
@@ -49,7 +54,9 @@
       } else {
         var key = item.href === '/admin/' ? '/admin/' : '/admin/' + item.href.split('/').pop();
         var cls = CURRENT === key ? 'active' : '';
-        navHtml += '<a href="' + item.href + '"' + (cls ? ' class="' + cls + '"' : '') + '>' +
+        var attrs = (cls ? ' class="' + cls + '"' : '') +
+                    (item.managerOnly ? ' data-manager-only hidden' : '');
+        navHtml += '<a href="' + item.href + '"' + attrs + '>' +
           svgIcon(item.icon) + item.label +
         '</a>';
       }
@@ -103,6 +110,15 @@
 
     var so = document.getElementById('adm-signout');
     if (so) so.addEventListener('click', function () { window.admin && window.admin.signOut(); });
+
+    /* Reveal manager-only links once the role is known (hidden = UX only;
+       RLS keeps the underlying data locked regardless). */
+    document.addEventListener('admin:authed', async function () {
+      if (!window.adminRoles) return;
+      var manager = await window.adminRoles.isManager();
+      if (!manager) return;
+      sidebar.querySelectorAll('[data-manager-only]').forEach(function (a) { a.hidden = false; });
+    });
   }
 
   if (document.readyState === 'loading') {

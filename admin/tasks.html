@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tasks · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div>
+          <h1>Tasks</h1>
+          <p>Assign work, track status, hit deadlines. Assignees update their own tasks; managers see and edit everything.</p>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <select class="input" id="f-status" style="max-width:180px">
+          <option value="open">Open (default)</option>
+          <option value="all">All statuses</option>
+          <option value="todo">To do</option>
+          <option value="in_progress">In progress</option>
+          <option value="blocked">Blocked</option>
+          <option value="done">Done</option>
+        </select>
+        <select class="input" id="f-assignee" style="max-width:200px">
+          <option value="all">Everyone</option>
+        </select>
+      </div>
+
+      <ul class="adm-list" id="task-list"></ul>
+
+      <div class="card-pane" style="margin-top:24px">
+        <h2>New task</h2>
+        <div class="row-2">
+          <div class="field"><label for="t-title">Title</label><input class="input" id="t-title" type="text" placeholder="Book flights for the Berlin trip" /></div>
+          <div class="field"><label for="t-assignee">Assign to</label><select class="input" id="t-assignee"></select></div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label for="t-priority">Priority</label>
+            <select class="input" id="t-priority">
+              <option value="low">Low</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+          <div class="field"><label for="t-due">Due date</label><input class="input" id="t-due" type="date" /></div>
+        </div>
+        <div class="field"><label for="t-details">Details <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label><textarea class="input" id="t-details" rows="3" placeholder="Links, context, what done looks like"></textarea></div>
+        <button class="btn btn-primary" id="t-add-btn" type="button">Create task</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=5"></script>
+  <script src="/admin/supabase-config.js?v=5"></script>
+  <script src="/admin/js/client.js?v=5"></script>
+  <script src="/admin/js/auth.js?v=5"></script>
+  <script src="/admin/js/roles.js?v=5"></script>
+  <script src="/admin/js/nav.js?v=5"></script>
+  <script src="/admin/js/tasks.js?v=5"></script>
+</body>
+</html>

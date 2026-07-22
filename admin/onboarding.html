@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Onboarding · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div>
+          <h1>Onboarding</h1>
+          <p>The checklist every new hire works through. Pick a person to see and tick their progress.</p>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+
+      <div class="field" style="max-width:360px">
+        <label for="ob-employee">Team member</label>
+        <select class="input" id="ob-employee"></select>
+      </div>
+
+      <div class="card-pane" style="margin-top:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+          <h2 style="margin:0">Checklist</h2>
+          <span class="badge" id="ob-progress-badge">–</span>
+        </div>
+        <ul class="adm-list" id="ob-list"></ul>
+      </div>
+
+      <div class="card-pane" id="ob-manage-pane" style="margin-top:16px" hidden>
+        <h2>Add checklist item</h2>
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">Items apply to everyone. Deactivating an item hides it without losing history.</p>
+        <div class="row-2">
+          <div class="field"><label for="ob-new-title">Title</label><input class="input" id="ob-new-title" type="text" placeholder="Set up payroll details" /></div>
+          <div class="field"><label for="ob-new-category">Category</label>
+            <select class="input" id="ob-new-category">
+              <option value="general">General</option>
+              <option value="accounts">Accounts</option>
+              <option value="legal">Legal</option>
+              <option value="tools">Tools</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label for="ob-new-desc">Description <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label><input class="input" id="ob-new-desc" type="text" placeholder="What done looks like" /></div>
+        <button class="btn btn-primary" id="ob-add-btn" type="button">Add item</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=5"></script>
+  <script src="/admin/supabase-config.js?v=5"></script>
+  <script src="/admin/js/client.js?v=5"></script>
+  <script src="/admin/js/auth.js?v=5"></script>
+  <script src="/admin/js/roles.js?v=5"></script>
+  <script src="/admin/js/nav.js?v=5"></script>
+  <script src="/admin/js/onboarding.js?v=5"></script>
+</body>
+</html>

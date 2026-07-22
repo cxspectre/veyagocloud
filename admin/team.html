@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Team · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div>
+          <h1>Team</h1>
+          <p>Everyone at Veyago — roles, status, and invites. RLS enforces roles: only owners and admins can change this page or see Finance.</p>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <ul class="adm-list" id="team-list"></ul>
+
+      <div class="card-pane" id="invite-pane" style="margin-top:24px" hidden>
+        <h2>Invite a team member</h2>
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">Sends a Supabase invite email and creates their employee record. They set a password from the email, land on the dashboard, and see only what their role allows.</p>
+        <div class="row-2">
+          <div class="field"><label for="e-name">Full name</label><input class="input" id="e-name" type="text" placeholder="Alex Doe" /></div>
+          <div class="field"><label for="e-email">Email</label><input class="input" id="e-email" type="email" placeholder="alex@example.com" /></div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label for="e-title">Job title</label><input class="input" id="e-title" type="text" placeholder="Personal Assistant" /></div>
+          <div class="field"><label for="e-role">Role</label>
+            <select class="input" id="e-role">
+              <option value="assistant">Assistant — team, onboarding, tasks</option>
+              <option value="employee">Employee — team, onboarding, tasks</option>
+              <option value="admin">Admin — everything incl. finance</option>
+              <option value="owner">Owner — everything incl. finance</option>
+            </select>
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="field"><label for="e-start">Start date</label><input class="input" id="e-start" type="date" /></div>
+          <div class="field"></div>
+        </div>
+        <button class="btn btn-primary" id="invite-btn" type="button">Send invite</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=5"></script>
+  <script src="/admin/supabase-config.js?v=5"></script>
+  <script src="/admin/js/client.js?v=5"></script>
+  <script src="/admin/js/auth.js?v=5"></script>
+  <script src="/admin/js/roles.js?v=5"></script>
+  <script src="/admin/js/nav.js?v=5"></script>
+  <script src="/admin/js/team.js?v=5"></script>
+</body>
+</html>
