@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div>
+          <h1>Your account</h1>
+          <p>Your details, your password, and two-factor security.</p>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+
+      <div class="adm-split">
+        <div style="min-width:0">
+          <div class="card-pane">
+            <h2>Your details</h2>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+              <div class="avatar" id="acct-avatar" style="width:44px;height:44px;font-size:.95rem"></div>
+              <div>
+                <div style="font-weight:600" id="acct-name">—</div>
+                <div style="font-size:.85rem;color:var(--muted)" id="acct-email">—</div>
+              </div>
+              <span class="badge" id="acct-role" style="margin-left:auto">—</span>
+            </div>
+            <div class="row-2">
+              <div class="field"><label for="acct-title">Job title</label><input class="input" id="acct-title" type="text" disabled /></div>
+              <div class="field"><label for="acct-phone">Phone</label><input class="input" id="acct-phone" type="text" disabled /></div>
+            </div>
+            <p class="hint">Ask an owner or admin to change these on the Team page.</p>
+          </div>
+
+          <div class="card-pane">
+            <h2>Password</h2>
+            <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">Choose a new password for signing in.</p>
+            <div class="row-2">
+              <div class="field"><label for="pw-new">New password</label><input class="input" id="pw-new" type="password" autocomplete="new-password" minlength="8" /></div>
+              <div class="field"><label for="pw-new-2">Confirm</label><input class="input" id="pw-new-2" type="password" autocomplete="new-password" /></div>
+            </div>
+            <div class="form-actions"><button class="btn btn-primary" id="pw-save" type="button">Change password</button></div>
+            <p class="msg" id="pw-msg" role="status" aria-live="polite" style="margin-top:10px"></p>
+          </div>
+        </div>
+
+        <div class="adm-side-sticky">
+          <div class="card-pane" style="margin-bottom:0" id="mfa-section">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">
+              <h2 style="margin:0">Two-factor</h2>
+              <span class="badge" id="mfa-badge">Checking…</span>
+            </div>
+            <p style="font-size:.85rem;color:var(--muted);margin-bottom:14px">A 6-digit code from an authenticator app on every sign-in. Strongly recommended.</p>
+            <p class="msg" id="mfa-msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+
+            <div id="mfa-setup" hidden>
+              <div class="mfa-qr-wrap" id="mfa-qr-wrap"></div>
+              <p class="mfa-secret" id="mfa-secret" hidden></p>
+              <p style="font-size:.78rem;color:var(--muted-2);margin:8px 0 14px;text-align:center">Can't scan? <button class="btn btn-sm" type="button" id="mfa-show-secret" style="font-size:.78rem;padding:3px 8px">Show code</button></p>
+              <div class="field">
+                <label for="mfa-code">Confirmation code</label>
+                <input class="input totp-input" id="mfa-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000 000" autocomplete="off" />
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-sm" type="button" id="mfa-confirm-btn">Enable</button>
+                <button class="btn btn-sm" type="button" id="mfa-cancel-btn">Cancel</button>
+              </div>
+            </div>
+
+            <div id="mfa-enrolled" hidden>
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;margin-bottom:14px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2" stroke-linecap="round" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
+                <div style="font-weight:600;font-size:.86rem;color:#1a7f37">Two-factor is on</div>
+              </div>
+              <button class="btn btn-danger btn-sm" type="button" id="mfa-disable-btn">Turn off</button>
+            </div>
+
+            <div id="mfa-start">
+              <button class="btn btn-primary" type="button" id="mfa-enroll-btn">Set up authenticator</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=11"></script>
+  <script src="/admin/supabase-config.js?v=11"></script>
+  <script src="/admin/js/client.js?v=11"></script>
+  <script src="/admin/js/auth.js?v=11"></script>
+  <script src="/admin/js/roles.js?v=11"></script>
+  <script src="/admin/js/nav.js?v=11"></script>
+  <script src="/admin/js/account.js?v=11"></script>
+</body>
+</html>

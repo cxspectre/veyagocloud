@@ -217,7 +217,122 @@
     wrap.hidden = false;
   }
 
-  function refresh() { loadStats(); loadArticles(); loadCompany(); }
+  /* ── Staff home ───────────────────────────────────────────────────────
+     An assistant landing on "Dashboard — everything published on veyago.cloud"
+     over five publishing counts, under a New article button RLS may refuse, is
+     being shown someone else's job. They get their own work instead. Reuses the
+     Tasks page's buckets and row markup — no new components. */
+
+  function greeting() {
+    var h = new Date().getHours();
+    return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  }
+
+  async function renderStaffHome(employee) {
+    var root = document.getElementById('view-staff');
+    if (!root) return;
+
+    var first = String((employee && employee.full_name) || '').trim().split(/\s+/)[0] || 'there';
+    var t0 = window.admin.localDate();
+    var weekOut = window.admin.localDate(7);
+
+    root.innerHTML =
+      '<div class="adm-page-head">' +
+        '<div><h1>' + escHtml(greeting()) + ', ' + escHtml(first) + '</h1>' +
+        '<p>Here’s what’s on your plate today.</p></div>' +
+        '<div class="adm-actions"><a class="btn btn-primary" href="/admin/tasks">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+          'New task</a></div>' +
+      '</div>' +
+      '<div class="dash-stats dash-stats--4" id="staff-stats"></div>' +
+      '<div class="card-pane">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">' +
+          '<h2 style="margin:0">Your tasks</h2>' +
+          '<a class="btn btn-sm" href="/admin/tasks">Open the board</a>' +
+        '</div>' +
+        '<ul class="adm-list" id="staff-tasks"><li class="skel"></li><li class="skel"></li></ul>' +
+      '</div>';
+    root.hidden = false;
+
+    if (!employee) return;
+
+    var res = await window.sb.from('tasks')
+      .select('id,title,status,priority,due_date')
+      .eq('assignee_id', employee.id).neq('status', 'done')
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .limit(50);
+    var mine = (res.error ? [] : (res.data || []));
+
+    var overdue = mine.filter(function (t) { return t.due_date && t.due_date < t0; });
+    var today   = mine.filter(function (t) { return t.due_date === t0; });
+    var soon    = mine.filter(function (t) { return t.due_date && t.due_date > t0 && t.due_date <= weekOut; });
+    var blocked = mine.filter(function (t) { return t.status === 'blocked'; });
+
+    window.admin.statCards(document.getElementById('staff-stats'), [
+      { n: today.length, label: 'Due today', color: '#0071e3', n2: today.length ? 'on your plate' : 'nothing due',
+        icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
+      { n: overdue.length, label: 'Overdue', color: overdue.length ? '#ff3b30' : '#86868b',
+        n2: overdue.length ? 'needs catching up' : 'all on time', n2Color: overdue.length ? '#b3261e' : null,
+        icon: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' },
+      { n: blocked.length, label: 'Blocked', color: blocked.length ? '#ff9500' : '#86868b',
+        n2: blocked.length ? 'waiting on someone' : 'nothing stuck',
+        icon: '<circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/>' },
+      { n: soon.length, label: 'This week', color: '#5856d6', n2: 'coming up',
+        icon: '<polyline points="20 6 9 17 4 12"/>' }
+    ]);
+
+    renderStaffTasks(overdue.concat(today, soon).slice(0, 8), t0);
+  }
+
+  function renderStaffTasks(rows, t0) {
+    var listEl = document.getElementById('staff-tasks');
+    if (!listEl) return;
+    if (!rows.length) {
+      listEl.innerHTML =
+        '<li class="dash-empty-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>' +
+          '<p>Nothing due this week. Enjoy the quiet.</p>' +
+        '</li>';
+      return;
+    }
+    listEl.innerHTML = '';
+    rows.forEach(function (t) {
+      var li = document.createElement('li');
+      li.className = 'adm-item' +
+        (t.priority === 'urgent' ? ' pri-urgent' : t.priority === 'high' ? ' pri-high' : '');
+      var icon = document.createElement('div'); icon.className = 'adm-item-icon';
+      icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>';
+      var main = document.createElement('div'); main.className = 'adm-item-main';
+      var title = document.createElement('div'); title.className = 'adm-item-title'; title.textContent = t.title;
+      var sub = document.createElement('div'); sub.className = 'adm-item-sub';
+      var late = t.due_date && t.due_date < t0;
+      sub.innerHTML = t.due_date
+        ? '<span' + (late ? ' class="due-over"' : '') + '>due ' + escHtml(t.due_date) + '</span>'
+        : 'no due date';
+      main.appendChild(title); main.appendChild(sub);
+      var acts = document.createElement('div'); acts.className = 'adm-item-acts';
+      var open = document.createElement('a');
+      open.className = 'btn btn-sm'; open.href = '/admin/tasks'; open.textContent = 'Open';
+      acts.appendChild(open);
+      li.appendChild(icon); li.appendChild(main); li.appendChild(acts);
+      listEl.appendChild(li);
+    });
+  }
+
+  async function refresh() {
+    var r = window.adminRoles ? await window.adminRoles.resolve() : { role: null };
+    var manager = r.role === 'owner' || r.role === 'admin';
+
+    if (!manager && r.role) {
+      document.title = 'Home · Veyago Admin';
+      renderStaffHome(r.employee);
+      return;
+    }
+
+    var mgrView = document.getElementById('view-manager');
+    if (mgrView) mgrView.hidden = false;
+    loadStats(); loadArticles(); loadCompany();
+  }
 
   /* Re-fetch when the user switches back to this tab after editing an article. */
   document.addEventListener('visibilitychange', function () {

@@ -31,7 +31,7 @@
   }
 
   async function load() {
-    if (!(await window.adminRoles.isManager())) { window.location.href = '/admin/'; return; }
+    if (!(await window.adminRoles.requireManager())) return;
 
     var acc = await window.sb.from('finance_accounts')
       .select('id,name,kind,provider,currency,last_synced_at').eq('active', true).order('name');
@@ -260,28 +260,6 @@
     if (res.error) { setMsg('Categorise failed: ' + res.error.message, 'err'); return; }
     setMsg('');
   }
-
-  /* ── Sync buttons ──────────────────────────────────────────────────── */
-
-  function wireSync(btnId, fnName, label) {
-    var btn = document.getElementById(btnId);
-    if (!btn) return;
-    btn.addEventListener('click', async function () {
-      btn.disabled = true;
-      setMsg('Syncing ' + label + '…');
-      try {
-        var out = await window.adminRoles.invokeFn(fnName, {});
-        setMsg(''); window.admin.toast(label + ' synced — ' + (out.transactions || 0) + ' transactions');
-        await load();
-      } catch (err) {
-        setMsg(label + ' sync failed: ' + err.message, 'err');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  }
-  wireSync('sync-mercury', 'sync-mercury', 'Mercury');
-  wireSync('sync-stripe',  'sync-stripe',  'Stripe');
 
   /* ── Manual entry ──────────────────────────────────────────────────── */
 

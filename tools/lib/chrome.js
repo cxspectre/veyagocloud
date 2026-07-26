@@ -12,6 +12,21 @@ var { esc, attr } = require('./escape');
 var SITE = 'https://www.veyago.cloud';
 var DEFAULT_OG_IMAGE = SITE + '/assets/og.png';
 
+/* Privacy-preserving analytics. OFF until ANALYTICS_DOMAIN is set, so nothing
+   third-party is ever added to the site without an explicit decision.
+   To turn it on: sign up at plausible.io (or a self-hosted instance), then
+     ANALYTICS_DOMAIN=veyago.cloud npm run build
+   or put ANALYTICS_DOMAIN=veyago.cloud in .env. Plausible is cookieless and
+   stores no personal data, so no consent banner is required — which matters
+   given how the apps are positioned on privacy. Swap ANALYTICS_SRC for a
+   self-hosted script URL if you'd rather not call plausible.io at all. */
+function analyticsTag() {
+  var domain = process.env.ANALYTICS_DOMAIN;
+  if (!domain) return '';
+  var src = process.env.ANALYTICS_SRC || 'https://plausible.io/js/script.js';
+  return '<script defer data-domain="' + attr(domain) + '" src="' + attr(src) + '"></script>';
+}
+
 /* The <head> inner markup. Mirrors the hand-authored pages + tools/build-essays.js. */
 function headTags(opts) {
   opts = opts || {};
@@ -47,6 +62,7 @@ function headTags(opts) {
     '<meta name="twitter:title" content="' + attr(ogTitle) + '" />',
     '<meta name="twitter:description" content="' + attr(ogDescription) + '" />',
     '<meta name="twitter:image" content="' + attr(ogImage) + '" />',
+    analyticsTag(),
     extra
   ].filter(Boolean).join('\n  ');
 }

@@ -54,6 +54,21 @@
       return r.role === 'owner' || r.role === 'admin';
     },
 
+    /* Anyone with a role at all — matches is_staff() in the database. */
+    async isStaff() {
+      var r = await resolve();
+      return !!r.role;
+    },
+
+    /* Guard a page. Redirects to the dashboard if the caller isn't allowed.
+       Cosmetic only — RLS is the real boundary — but it means a wrong URL
+       shows the dashboard instead of a broken empty page. */
+    async requireManager() {
+      if (await this.isManager()) return true;
+      window.location.href = '/admin/';
+      return false;
+    },
+
     /* Current user's employees row (null for legacy allowlist-only admins). */
     async employee() {
       var r = await resolve();

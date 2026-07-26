@@ -1,64 +1,60 @@
-/* User/admin access management. Reads+writes the public.admins table. */
+/* Account page: your own profile (read-only), password change, and TOTP setup.
+   Everyone with a role can reach this — it is the one page with no role gate. */
 (function () {
   'use strict';
-  var listEl = document.getElementById('users-list');
-  var msg    = document.getElementById('msg');
-  var uuidEl = document.getElementById('u-uuid');
-  var emailEl = document.getElementById('u-email');
 
+  var msg = document.getElementById('msg');
   function setMsg(t, k) { if (!msg) return; msg.textContent = t || ''; msg.className = 'msg' + (k ? ' ' + k : ''); }
 
-  var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var ROLE_COLOR = { owner: '#0071e3', admin: '#5856d6', assistant: '#ff9500', employee: '#86868b' };
+  var ROLE_BADGE = { owner: 'badge-role-owner', admin: 'badge-role-admin', assistant: 'badge-role-assistant', employee: 'badge-role-employee' };
+
+  function initials(name) {
+    return String(name || '?').trim().split(/\s+/).slice(0, 2)
+      .map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+  }
 
   async function load() {
-    var res = await window.sb.from('admins').select('user_id,email,created_at').order('created_at');
-    if (res.error) { setMsg('Could not load admin list: ' + res.error.message, 'err'); return; }
-    render(res.data || []);
+    var session = await window.admin.session();
+    var r = await window.adminRoles.resolve();
+    var emp = r.employee;
+
+    var name = (emp && emp.full_name) || (session && session.user.email) || 'Signed in';
+    document.getElementById('acct-name').textContent = name;
+    document.getElementById('acct-email').textContent = (emp && emp.email) || (session && session.user.email) || '';
+
+    var av = document.getElementById('acct-avatar');
+    av.textContent = initials(name);
+    av.style.background = ROLE_COLOR[r.role] || '#86868b';
+
+    var badge = document.getElementById('acct-role');
+    badge.textContent = r.role || 'no role';
+    badge.className = 'badge ' + (ROLE_BADGE[r.role] || 'badge-neutral');
+
+    document.getElementById('acct-title').value = (emp && emp.title) || '';
+    document.getElementById('acct-phone').value = (emp && emp.phone) || '';
+
+    loadMfaStatus();
   }
 
-  function render(rows) {
-    if (!listEl) return;
-    if (!rows.length) { listEl.innerHTML = '<li class="adm-empty"><p>No admins found.</p></li>'; return; }
-    listEl.innerHTML = '';
-    rows.forEach(function (u) {
-      var li = document.createElement('li'); li.className = 'adm-item';
-      var icon = document.createElement('div'); icon.className = 'adm-item-icon'; icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-      var main = document.createElement('div'); main.className = 'adm-item-main';
-      var t = document.createElement('div'); t.className = 'adm-item-title'; t.textContent = u.email || 'No email label';
-      var s = document.createElement('div'); s.className = 'adm-item-sub'; s.textContent = u.user_id;
-      main.appendChild(t); main.appendChild(s);
-      var acts = document.createElement('div'); acts.className = 'adm-item-acts';
-      var badge = document.createElement('span'); badge.className = 'badge badge-live'; badge.textContent = 'Admin';
-      var rmBtn = document.createElement('button'); rmBtn.className = 'btn btn-sm btn-danger'; rmBtn.type = 'button'; rmBtn.textContent = 'Revoke';
-      rmBtn.addEventListener('click', function () { revoke(u); });
-      acts.appendChild(badge); acts.appendChild(rmBtn);
-      li.appendChild(icon); li.appendChild(main); li.appendChild(acts);
-      listEl.appendChild(li);
-    });
-  }
-
-  async function revoke(u) {
-    if (!confirm('Revoke admin access for ' + (u.email || u.user_id) + '?\n\nThey will immediately lose write access (RLS enforced). They will NOT be deleted from Supabase Auth.')) return;
-    var res = await window.sb.from('admins').delete().eq('user_id', u.user_id);
-    if (res.error) { setMsg('Failed: ' + res.error.message, 'err'); return; }
-    setMsg('Access revoked for ' + (u.email || u.user_id) + '.', 'ok');
-    load();
-  }
-
-  document.getElementById('add-user').addEventListener('click', async function () {
-    var uuid = (uuidEl.value || '').trim();
-    var email = (emailEl.value || '').trim() || null;
-    if (!UUID_RE.test(uuid)) { uuidEl.classList.add('err'); uuidEl.focus(); setMsg('Enter a valid UUID from the Supabase dashboard.', 'err'); return; }
-    uuidEl.classList.remove('err');
-    var res = await window.sb.from('admins').insert({ user_id: uuid, email: email });
-    if (res.error) { setMsg('Failed: ' + res.error.message, 'err'); return; }
-    uuidEl.value = ''; emailEl.value = '';
-    setMsg('Access granted.', 'ok'); load();
+  /* ── Change password ──────────────────────────────────────────────── */
+  var pwMsg = document.getElementById('pw-msg');
+  document.getElementById('pw-save').addEventListener('click', async function () {
+    var a = document.getElementById('pw-new').value || '';
+    var b = document.getElementById('pw-new-2').value || '';
+    if (a.length < 8) { pwMsg.textContent = 'Use at least 8 characters.'; pwMsg.className = 'msg err'; return; }
+    if (a !== b) { pwMsg.textContent = 'Those two passwords don\'t match.'; pwMsg.className = 'msg err'; return; }
+    var btn = this; btn.disabled = true;
+    pwMsg.textContent = 'Saving…'; pwMsg.className = 'msg';
+    try {
+      var res = await window.sb.auth.updateUser({ password: a });
+      if (res.error) { pwMsg.textContent = res.error.message; pwMsg.className = 'msg err'; return; }
+      document.getElementById('pw-new').value = '';
+      document.getElementById('pw-new-2').value = '';
+      pwMsg.textContent = ''; pwMsg.className = 'msg';
+      window.admin.toast('Password changed');
+    } finally { btn.disabled = false; }
   });
-
-  /* adminReady is a promise — immune to the event-vs-registration race that
-     left pages blank when Supabase resolved the session early. */
-  window.adminReady.then(function (s) { if (s) load(); });
 
   /* ── MFA enrollment ───────────────────────────────────────────────── */
   var mfaMsg      = document.getElementById('mfa-msg');
@@ -257,5 +253,6 @@
 
   /* adminReady is a promise — immune to the event-vs-registration race that
      left pages blank when Supabase resolved the session early. */
-  window.adminReady.then(function (s) { if (s) loadMfaStatus(); });
+
+  window.adminReady.then(function (s) { if (s) load(); });
 })();

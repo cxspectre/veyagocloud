@@ -35,6 +35,44 @@
           <p class="msg" id="attempts-msg" role="status" aria-live="polite" style="margin-bottom:8px"></p>
           <button class="btn btn-primary" type="submit" id="login-btn" style="width:100%;justify-content:center">Sign in</button>
           <p class="msg" id="login-msg" role="status" aria-live="polite" style="margin-top:10px"></p>
+          <p style="margin:12px 0 0;text-align:center">
+            <button class="btn-link" type="button" id="forgot-btn">Forgot your password?</button>
+          </p>
+        </form>
+      </div>
+
+      <!-- Step: request a reset email -->
+      <div id="step-forgot" hidden>
+        <h1>Reset password</h1>
+        <p>We'll email you a link that lets you set a new password.</p>
+        <form id="forgot-form" novalidate>
+          <div class="field">
+            <label for="forgot-email">Email</label>
+            <input class="input" id="forgot-email" type="email" autocomplete="username" required />
+          </div>
+          <button class="btn btn-primary" type="submit" id="forgot-send" style="width:100%;justify-content:center">Send reset link</button>
+          <button class="btn" type="button" id="forgot-back" style="width:100%;justify-content:center;margin-top:8px">← Back to sign in</button>
+          <p class="msg" id="forgot-msg" role="status" aria-live="polite" style="margin-top:10px"></p>
+        </form>
+      </div>
+
+      <!-- Step: choose a password. Shown after an invite or reset link, where
+           Supabase signs the user in WITHOUT a password having ever been set. -->
+      <div id="step-set-password" hidden>
+        <h1>Choose a password</h1>
+        <p id="set-pw-lede">Set a password so you can sign back in later.</p>
+        <form id="set-password-form" novalidate>
+          <div class="field">
+            <label for="new-password">New password</label>
+            <input class="input" id="new-password" type="password" autocomplete="new-password" minlength="8" required />
+            <p class="hint">At least 8 characters.</p>
+          </div>
+          <div class="field">
+            <label for="new-password-2">Confirm password</label>
+            <input class="input" id="new-password-2" type="password" autocomplete="new-password" required />
+          </div>
+          <button class="btn btn-primary" type="submit" id="set-pw-btn" style="width:100%;justify-content:center">Save password and continue</button>
+          <p class="msg" id="set-pw-msg" role="status" aria-live="polite" style="margin-top:10px"></p>
         </form>
       </div>
 
@@ -68,6 +106,11 @@
   <div class="adm-shell" id="adm-shell" hidden>
     <main class="adm-main">
 
+      <!-- Staff view: rendered by dashboard.js for assistants/employees. -->
+      <div id="view-staff" hidden></div>
+
+      <!-- Manager view: the full publishing + company picture. -->
+      <div id="view-manager" hidden>
       <div class="adm-page-head">
         <div>
           <h1>Dashboard</h1>
@@ -174,15 +217,16 @@
         </div>
 
       </div>
+      </div>
     </main>
   </div>
 
-  <script src="/admin/vendor/supabase.js?v=10"></script>
-  <script src="/admin/supabase-config.js?v=10"></script>
-  <script src="/admin/js/client.js?v=10"></script>
-  <script src="/admin/js/auth.js?v=10"></script>
-  <script src="/admin/js/roles.js?v=10"></script>
-  <script src="/admin/js/nav.js?v=10"></script>
-  <script src="/admin/js/dashboard.js?v=10"></script>
+  <script src="/admin/vendor/supabase.js?v=11"></script>
+  <script src="/admin/supabase-config.js?v=11"></script>
+  <script src="/admin/js/client.js?v=11"></script>
+  <script src="/admin/js/auth.js?v=11"></script>
+  <script src="/admin/js/roles.js?v=11"></script>
+  <script src="/admin/js/nav.js?v=11"></script>
+  <script src="/admin/js/dashboard.js?v=11"></script>
 </body>
 </html>

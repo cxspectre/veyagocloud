@@ -1,0 +1,399 @@
+# =============================================================================
+# publish.yml — regenerate the static site from Supabase and commit it.
+#
+# `npm run build` reads PUBLISHED rows from Supabase and rewrites /journal,
+# /wallpapers, /apps/<slug>/, /assets/... and sitemap.xml. It *deletes* /journal
+# before regenerating it, so a partial read from Supabase produces a perfectly
+# "successful" build of an emptied site. Nothing is committed until
+# tools/verify-cli.js says the generated tree is sound. Pushing to the default
+# branch is what makes Vercel redeploy, so an unverified commit here is a live
+# incident on veyago.cloud.
+#
+# -----------------------------------------------------------------------------
+# REPOSITORY SECRETS
+#   Settings -> Secrets and variables -> Actions -> "Secrets" tab -> New secret
+#
+#   REQUIRED
+#     SUPABASE_URL              Project URL, e.g. https://abcdxyz.supabase.co
+#                               (Supabase dashboard -> Project Settings -> API)
+#     SUPABASE_ANON_KEY         The project's "anon public" key. Read-only in
+#                               practice: RLS gates everything and the build only
+#                               reads published rows.
+#
+#   OPTIONAL (needed for the /admin publish history to show an outcome)
+#     SUPABASE_SERVICE_ROLE_KEY Used ONLY to move this run's public.build_runs row
+#                               from 'queued' -> 'running' -> 'success'/'failed'.
+#                               That table has RLS on with no write policy, so the
+#                               service role is the only thing that can write it
+#                               (see supabase/migrations/0008_build_runs.sql).
+#                               Leave it unset and publishing still works — the
+#                               history just stays stuck on "queued".
+#
+#   Never put the service_role key anywhere the build can read it as content, and
+#   never add it to SUPABASE_ANON_KEY: the build's output is committed publicly.
+#   Pushing uses the automatic GITHUB_TOKEN granted by `permissions:` below — do
+#   not add a personal token for that.
+#
+# NOT repository secrets, but needed for the browser-triggered path. The
+# supabase/functions/deploy Edge Function fires the repository_dispatch and needs
+# its own Supabase secrets:
+#     supabase secrets set GITHUB_TOKEN=github_pat_... GITHUB_REPO=owner/repo
+#   GITHUB_TOKEN: fine-grained PAT with repository "Contents: read and write"
+#   (or the classic `repo` scope) — that is what repository_dispatch requires.
+# =============================================================================
+name: Publish site
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you publishing? (recorded in the commit message)"
+        required: false
+        default: ""
+        type: string
+  repository_dispatch:
+    types: [publish-site]
+
+# Only the automatic token, and only what the job actually needs.
+permissions:
+  contents: write
+
+# Two publishes must never interleave: they would race on the same generated
+# files. Queue them instead of cancelling — a cancelled run may already have
+# pushed.
+concurrency:
+  group: publish-site
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build, verify, commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install build dependencies
+        run: npm ci
+
+      # `client_payload` is written by whoever holds the dispatch token, so treat
+      # it as input: read it through env (never `${{ }}` inside the script, which
+      # would splice it into bash) and flatten it to one short printable line
+      # before it can reach a commit message. run_id must be a UUID or we ignore
+      # it rather than paste it into a database URL.
+      - name: Describe the trigger
+        id: trigger
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          GH_ACTOR: ${{ github.actor }}
+          INPUT_REASON: ${{ inputs.reason }}
+          PAYLOAD_TRIGGER: ${{ github.event.client_payload.trigger }}
+          PAYLOAD_EMAIL: ${{ github.event.client_payload.triggered_by_email }}
+          PAYLOAD_RUN_ID: ${{ github.event.client_payload.run_id }}
+        run: |
+          set -euo pipefail
+
+          clean() {
+            printf '%s' "${1:-}" \
+              | tr '\n\r\t' '   ' \
+              | tr -c '[:alnum:][:space:]@._,:/()+-' '?' \
+              | cut -c1-120
+          }
+
+          run_id=""
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            via="repository_dispatch (publish-site)"
+            who="$(clean "${PAYLOAD_EMAIL:-}")"
+            why="$(clean "${PAYLOAD_TRIGGER:-}")"
+            [ -n "$who" ] || who="Veyago admin"
+            [ -n "$why" ] || why="manual"
+            why="publish from /admin (trigger: $why)"
+
+            candidate="${PAYLOAD_RUN_ID:-}"
+            if printf '%s' "$candidate" | grep -Eq '^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$'; then
+              run_id="$candidate"
+            elif [ -n "$candidate" ]; then
+              echo "::warning::client_payload.run_id is not a UUID — build_runs will not be updated."
+            fi
+          else
+            via="workflow_dispatch"
+            who="$(clean "$GH_ACTOR")"
+            why="$(clean "${INPUT_REASON:-}")"
+            [ -n "$why" ] || why="no reason given"
+          fi
+
+          {
+            echo "source=$via"
+            echo "who=$who"
+            echo "why=$why"
+            echo "run_id=$run_id"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Triggered by $via — $who — $why"
+
+      # Audit trail only. It must never decide whether the build is safe, and a
+      # failure here must never block publishing — hence `|| warn`.
+      - name: Mark the run as running
+        if: steps.trigger.outputs.run_id != ''
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RUN_ROW_ID: ${{ steps.trigger.outputs.run_id }}
+        run: |
+          set -uo pipefail
+          if [ -z "${SERVICE_KEY:-}" ]; then
+            echo "::notice::SUPABASE_SERVICE_ROLE_KEY not set — skipping the build_runs update."
+            exit 0
+          fi
+          curl -sS --fail-with-body -o /dev/null \
+            -X PATCH "$SUPABASE_URL/rest/v1/build_runs?id=eq.$RUN_ROW_ID" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            --data '{"status":"running"}' \
+            || echo "::warning::Could not mark build_runs row as running."
+
+      # The build log goes to RUNNER_TEMP, outside the checkout, so it can never
+      # be picked up by `git add` and committed.
+      - name: Build the static site
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ]; then
+            echo "::error::Repository secret SUPABASE_URL is not set (see the header of this workflow)."
+            exit 1
+          fi
+          if [ -z "${SUPABASE_ANON_KEY:-}" ]; then
+            echo "::error::Repository secret SUPABASE_ANON_KEY is not set (see the header of this workflow)."
+            exit 1
+          fi
+          npm run build 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      # The gate. A non-zero exit fails the job here, before anything is staged:
+      # exit 1 = the generated tree is wrong, exit 2 = the verifier itself could
+      # not run. Both refuse to publish.
+      # Count what is already live, BEFORE the build runs. This is the only
+      # independent reference point the gate has: every other check compares the
+      # build against its own log, so a short read from Supabase that renders an
+      # empty site would otherwise verify clean and delete the real pages.
+      - name: Count the currently published pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          articles=$(find journal -mindepth 2 -maxdepth 2 -name index.html 2>/dev/null | wc -l | tr -d ' ')
+          apps=$(find apps -mindepth 2 -maxdepth 2 -name index.html 2>/dev/null | wc -l | tr -d ' ')
+          printf '{"articles":%s,"appPages":%s}\n' "$articles" "$apps" > "$RUNNER_TEMP/before.json"
+          echo "Currently live: $articles article page(s), $apps app page(s)."
+
+      - name: Verify the generated site
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/verify-cli.js \
+            --root "$GITHUB_WORKSPACE" \
+            --build-log "$RUNNER_TEMP/build.log" \
+            --before "$RUNNER_TEMP/before.json" \
+            --report "$RUNNER_TEMP/verify-report.txt"
+
+      # Stage only the paths the build owns. An allowlist, not `git add -A`, so
+      # a stray file in the workspace can never ride along into a public commit.
+      - name: Stage the build-managed paths
+        id: stage
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -A -- journal wallpapers apps assets sitemap.xml
+
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Nothing changed — the committed site already matches Supabase."
+            exit 0
+          fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          git diff --cached --name-status > "$RUNNER_TEMP/changed-files.txt"
+          cat "$RUNNER_TEMP/changed-files.txt"
+
+      - name: Refuse anything outside the build-managed paths
+        if: steps.stage.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          staged="$(git -c core.quotePath=false diff --cached --name-only)"
+
+          outside="$(printf '%s\n' "$staged" \
+            | grep -Ev '^(journal/|wallpapers/|apps/|assets/|sitemap\.xml$)' || true)"
+          if [ -n "$outside" ]; then
+            echo "::error::Staged files outside the build-managed paths:"
+            printf '%s\n' "$outside"
+            exit 1
+          fi
+
+          secretish="$(printf '%s\n' "$staged" \
+            | grep -Ei '(^|/)\.env|\.pem$|\.key$|\.p12$|(^|/)id_(rsa|ed25519)|(^|/)[^/]*(secret|credential)[^/]*\.(json|ya?ml|txt|env)$' || true)"
+          if [ -n "$secretish" ]; then
+            echo "::error::Refusing to commit — these staged paths look like credentials:"
+            printf '%s\n' "$secretish"
+            exit 1
+          fi
+
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::.env is tracked in this repository. Remove it before publishing."
+            exit 1
+          fi
+
+          echo "Staged tree is clean: build outputs only."
+
+      - name: Commit and push
+        id: commit
+        if: steps.stage.outputs.changed == 'true'
+        shell: bash
+        env:
+          TRIGGER_SOURCE: ${{ steps.trigger.outputs.source }}
+          TRIGGER_WHO: ${{ steps.trigger.outputs.who }}
+          TRIGGER_WHY: ${{ steps.trigger.outputs.why }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          git config user.name "veyago-publish[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          body="$(printf 'Triggered by: %s\nRequested by: %s\nReason: %s\nVerified by: tools/verify-cli.js\nRun: %s' \
+            "$TRIGGER_SOURCE" "$TRIGGER_WHO" "$TRIGGER_WHY" "$RUN_URL")"
+
+          git commit \
+            --message "chore(publish): rebuild static site from Supabase" \
+            --message "$body"
+
+          # A human push can land between checkout and now. Replay our single
+          # commit on top rather than clobbering it; a real conflict fails here.
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "Push rejected — rebasing on origin/$BRANCH and retrying once."
+            git fetch origin "$BRANCH"
+            git rebase "origin/$BRANCH"
+            git push origin "HEAD:$BRANCH"
+          fi
+
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Job summary
+        if: always()
+        shell: bash
+        env:
+          TRIGGER_SOURCE: ${{ steps.trigger.outputs.source }}
+          TRIGGER_WHO: ${{ steps.trigger.outputs.who }}
+          TRIGGER_WHY: ${{ steps.trigger.outputs.why }}
+          CHANGED: ${{ steps.stage.outputs.changed }}
+          COMMIT_SHA: ${{ steps.commit.outputs.sha }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -uo pipefail
+          {
+            echo "## Publish site"
+            echo
+            echo "- **Trigger:** ${TRIGGER_SOURCE:-unknown}"
+            echo "- **Requested by:** ${TRIGGER_WHO:-unknown}"
+            echo "- **Reason:** ${TRIGGER_WHY:-unknown}"
+            echo "- **Result:** ${JOB_STATUS:-unknown}"
+            echo
+
+            echo "### Verification"
+            echo
+            if [ -f "$RUNNER_TEMP/verify-report.txt" ]; then
+              echo '```'
+              cat "$RUNNER_TEMP/verify-report.txt"
+              echo '```'
+            else
+              echo "No verification report — the run stopped before or during verification. **Nothing was committed.**"
+            fi
+            echo
+
+            echo "### Changes committed"
+            echo
+            if [ "${CHANGED:-}" != "true" ]; then
+              echo "Nothing changed — the committed site already matched Supabase."
+            elif [ -n "${COMMIT_SHA:-}" ]; then
+              echo "Pushed \`${COMMIT_SHA}\`:"
+              echo
+              echo '```'
+              cat "$RUNNER_TEMP/changed-files.txt"
+              echo '```'
+            else
+              echo "Verified changes were staged but never committed — the run failed first."
+              echo
+              echo '```'
+              cat "$RUNNER_TEMP/changed-files.txt" 2>/dev/null || echo "(no file list captured)"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Closes out the public.build_runs row the Edge Function opened as 'queued'.
+      # Runs on success, failure and cancellation so a run never stays "queued"
+      # forever in /admin. Never fails the job — this is the paper trail, not the
+      # gate.
+      - name: Record the outcome
+        if: always() && steps.trigger.outputs.run_id != ''
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RUN_ROW_ID: ${{ steps.trigger.outputs.run_id }}
+          JOB_STATUS: ${{ job.status }}
+          COMMIT_SHA: ${{ steps.commit.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          if [ -z "${SERVICE_KEY:-}" ]; then
+            echo "::notice::SUPABASE_SERVICE_ROLE_KEY not set — skipping the build_runs update."
+            exit 0
+          fi
+
+          if [ "$JOB_STATUS" = "success" ]; then
+            status="success"
+            detail=""
+          else
+            status="failed"
+            # The verification report explains a failed publish in plain words;
+            # anything else (build error, cancellation) only gets the run link,
+            # because the raw log is the one place secrets could surface.
+            if [ -f "$RUNNER_TEMP/verify-report.txt" ]; then
+              detail="$(head -c 1000 "$RUNNER_TEMP/verify-report.txt")"$'\n\n'"Full log: $RUN_URL"
+            else
+              detail="Publish failed before verification finished ($JOB_STATUS). Full log: $RUN_URL"
+            fi
+          fi
+
+          # jq builds the JSON so titles, quotes and newlines cannot break out.
+          payload="$(jq -nc \
+            --arg status "$status" \
+            --arg sha "${COMMIT_SHA:-}" \
+            --arg detail "$detail" \
+            '{status: $status, finished_at: (now | todate)}
+             + (if $sha    == "" then {} else {commit_sha: $sha} end)
+             + (if $detail == "" then {} else {error: $detail}   end)')"
+
+          curl -sS --fail-with-body -o /dev/null \
+            -X PATCH "$SUPABASE_URL/rest/v1/build_runs?id=eq.$RUN_ROW_ID" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            --data "$payload" \
+            || echo "::warning::Could not write the outcome to build_runs (status was $status)."

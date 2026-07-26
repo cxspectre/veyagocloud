@@ -136,6 +136,14 @@
 .field:last-child { margin-bottom: 0; }
 .field label { display: block; font-size: 0.84rem; font-weight: 600; color: var(--ink); margin-bottom: 5px; }
 .field .hint { font-size: 0.78rem; color: var(--muted-2); margin-top: 4px; line-height: 1.5; }
+
+/* Text-only button for secondary auth actions (forgot password). */
+.btn-link {
+  font: inherit; font-size: 0.85rem; color: var(--blue); background: none;
+  border: none; padding: 4px; cursor: pointer; text-decoration: none;
+}
+.btn-link:hover { text-decoration: underline; }
+.btn-link:focus-visible { outline: 2px solid var(--blue-2); outline-offset: 2px; border-radius: 4px; }
 .input, .textarea, .select {
   width: 100%; font: inherit; font-size: var(--fz-body); color: var(--ink);
   background: #fff; border: 1px solid var(--hair); border-radius: 11px; padding: 10px 13px;
@@ -834,7 +842,19 @@
   display: flex; align-items: center; gap: 10px;
   padding: 10px; margin-bottom: 6px; border-radius: 10px; background: var(--bg-card);
 }
+.adm-user { text-decoration: none; transition: background .15s var(--ease); }
+.adm-user:hover { background: var(--hair-soft); }
 .adm-user .avatar { width: 30px; height: 30px; font-size: 0.7rem; }
+
+/* Secondary links under the user chip (Account, Settings). */
+.adm-foot-links { display: flex; flex-direction: column; gap: 1px; margin-bottom: 4px; }
+.adm-foot-link {
+  font-size: 0.83rem; color: var(--muted); text-decoration: none;
+  padding: 6px 10px; border-radius: 8px;
+  transition: background .15s var(--ease), color .15s var(--ease);
+}
+.adm-foot-link:hover { background: var(--bg-card); color: var(--ink); }
+.adm-foot-link.active { color: #1a56db; }
 .adm-user-name { font-size: 0.82rem; font-weight: 600; color: var(--ink); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adm-user-role { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-2); }
 

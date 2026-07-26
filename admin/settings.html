@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div>
+          <h1>Settings</h1>
+          <p>Connected accounts, the publish pipeline, and access.</p>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+
+      <div class="card-pane">
+        <h2>Connected accounts</h2>
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">Pull transactions into the finance ledger. Syncing is safe to repeat — entries are matched on their provider ID, never duplicated.</p>
+        <ul class="adm-list" id="sync-list"></ul>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+          <button class="btn" id="sync-mercury" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            Sync Mercury
+          </button>
+          <button class="btn" id="sync-stripe" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+            Sync Stripe
+          </button>
+        </div>
+      </div>
+
+      <div class="card-pane">
+        <h2>Access</h2>
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">Roles on the <a href="/admin/team">Team page</a> are the single source of truth for who can do what. The list below is the retired allowlist, kept only as a record — it no longer grants anything.</p>
+        <ul class="adm-list" id="legacy-list"></ul>
+      </div>
+
+      <div class="card-pane">
+        <h2>Publishing</h2>
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">The live site is rebuilt from published rows. Anyone on the team can publish; every run is checked before it goes out and can be rolled back.</p>
+        <div id="publish-mount"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=11"></script>
+  <script src="/admin/supabase-config.js?v=11"></script>
+  <script src="/admin/js/client.js?v=11"></script>
+  <script src="/admin/js/auth.js?v=11"></script>
+  <script src="/admin/js/roles.js?v=11"></script>
+  <script src="/admin/js/nav.js?v=11"></script>
+  <script src="/admin/js/publish.js?v=11"></script>
+  <script src="/admin/js/settings.js?v=11"></script>
+</body>
+</html>

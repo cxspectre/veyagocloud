@@ -53,12 +53,39 @@
   var shellEl  = document.getElementById('adm-shell');
   var step1    = document.getElementById('step-password');
   var step2    = document.getElementById('step-totp');
+  var stepForgot = document.getElementById('step-forgot');
+  var stepSetPw  = document.getElementById('step-set-password');
   var loginMsg = document.getElementById('login-msg');
   var totpMsg  = document.getElementById('totp-msg');
+  var forgotMsg = document.getElementById('forgot-msg');
+  var setPwMsg  = document.getElementById('set-pw-msg');
+
+  /* Show exactly one panel inside the login card. */
+  function showStep(el) {
+    [step1, step2, stepForgot, stepSetPw].forEach(function (s) {
+      if (s) s.hidden = s !== el;
+    });
+  }
 
   /* ── adminReady promise ───────────────────────────────────────────── */
   var resolveReady;
   window.adminReady = new Promise(function(res) { resolveReady = res; });
+
+  /* ── Invite / recovery detection ──────────────────────────────────────
+     Supabase invite and reset links land here with type=invite|recovery in
+     the URL fragment, then sign the user in and STRIP the fragment. Capture
+     it at load, before supabase-js consumes it, so we know to ask for a
+     password instead of dropping them straight into the shell. Without this
+     an invited user never sets a password and is locked out the moment their
+     session expires. */
+  var linkType = (function () {
+    var hash = (window.location.hash || '').replace(/^#/, '');
+    var qs   = (window.location.search || '').replace(/^\?/, '');
+    var m = (hash + '&' + qs).match(/(?:^|&)type=([a-z_]+)/);
+    return m ? m[1] : null;
+  })();
+  var needsPassword = linkType === 'invite' || linkType === 'recovery' || linkType === 'signup';
+  var passwordJustSet = false;   // set once the user saves one, so we stop intercepting
 
   /* ── Shell toggle ─────────────────────────────────────────────────── */
   var shellShown = false;
@@ -87,8 +114,7 @@
   var pendingFactorId = null;
 
   function showTotpStep() {
-    if (step1) step1.hidden = true;
-    if (step2) step2.hidden = false;
+    showStep(step2);
     var inp = document.getElementById('totp-code');
     if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
   }
@@ -118,6 +144,26 @@
      only after Supabase has a valid, active JWT. Any queries inside admin:authed
      handlers will therefore run with a correct auth.uid(). */
   window.sb.auth.onAuthStateChange(async function(event, session) {
+    /* A reset link fires PASSWORD_RECOVERY; an invite link just signs in with
+       type=invite in the fragment. Both must land on "choose a password". */
+    if (event === 'PASSWORD_RECOVERY' || (session && needsPassword && !passwordJustSet)) {
+      if (stepSetPw) {
+        showLogin();
+        showStep(stepSetPw);
+        var lede = document.getElementById('set-pw-lede');
+        if (lede && linkType === 'invite') {
+          lede.textContent = 'Welcome to Veyago. Set a password so you can sign back in later.';
+        }
+        var pw1 = document.getElementById('new-password');
+        if (pw1) setTimeout(function () { pw1.focus(); }, 50);
+        /* adminReady stays PENDING — see the MFA note below. */
+      } else {
+        /* A non-index page caught the link; send them to the login card. */
+        window.location.href = '/admin/';
+      }
+      return;
+    }
+
     /* INITIAL_SESSION fires on every page load once the stored session has been
        fully restored — without it, navigating between admin pages with a live
        session never reveals the shell (blank page). */
@@ -210,6 +256,91 @@
     });
   }
 
+  /* ── Set password (invite / recovery) ─────────────────────────────── */
+  var setPwForm = document.getElementById('set-password-form');
+  if (setPwForm) {
+    setPwForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var pw1 = document.getElementById('new-password').value || '';
+      var pw2 = document.getElementById('new-password-2').value || '';
+      var btn = document.getElementById('set-pw-btn');
+
+      if (pw1.length < 8) { setMsg(setPwMsg, 'Use at least 8 characters.', 'err'); return; }
+      if (pw1 !== pw2)    { setMsg(setPwMsg, 'Those two passwords don\'t match.', 'err'); return; }
+
+      btn.disabled = true;
+      setMsg(setPwMsg, 'Saving…');
+      try {
+        var res = await window.sb.auth.updateUser({ password: pw1 });
+        if (res.error) { setMsg(setPwMsg, res.error.message, 'err'); return; }
+
+        passwordJustSet = true;
+        needsPassword = false;
+        setMsg(setPwMsg, '');
+
+        /* Mark an invited employee active now that they've completed setup —
+           otherwise "Invites pending" never clears. Narrow SECURITY DEFINER
+           RPC, because employees is manager-write-only by design.
+           Best-effort: never block sign-in on it. */
+        try { await window.sb.rpc('activate_self'); } catch (err) { /* non-fatal */ }
+
+        var sess = await window.admin.session();
+        showShell(sess);
+      } catch (err) {
+        setMsg(setPwMsg, 'Could not save: ' + (err && err.message || err), 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
+  /* ── Forgot password ──────────────────────────────────────────────── */
+  var forgotBtn = document.getElementById('forgot-btn');
+  if (forgotBtn) {
+    forgotBtn.addEventListener('click', function () {
+      var typed = (document.getElementById('email').value || '').trim();
+      if (typed) document.getElementById('forgot-email').value = typed;
+      showStep(stepForgot);
+      setMsg(forgotMsg, '');
+      setTimeout(function () { document.getElementById('forgot-email').focus(); }, 50);
+    });
+  }
+
+  var forgotBack = document.getElementById('forgot-back');
+  if (forgotBack) {
+    forgotBack.addEventListener('click', function () {
+      showStep(step1);
+      setMsg(forgotMsg, '');
+    });
+  }
+
+  var forgotForm = document.getElementById('forgot-form');
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var email = (document.getElementById('forgot-email').value || '').trim();
+      var btn = document.getElementById('forgot-send');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setMsg(forgotMsg, 'Enter a valid email address.', 'err'); return;
+      }
+      btn.disabled = true;
+      setMsg(forgotMsg, 'Sending…');
+      try {
+        var res = await window.sb.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/admin/'
+        });
+        /* Deliberately identical response whether or not the address exists —
+           don't let this page confirm who has an account. */
+        if (res.error) console.warn('[auth] reset error:', res.error.message);
+        setMsg(forgotMsg, 'If that address has an account, a reset link is on its way. Check your inbox.', 'ok');
+      } catch (err) {
+        setMsg(forgotMsg, 'Could not send: ' + (err && err.message || err), 'err');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
   /* TOTP form controls */
   var totpBtn = document.getElementById('totp-btn');
   if (totpBtn) totpBtn.addEventListener('click', function() {
@@ -233,8 +364,7 @@
   var totpBack = document.getElementById('totp-back');
   if (totpBack) totpBack.addEventListener('click', function() {
     pendingFactorId = null;
-    if (step2) step2.hidden = true;
-    if (step1) step1.hidden = false;
+    showStep(step1);
     setMsg(totpMsg, '');
   });
 

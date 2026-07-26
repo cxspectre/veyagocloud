@@ -15,22 +15,27 @@
   }
   var CURRENT = currentKey();
 
+  /* Sidebar. `manager: true` hides the item from assistants and employees —
+     cosmetic only; RLS is the real boundary and every such page also guards
+     itself. Grouped by the job being done, not by which table it writes. */
   var NAV = [
-    { label: 'Dashboard',     href: '/admin/',                   icon: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
+    { label: 'Home',          href: '/admin/',               icon: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>' },
     { section: 'Content' },
-    { label: 'Articles',      href: '/admin/journal',        icon: '<path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>' },
+    { label: 'Journal',       href: '/admin/journal',        icon: '<path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>' },
     { label: 'Wallpapers',    href: '/admin/wallpapers',     icon: '<rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 13l5-4 4 4 3-2 5 3"/>' },
-    { section: 'Site' },
-    { label: 'Announcements', href: '/admin/announcements',  icon: '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>' },
     { label: 'Apps',          href: '/admin/apps',           icon: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>' },
-    { label: 'Projects',      href: '/admin/projects',       icon: '<polygon points="12 2 2 7 12 12 22 7"/><polyline points="2 17 12 22 22 17"/>' },
+    { label: 'Announcements', href: '/admin/announcements',  icon: '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>' },
     { section: 'Company' },
+    { label: 'Tasks',         href: '/admin/tasks',          icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
     { label: 'Team',          href: '/admin/team',           icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' },
     { label: 'Onboarding',    href: '/admin/onboarding',     icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>' },
-    { label: 'Tasks',         href: '/admin/tasks',          icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
-    { label: 'Finance',       href: '/admin/finance',        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', managerOnly: true },
-    { section: 'Settings' },
-    { label: 'Users',         href: '/admin/users',          icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008.6 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2.7a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V2.7a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1h.09a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>' }
+    { label: 'Finance',       href: '/admin/finance',        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', manager: true }
+  ];
+
+  /* Footer links live under the user chip rather than in the main list. */
+  var FOOT_NAV = [
+    { label: 'Account',  href: '/admin/account' },
+    { label: 'Settings', href: '/admin/settings', manager: true }
   ];
 
   function svgIcon(d) {
@@ -61,7 +66,7 @@
         var cachedRole = (window.adminRoles && window.adminRoles.cachedRole) ? window.adminRoles.cachedRole() : null;
         var cachedManager = cachedRole === 'owner' || cachedRole === 'admin';
         var attrs = (cls ? ' class="' + cls + '"' : '') +
-                    (item.managerOnly ? ' data-manager-only' + (cachedManager ? '' : ' hidden') : '');
+                    (item.manager ? ' data-manager-only' + (cachedManager ? '' : ' hidden') : '');
         navHtml += '<a href="' + item.href + '"' + attrs + '>' +
           svgIcon(item.icon) + item.label +
         '</a>';
@@ -69,13 +74,23 @@
     });
     navHtml += '</nav>';
 
+    var cachedRoleFoot = (window.adminRoles && window.adminRoles.cachedRole) ? window.adminRoles.cachedRole() : null;
+    var cachedManagerFoot = cachedRoleFoot === 'owner' || cachedRoleFoot === 'admin';
+    var footLinks = FOOT_NAV.map(function (item) {
+      var cls = CURRENT === item.href.replace(/\/$/, '') ? ' active' : '';
+      return '<a class="adm-foot-link' + cls + '" href="' + item.href + '"' +
+        (item.manager ? ' data-manager-only' + (cachedManagerFoot ? '' : ' hidden') : '') +
+        '>' + item.label + '</a>';
+    }).join('');
+
     var footHtml =
       '<div class="adm-sidebar-foot">' +
-        '<div class="adm-user" id="adm-user" hidden>' +
+        '<a class="adm-user" id="adm-user" href="/admin/account" hidden>' +
           '<div class="avatar" id="adm-user-avatar"></div>' +
           '<div style="min-width:0"><div class="adm-user-name" id="adm-user-name"></div>' +
           '<div class="adm-user-role" id="adm-user-role"></div></div>' +
-        '</div>' +
+        '</a>' +
+        '<div class="adm-foot-links">' + footLinks + '</div>' +
         '<button class="adm-signout" id="adm-signout" type="button">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>' +
           'Sign out' +
