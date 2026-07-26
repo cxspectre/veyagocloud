@@ -15,11 +15,15 @@
       <div class="adm-page-head">
         <div>
           <h1>Onboarding</h1>
-          <p>The checklist every new hire works through.</p>
+          <p>Where one person stands on the company checklist — tick items off and leave a note on any of them.</p>
         </div>
         <div class="adm-actions">
           <label for="ob-employee" style="font-size:.78rem;font-weight:600;color:var(--muted-2)">Team member</label>
-          <select class="input" id="ob-employee" style="width:auto;min-width:180px"></select>
+          <select class="input input-sm" id="ob-employee"></select>
+          <a class="btn btn-sm" id="ob-manage-link" href="/admin/checklist" hidden>
+            Manage checklist
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
         </div>
       </div>
       <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
@@ -39,39 +43,22 @@
         </div>
       </div>
 
-      <div class="adm-split">
-        <div class="card-pane" style="margin-bottom:0">
-          <h2>Checklist</h2>
-          <ul class="adm-list" id="ob-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
+      <div class="card-pane" style="margin-bottom:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+          <h2 style="margin:0">Checklist</h2>
+          <span class="badge badge-inactive" id="ob-count"></span>
         </div>
-
-        <div class="adm-side-sticky" id="ob-manage-pane" hidden>
-          <div class="card-pane" style="margin-bottom:0">
-            <h2>Manage checklist</h2>
-            <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px"><strong>Applies to everyone.</strong> Removing an item deactivates it — history is kept.</p>
-            <div class="field"><label for="ob-new-title">Title</label><input class="input" id="ob-new-title" type="text" placeholder="Set up payroll details" /></div>
-            <div class="field"><label for="ob-new-category">Category</label>
-              <select class="input" id="ob-new-category">
-                <option value="general">General</option>
-                <option value="accounts">Accounts</option>
-                <option value="legal">Legal</option>
-                <option value="tools">Tools</option>
-              </select>
-            </div>
-            <div class="field"><label for="ob-new-desc">Description <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label><input class="input" id="ob-new-desc" type="text" placeholder="What done looks like" /></div>
-            <div class="form-actions"><button class="btn btn-primary" id="ob-add-btn" type="button">Add item</button></div>
-          </div>
-        </div>
+        <ul class="adm-list" id="ob-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
       </div>
     </main>
   </div>
 
-  <script src="/admin/vendor/supabase.js?v=11"></script>
-  <script src="/admin/supabase-config.js?v=11"></script>
-  <script src="/admin/js/client.js?v=11"></script>
-  <script src="/admin/js/auth.js?v=11"></script>
-  <script src="/admin/js/roles.js?v=11"></script>
-  <script src="/admin/js/nav.js?v=11"></script>
-  <script src="/admin/js/onboarding.js?v=11"></script>
+  <script src="/admin/vendor/supabase.js?v=12"></script>
+  <script src="/admin/supabase-config.js?v=12"></script>
+  <script src="/admin/js/client.js?v=12"></script>
+  <script src="/admin/js/auth.js?v=12"></script>
+  <script src="/admin/js/roles.js?v=12"></script>
+  <script src="/admin/js/nav.js?v=12"></script>
+  <script src="/admin/js/onboarding.js?v=12"></script>
 </body>
 </html>

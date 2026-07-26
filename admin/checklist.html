@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checklist template · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <a class="adm-back" href="/admin/onboarding">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Onboarding
+      </a>
+
+      <div class="adm-page-head">
+        <div>
+          <h1>Checklist template</h1>
+          <p><strong>Everything here applies to everyone.</strong> This is the one list every team member works through — add an item and it appears, unticked, on all of their onboarding pages. Retiring an item takes it off all of them but keeps what people already ticked.</p>
+        </div>
+        <div class="adm-actions">
+          <button class="btn btn-primary" id="ck-jump" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New item
+          </button>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+
+      <div class="dash-stats dash-stats--4" id="ck-stats"></div>
+
+      <div class="adm-split">
+        <div style="min-width:0">
+          <div class="card-pane">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+              <h2 style="margin:0">Items</h2>
+              <span class="badge badge-inactive" id="ck-count"></span>
+            </div>
+            <ul class="adm-list" id="ck-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
+          </div>
+
+          <div class="card-pane" id="ck-retired-pane" style="margin-bottom:0" hidden>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+              <h2 style="margin:0">Retired</h2>
+              <button class="btn btn-sm" id="ck-retired-toggle" type="button" aria-expanded="false" aria-controls="ck-retired-list">
+                <span id="ck-retired-label">Show</span>
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+            </div>
+            <p style="font-size:.85rem;color:var(--muted);margin:8px 0 0" id="ck-retired-sub"></p>
+            <ul class="adm-list" id="ck-retired-list" style="margin-top:14px" hidden></ul>
+          </div>
+        </div>
+
+        <div class="adm-side-sticky">
+          <div class="card-pane" style="margin-bottom:0">
+            <h2>Add an item</h2>
+            <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">It lands at the bottom of its category, unticked, on every active team member's checklist.</p>
+            <div class="field"><label for="ck-new-title">Title</label><input class="input" id="ck-new-title" type="text" placeholder="Set up payroll details" /></div>
+            <div class="field"><label for="ck-new-category">Category</label><select class="input" id="ck-new-category"></select></div>
+            <div class="field">
+              <label for="ck-new-desc">Description <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label>
+              <input class="input" id="ck-new-desc" type="text" placeholder="What done looks like" />
+              <div class="hint">Shown under the title on everyone's checklist — say what finished means, not how to do it.</div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" id="ck-add-btn" type="button">Add item</button>
+              <p class="msg" id="ck-add-msg"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=12"></script>
+  <script src="/admin/supabase-config.js?v=12"></script>
+  <script src="/admin/js/client.js?v=12"></script>
+  <script src="/admin/js/auth.js?v=12"></script>
+  <script src="/admin/js/roles.js?v=12"></script>
+  <script src="/admin/js/nav.js?v=12"></script>
+  <script src="/admin/js/checklist.js?v=12"></script>
+</body>
+</html>

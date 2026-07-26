@@ -15,73 +15,69 @@
       <div class="adm-page-head">
         <div>
           <h1>Finance</h1>
-          <p>Mercury, Stripe, and manual entries in one ledger. Owners and admins only.</p>
+          <p>Where the money is right now. Owners and admins only.</p>
         </div>
         <div class="adm-actions">
+          <a class="btn" href="/admin/transactions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Transactions
+          </a>
+          <a class="btn" href="/admin/invoices">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Invoices
+          </a>
           <a class="btn" href="/admin/settings">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
             Sync accounts
           </a>
         </div>
-        <div class="card-pane" style="margin-bottom:0">
-          <h2>Accounts</h2>
-          <ul class="adm-list" id="fin-accounts"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
-        </div>
       </div>
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
 
-      <div class="card-pane" style="margin-top:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
-          <h2 style="margin:0">Transactions</h2>
-          <div style="display:flex;align-items:center;gap:8px">
-            <label for="f-account" style="font-size:.78rem;font-weight:600;color:var(--muted-2)">Account</label>
-            <select class="input input-sm" id="f-account"><option value="all">All accounts</option></select>
+      <div class="dash-stats dash-stats--4" id="fin-stats"></div>
+
+      <div class="adm-split">
+        <div class="card-pane" style="margin-bottom:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+            <h2 style="margin:0">Income vs expenses</h2>
+            <span class="adm-item-sub">Last 6 months, all accounts</span>
           </div>
-        </div>
-        <div class="fin-head"><span>Date</span><span>Description</span><span>Category</span><span style="text-align:right">Amount</span></div>
-        <div class="fin-list" id="tx-list"><div class="skel skel-sm"></div><div class="skel skel-sm"></div><div class="skel skel-sm"></div><div class="skel skel-sm"></div></div>
-      </div>
-
-      <div class="adm-split" style="margin-top:20px">
-        <div class="card-pane" style="margin-bottom:0">
-          <h2>Invoices</h2>
-          <ul class="adm-list" id="inv-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
+          <div id="fin-chart"><div class="skel"></div></div>
         </div>
 
-        <div>
+        <div class="adm-side-sticky">
           <div class="card-pane">
-            <h2>Add transaction</h2>
-            <div class="field"><label for="m-desc">Description</label><input class="input" id="m-desc" type="text" placeholder="Office rent — July" /></div>
-            <div class="row-2">
-              <div class="field"><label for="m-amount">Amount <span style="font-weight:400;color:var(--muted-2)">(− = expense)</span></label><input class="input" id="m-amount" type="number" step="0.01" placeholder="-1200.00" /></div>
-              <div class="field"><label for="m-date">Date</label><input class="input" id="m-date" type="date" /></div>
-            </div>
-            <div class="field"><label for="m-category">Category</label><select class="input" id="m-category"></select></div>
-            <div class="form-actions"><button class="btn btn-primary" id="m-add-btn" type="button">Add transaction</button></div>
+            <h2>Accounts</h2>
+            <ul class="adm-list" id="fin-accounts"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
           </div>
 
           <div class="card-pane" style="margin-bottom:0">
-            <h2>New invoice</h2>
-            <div class="row-2">
-              <div class="field"><label for="i-client">Client</label><input class="input" id="i-client" type="text" placeholder="Acme GmbH" /></div>
-              <div class="field"><label for="i-number">Invoice #</label><input class="input" id="i-number" type="text" placeholder="2026-014" /></div>
+            <h2>Invoices</h2>
+            <ul class="adm-list" id="inv-summary"><li class="skel skel-sm"></li><li class="skel skel-sm"></li><li class="skel skel-sm"></li></ul>
+            <div class="form-actions">
+              <a class="btn btn-sm" href="/admin/invoices">Manage invoices →</a>
             </div>
-            <div class="row-2">
-              <div class="field"><label for="i-amount">Amount</label><input class="input" id="i-amount" type="number" step="0.01" placeholder="2500.00" /></div>
-              <div class="field"><label for="i-due">Due date</label><input class="input" id="i-due" type="date" /></div>
-            </div>
-            <div class="form-actions"><button class="btn btn-primary" id="i-add-btn" type="button">Add invoice</button></div>
           </div>
         </div>
+      </div>
+
+      <div class="card-pane" style="margin-top:20px;margin-bottom:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+          <h2 style="margin:0">Recent activity</h2>
+          <a class="btn btn-sm" href="/admin/transactions">View all →</a>
+        </div>
+        <div class="fin-head"><span>Date</span><span>Description</span><span>Category</span><span class="fin-amt">Amount</span></div>
+        <div class="fin-list" id="tx-recent"><div class="skel skel-sm"></div><div class="skel skel-sm"></div><div class="skel skel-sm"></div><div class="skel skel-sm"></div></div>
       </div>
     </main>
   </div>
 
-  <script src="/admin/vendor/supabase.js?v=11"></script>
-  <script src="/admin/supabase-config.js?v=11"></script>
-  <script src="/admin/js/client.js?v=11"></script>
-  <script src="/admin/js/auth.js?v=11"></script>
-  <script src="/admin/js/roles.js?v=11"></script>
-  <script src="/admin/js/nav.js?v=11"></script>
-  <script src="/admin/js/finance.js?v=11"></script>
+  <script src="/admin/vendor/supabase.js?v=12"></script>
+  <script src="/admin/supabase-config.js?v=12"></script>
+  <script src="/admin/js/client.js?v=12"></script>
+  <script src="/admin/js/auth.js?v=12"></script>
+  <script src="/admin/js/roles.js?v=12"></script>
+  <script src="/admin/js/nav.js?v=12"></script>
+  <script src="/admin/js/finance.js?v=12"></script>
 </body>
 </html>

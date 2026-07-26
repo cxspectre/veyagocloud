@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Team member · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <a class="adm-back" href="/admin/team">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Team
+      </a>
+
+      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+
+      <!-- Shimmer until the record lands; a deep link opens cold. -->
+      <div id="m-loading">
+        <ul class="adm-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
+      </div>
+
+      <!-- No id, bad id, deleted, or invisible under RLS — all end up here. -->
+      <div class="card-pane" id="m-missing" hidden>
+        <div class="dash-empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <p id="m-missing-text">That team member could not be found.</p>
+          <a class="btn" href="/admin/team">Back to Team</a>
+        </div>
+      </div>
+
+      <div id="m-body" hidden>
+        <div class="adm-detail-head">
+          <div class="avatar" id="m-avatar" aria-hidden="true"></div>
+          <div class="adm-detail-id">
+            <h1 id="m-name">Team member</h1>
+            <div class="adm-detail-meta" id="m-meta"></div>
+          </div>
+          <div class="adm-actions">
+            <a class="btn" id="m-email-btn" href="/admin/team">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+              Email
+            </a>
+            <a class="btn btn-primary" id="m-task-btn" href="/admin/tasks">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Assign a task
+            </a>
+          </div>
+        </div>
+
+        <div class="adm-tabs" role="tablist" aria-label="Member sections">
+          <button class="adm-tab active" type="button" role="tab" id="tab-profile" aria-controls="panel-profile" aria-selected="true">Profile</button>
+          <button class="adm-tab" type="button" role="tab" id="tab-onboarding" aria-controls="panel-onboarding" aria-selected="false" tabindex="-1">Onboarding<span id="tab-onboarding-n"></span></button>
+          <button class="adm-tab" type="button" role="tab" id="tab-tasks" aria-controls="panel-tasks" aria-selected="false" tabindex="-1">Tasks<span id="tab-tasks-n"></span></button>
+        </div>
+
+        <!-- ── Profile ─────────────────────────────────────────────────── -->
+        <section class="adm-tabpanel" id="panel-profile" role="tabpanel" aria-labelledby="tab-profile">
+          <div class="adm-split">
+            <div class="card-pane">
+              <h2>Details</h2>
+              <div class="row-2">
+                <div class="field">
+                  <label for="f-full_name">Full name</label>
+                  <input class="input" id="f-full_name" type="text" placeholder="Alex Doe" />
+                </div>
+                <div class="field">
+                  <label for="f-title">Job title</label>
+                  <input class="input" id="f-title" type="text" placeholder="Personal Assistant" />
+                </div>
+              </div>
+              <div class="row-2">
+                <div class="field">
+                  <label for="f-phone">Phone</label>
+                  <input class="input" id="f-phone" type="tel" placeholder="+49 …" />
+                </div>
+                <div class="field">
+                  <label for="f-start_date">Start date</label>
+                  <input class="input" id="f-start_date" type="date" />
+                </div>
+              </div>
+              <div class="row-2">
+                <div class="field">
+                  <label for="f-role">Role</label>
+                  <select class="input" id="f-role">
+                    <option value="owner">Owner</option>
+                    <option value="admin">Admin</option>
+                    <option value="assistant">Assistant</option>
+                    <option value="employee">Employee</option>
+                  </select>
+                  <p class="hint">Owners and admins also get Finance. RLS enforces it server-side.</p>
+                </div>
+                <div class="field">
+                  <label for="f-status">Status</label>
+                  <select class="input" id="f-status">
+                    <option value="invited">Invited</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                  <p class="hint">Inactive blocks sign-in and hides them from pickers.</p>
+                </div>
+              </div>
+              <div class="field">
+                <label for="f-notes">Notes</label>
+                <textarea class="input textarea" id="f-notes" rows="3" placeholder="Emergency contact, working hours…"></textarea>
+                <p class="hint">Everyone on the team can read these — keep anything private out.</p>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" id="m-save" type="button">Save changes</button>
+                <span class="msg" id="m-form-msg"></span>
+              </div>
+            </div>
+
+            <div class="adm-side-sticky">
+              <div class="card-pane">
+                <h2>At a glance</h2>
+                <dl class="adm-facts">
+                  <dt>Sign-in</dt><dd id="fact-signin">—</dd>
+                  <dt>Access</dt><dd id="fact-access">—</dd>
+                  <dt>Added</dt><dd id="fact-added">—</dd>
+                  <dt>Onboarding</dt><dd id="fact-onboarding">—</dd>
+                  <dt>Open tasks</dt><dd id="fact-tasks">—</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+
+          <div class="adm-danger-zone" id="m-danger" hidden>
+            <h3>Danger zone</h3>
+            <p id="m-danger-note"></p>
+            <div class="form-actions">
+              <button class="btn btn-danger" id="m-deactivate" type="button" hidden>Deactivate member</button>
+              <button class="btn" id="m-resend" type="button" hidden>Resend invite</button>
+              <span class="msg" id="m-danger-msg"></span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Onboarding ──────────────────────────────────────────────── -->
+        <section class="adm-tabpanel" id="panel-onboarding" role="tabpanel" aria-labelledby="tab-onboarding" hidden>
+          <div class="card-pane">
+            <h2>Onboarding checklist</h2>
+            <div class="field" id="ob-progress-wrap">
+              <div class="adm-subhead">Progress <span class="n" id="ob-count">…</span></div>
+              <div class="adm-progress" id="ob-bar"><i></i></div>
+            </div>
+            <p class="msg" id="ob-msg"></p>
+            <ul class="adm-list" id="ob-list"><li class="skel skel-sm"></li><li class="skel skel-sm"></li><li class="skel skel-sm"></li></ul>
+            <div class="form-actions">
+              <a class="btn btn-sm" id="ob-link" href="/admin/onboarding">Manage the full checklist</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Tasks ───────────────────────────────────────────────────── -->
+        <section class="adm-tabpanel" id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" hidden>
+          <div class="card-pane">
+            <h2>Open tasks</h2>
+            <p class="msg" id="task-msg"></p>
+            <ul class="adm-list" id="task-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
+            <div class="form-actions">
+              <a class="btn btn-sm" id="task-link" href="/admin/tasks">Open in Tasks</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=12"></script>
+  <script src="/admin/supabase-config.js?v=12"></script>
+  <script src="/admin/js/client.js?v=12"></script>
+  <script src="/admin/js/auth.js?v=12"></script>
+  <script src="/admin/js/roles.js?v=12"></script>
+  <script src="/admin/js/nav.js?v=12"></script>
+  <script src="/admin/js/member.js?v=12"></script>
+</body>
+</html>

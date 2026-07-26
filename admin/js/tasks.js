@@ -184,13 +184,20 @@
     var main = document.createElement('div'); main.className = 'adm-item-main';
     var title = document.createElement('div'); title.className = 'adm-item-title'; title.textContent = t.title;
     if (t.status === 'done') { title.style.textDecoration = 'line-through'; title.style.color = 'var(--muted)'; }
+    /* The title opens the task's own page, where editing, history and delete
+       live. The row keeps its quick-actions so the board stays fast for bulk
+       work — you should never have to open a task just to tick it off. */
+    var titleLink = document.createElement('a');
+    titleLink.className = 'adm-item--link';
+    titleLink.href = '/admin/task?id=' + encodeURIComponent(t.id);
+    titleLink.appendChild(title);
     var sub = document.createElement('div'); sub.className = 'adm-item-sub';
     var who = t.assignee_id && byId[t.assignee_id] ? byId[t.assignee_id].full_name : 'Unassigned';
     var overdue = t.status !== 'done' && t.due_date && t.due_date < t0;
     sub.innerHTML = esc(who) +
       (t.due_date ? ' · <span' + (overdue ? ' class="due-over"' : '') + '>due ' + t.due_date + '</span>' : '') +
       (t.details ? ' · ' + esc(t.details) : '');
-    main.appendChild(title); main.appendChild(sub);
+    main.appendChild(titleLink); main.appendChild(sub);
 
     var acts = document.createElement('div'); acts.className = 'adm-item-acts';
     var sb2 = document.createElement('span');
@@ -266,9 +273,17 @@
         created_by: session ? session.user.id : null
       };
       addBtn.disabled = true;
-      var res = await window.sb.from('tasks').insert(row);
+      var res = await window.sb.from('tasks').insert(row).select('id').single();
       addBtn.disabled = false;
       if (res.error) { setMsg('Create failed: ' + res.error.message, 'err'); return; }
+
+      /* Tell the assignee it exists. Deliberately not awaited into the success
+         path: the task is already saved, and a mail problem must not read as a
+         failed save. The function skips self-assignment on its own. */
+      if (row.assignee_id && res.data && res.data.id) {
+        window.adminRoles.invokeFn('notify-task', { task_id: res.data.id })
+          .catch(function (err) { console.warn('[tasks] notify failed:', err.message); });
+      }
       document.getElementById('t-title').value = '';
       document.getElementById('t-details').value = '';
       document.getElementById('t-due').value = '';

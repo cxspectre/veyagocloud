@@ -326,11 +326,13 @@
       btn.disabled = true;
       setMsg(forgotMsg, 'Sending…');
       try {
-        var res = await window.sb.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + '/admin/'
+        /* Goes through our own Edge Function rather than
+           sb.auth.resetPasswordForEmail, so the mail is branded, rate limited,
+           and logged. The function always answers the same way, so nothing here
+           can confirm who has an account. */
+        var res = await window.sb.functions.invoke('request-password-reset', {
+          body: { email: email }
         });
-        /* Deliberately identical response whether or not the address exists —
-           don't let this page confirm who has an account. */
         if (res.error) console.warn('[auth] reset error:', res.error.message);
         setMsg(forgotMsg, 'If that address has an account, a reset link is on its way. Check your inbox.', 'ok');
       } catch (err) {

@@ -1,5 +1,8 @@
-/* Finance page: accent stat cards (honest, always unfiltered), 6-month chart,
-   accounts panel, column-aligned ledger, invoices + side forms.
+/* Finance OVERVIEW. Read-only on purpose: headline stats, the 6-month chart,
+   the accounts panel, the eight most recent transactions and an invoice
+   summary. Everything you can DO lives on its own page —
+   /admin/transactions (the full ledger) and /admin/invoices (invoice
+   management) — so this page never grows a form again.
    Managers only — non-managers are bounced to the dashboard. */
 (function () {
   'use strict';
@@ -7,11 +10,20 @@
   var msg = document.getElementById('msg');
 
   var accounts = [];
-  var categories = [];
-  var transactions = [];   // filtered ledger window, newest first
+  var catById = {};        // category id → name, for the recent-activity column
   var chartRows = [];      // 6-month unfiltered (posted_at, amount)
 
   function setMsg(t, k) { if (!msg) return; msg.textContent = t || ''; msg.className = 'msg' + (k ? ' ' + k : ''); }
+
+  /* Escapes for BOTH text and quoted-attribute contexts — see team.js:esc. */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   function fmt(n, currency) {
     return new Intl.NumberFormat('en-US', {
@@ -41,31 +53,15 @@
     var cat = await window.sb.from('finance_categories')
       .select('id,name,kind').order('sort_order');
     if (cat.error) { setMsg('Could not load categories: ' + cat.error.message, 'err'); return; }
-    categories = cat.data || [];
+    catById = {};
+    (cat.data || []).forEach(function (c) { catById[c.id] = c.name; });
 
-    fillSelects();
     renderAccounts();
-    await Promise.all([loadOverview(), loadTransactions(), loadInvoices()]);
+    await Promise.all([loadOverview(), loadRecent()]);
   }
 
-  function fillSelects() {
-    var accSel = document.getElementById('f-account');
-    accSel.innerHTML = '<option value="all">All accounts</option>';
-    accounts.forEach(function (a) {
-      var o = document.createElement('option'); o.value = a.id; o.textContent = a.name;
-      accSel.appendChild(o);
-    });
-
-    var catSel = document.getElementById('m-category');
-    catSel.innerHTML = '<option value="">Uncategorised</option>';
-    categories.forEach(function (c) {
-      var o = document.createElement('option'); o.value = c.id; o.textContent = c.name;
-      catSel.appendChild(o);
-    });
-  }
-
-  /* ── Overview: stats + chart, ALWAYS unfiltered so the account filter
-     can't silently skew the headline numbers. ───────────────────────── */
+  /* ── Overview: stats + chart, ALWAYS unfiltered so nothing can silently
+     skew the headline numbers. ──────────────────────────────────────── */
 
   /* Local-time YYYY-MM — toISOString() would shift a local first-of-month
      back a day in any TZ east of UTC, mis-bucketing the whole chart. */
@@ -91,11 +87,13 @@
     chartRows = res.data || [];
 
     var inv = await window.sb.from('finance_invoices')
-      .select('amount,status,due_on').in('status', ['sent', 'overdue']);
-    var outstanding = (inv.data || []).reduce(function (sum, i) { return sum + Number(i.amount); }, 0);
+      .select('amount,status,due_on,paid_on').limit(500);
+    if (inv.error) { setMsg('Could not load invoices: ' + inv.error.message, 'err'); return; }
+    var summary = summarise(inv.data || []);
 
-    renderStats(outstanding);
+    renderStats(summary.outstanding);
     renderChart();
+    renderInvoiceSummary(summary);
   }
 
   function renderStats(outstanding) {
@@ -118,6 +116,7 @@
       { color: '#0071e3', label: 'Net this month',      n: fmt(income - expense, cur),
         icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' },
       { color: '#ff9500', label: 'Outstanding invoices', n: fmt(outstanding, cur),
+        href: '/admin/invoices',
         icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>' }
     ]);
   }
@@ -196,199 +195,129 @@
     });
   }
 
-  /* ── Ledger ────────────────────────────────────────────────────────── */
+  /* ── Recent activity: newest eight, read-only. The editable ledger is
+     /admin/transactions. ───────────────────────────────────────────────── */
 
-  async function loadTransactions() {
-    var accountId = document.getElementById('f-account').value;
-    var q = window.sb.from('finance_transactions')
-      .select('id,account_id,posted_at,description,counterparty,amount,currency,category_id,status,source')
-      .order('posted_at', { ascending: false })
-      .limit(200);
-    if (accountId !== 'all') q = q.eq('account_id', accountId);
-    var res = await q;
-    if (res.error) { setMsg('Could not load transactions: ' + res.error.message, 'err'); return; }
-    transactions = res.data || [];
-    renderTransactions();
-  }
-
-  function renderTransactions() {
-    var listEl = document.getElementById('tx-list');
+  async function loadRecent() {
+    var listEl = document.getElementById('tx-recent');
     if (!listEl) return;
-    if (!transactions.length) {
-      listEl.innerHTML = '<div class="dash-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><p>No transactions yet — sync Mercury/Stripe or add one manually.</p></div>';
-      return;
-    }
-    listEl.innerHTML = '';
-    transactions.forEach(function (t) {
-      var row = document.createElement('div'); row.className = 'fin-row';
 
-      var date = document.createElement('span'); date.className = 'fin-date';
-      date.textContent = t.posted_at.slice(5) + (t.status === 'pending' ? ' ⏳' : '');
-      date.title = t.posted_at + (t.status === 'pending' ? ' (pending)' : '');
-
-      var desc = document.createElement('div'); desc.className = 'fin-desc';
-      var b = document.createElement('b'); b.textContent = t.description; b.title = t.description;
-      desc.appendChild(b);
-      var acctName = (accounts.find(function (a) { return a.id === t.account_id; }) || {}).name || '';
-      var span = document.createElement('span');
-      span.textContent = acctName + (t.counterparty ? ' · ' + t.counterparty : '');
-      desc.appendChild(span);
-
-      var catSel = document.createElement('select'); catSel.className = 'input input-sm';
-      catSel.style.width = '100%';
-      var none = document.createElement('option'); none.value = ''; none.textContent = '—';
-      catSel.appendChild(none);
-      categories.forEach(function (c) {
-        var o = document.createElement('option'); o.value = c.id; o.textContent = c.name;
-        if (c.id === t.category_id) o.selected = true;
-        catSel.appendChild(o);
-      });
-      catSel.addEventListener('change', function () { categorise(t, catSel.value || null); });
-
-      var amt = document.createElement('span'); amt.className = 'fin-amt';
-      amt.style.color = t.amount >= 0 ? '#1a7f37' : '#b3261e';
-      amt.textContent = fmt(Number(t.amount), t.currency);
-
-      row.appendChild(date); row.appendChild(desc); row.appendChild(catSel); row.appendChild(amt);
-      listEl.appendChild(row);
-    });
-  }
-
-  async function categorise(t, categoryId) {
     var res = await window.sb.from('finance_transactions')
-      .update({ category_id: categoryId }).eq('id', t.id);
-    if (res.error) { setMsg('Categorise failed: ' + res.error.message, 'err'); return; }
-    setMsg('');
-  }
+      .select('id,account_id,posted_at,description,counterparty,amount,currency,category_id,status')
+      .order('posted_at', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(8);
+    if (res.error) { setMsg('Could not load transactions: ' + res.error.message, 'err'); return; }
 
-  /* ── Manual entry ──────────────────────────────────────────────────── */
-
-  document.getElementById('m-add-btn').addEventListener('click', async function () {
-    var desc   = (document.getElementById('m-desc').value || '').trim();
-    var amount = parseFloat(document.getElementById('m-amount').value);
-    var date   = document.getElementById('m-date').value;
-    if (!desc) { setMsg('Enter a description.', 'err'); return; }
-    if (!isFinite(amount) || amount === 0) { setMsg('Enter a non-zero amount (negative for expenses).', 'err'); return; }
-    if (!date) { setMsg('Pick a date.', 'err'); return; }
-
-    var manual = accounts.find(function (a) { return a.kind === 'manual'; });
-    if (!manual) {
-      var created = await window.sb.from('finance_accounts')
-        .insert({ name: 'Manual entries', kind: 'manual' }).select().single();
-      if (created.error) { setMsg('Could not create manual account: ' + created.error.message, 'err'); return; }
-      manual = created.data;
-      accounts = accounts.concat([manual]);
-      fillSelects();
-      renderAccounts();
-    }
-
-    var res = await window.sb.from('finance_transactions').insert({
-      account_id: manual.id,
-      posted_at: date,
-      description: desc,
-      amount: amount,
-      currency: manual.currency,
-      category_id: document.getElementById('m-category').value || null,
-      source: 'manual'
-    });
-    if (res.error) { setMsg('Add failed: ' + res.error.message, 'err'); return; }
-    document.getElementById('m-desc').value = '';
-    document.getElementById('m-amount').value = '';
-    setMsg(''); window.admin.toast('Transaction added');
-    loadOverview();
-    loadTransactions();
-  });
-
-  /* ── Invoices ──────────────────────────────────────────────────────── */
-
-  /* overdue is danger-red here, matching the red due-date text on the same row. */
-  var INV_BADGE = { draft: 'badge-neutral', sent: 'badge-info', paid: 'badge-success', overdue: 'badge-danger' };
-  var INV_NEXT  = { draft: 'sent', sent: 'paid', overdue: 'paid' };
-  var INV_NEXT_LABEL = { draft: 'Mark sent', sent: 'Mark paid', overdue: 'Mark paid' };
-
-  async function loadInvoices() {
-    var res = await window.sb.from('finance_invoices')
-      .select('id,number,client,amount,currency,status,due_on,paid_on')
-      .order('created_at', { ascending: false }).limit(50);
-    if (res.error) { setMsg('Could not load invoices: ' + res.error.message, 'err'); return; }
-    renderInvoices(res.data || []);
-  }
-
-  function renderInvoices(rows) {
-    var listEl = document.getElementById('inv-list');
-    if (!listEl) return;
+    var rows = res.data || [];
     if (!rows.length) {
-      listEl.innerHTML = '<li class="dash-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><p>No invoices tracked yet — add one on the right.</p></li>';
+      listEl.innerHTML =
+        '<div class="dash-empty-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' +
+          '<p>No transactions yet — sync an account or add one on the ledger.</p>' +
+          '<a class="btn btn-sm btn-primary" href="/admin/transactions">Open the ledger</a>' +
+        '</div>';
       return;
     }
-    listEl.innerHTML = '';
-    var t0 = window.admin.localDate();
-    rows.forEach(function (inv) {
-      var status = (inv.status === 'sent' && inv.due_on && inv.due_on < t0) ? 'overdue' : inv.status;
 
+    listEl.innerHTML = '';
+    rows.forEach(function (t) { listEl.appendChild(recentRow(t)); });
+  }
+
+  function recentRow(t) {
+    var row = document.createElement('a');
+    row.className = 'fin-row adm-item--link';
+    row.href = '/admin/transactions?tx=' + encodeURIComponent(t.id);
+
+    var date = document.createElement('span'); date.className = 'fin-date';
+    date.textContent = t.posted_at.slice(5) + (t.status === 'pending' ? ' ⏳' : '');
+    date.title = t.posted_at + (t.status === 'pending' ? ' (pending)' : '');
+
+    var desc = document.createElement('div'); desc.className = 'fin-desc';
+    var b = document.createElement('b'); b.textContent = t.description; b.title = t.description;
+    desc.appendChild(b);
+    var acctName = (accounts.find(function (a) { return a.id === t.account_id; }) || {}).name || '';
+    /* A div carrying .adm-item-sub, not a bare span: the class brings the
+       one-line ellipsis, and only a block box can actually clip to it. */
+    var sub = document.createElement('div');
+    sub.className = 'adm-item-sub';
+    sub.textContent = acctName + (t.counterparty ? ' · ' + t.counterparty : '');
+    sub.title = sub.textContent;
+    desc.appendChild(sub);
+
+    var cat = document.createElement('span'); cat.className = 'fin-date';
+    cat.textContent = catById[t.category_id] || 'Uncategorised';
+
+    var amt = document.createElement('span'); amt.className = 'fin-amt';
+    amt.style.color = t.amount >= 0 ? '#1a7f37' : '#b3261e';
+    amt.textContent = fmt(Number(t.amount), t.currency);
+
+    row.appendChild(date); row.appendChild(desc); row.appendChild(cat); row.appendChild(amt);
+    return row;
+  }
+
+  /* ── Invoice summary ───────────────────────────────────────────────── */
+
+  /* A 'sent' invoice past its due date reads as overdue even if nobody has
+     flipped the stored status yet — same rule as /admin/invoices. */
+  function effectiveStatus(inv, t0) {
+    if (inv.status === 'sent' && inv.due_on && inv.due_on < t0) return 'overdue';
+    return inv.status;
+  }
+
+  function summarise(rows) {
+    var t0 = window.admin.localDate();
+    var month = ym(new Date());
+    var out = { draft: 0, sent: 0, overdue: 0, paidMonth: 0, outstanding: 0 };
+    rows.forEach(function (inv) {
+      var s = effectiveStatus(inv, t0);
+      if (s === 'draft') out.draft++;
+      else if (s === 'sent')    { out.sent++;    out.outstanding += Number(inv.amount); }
+      else if (s === 'overdue') { out.overdue++; out.outstanding += Number(inv.amount); }
+      else if (s === 'paid' && inv.paid_on && inv.paid_on.slice(0, 7) === month) out.paidMonth++;
+    });
+    return out;
+  }
+
+  var SUMMARY_ROWS = [
+    { key: 'draft',     label: 'Draft',          badge: 'badge-neutral' },
+    { key: 'sent',      label: 'Sent',           badge: 'badge-info' },
+    { key: 'overdue',   label: 'Overdue',        badge: 'badge-danger' },
+    { key: 'paidMonth', label: 'Paid this month', badge: 'badge-success' }
+  ];
+
+  function renderInvoiceSummary(summary) {
+    var listEl = document.getElementById('inv-summary');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    SUMMARY_ROWS.forEach(function (r) {
       var li = document.createElement('li'); li.className = 'adm-item';
       var main = document.createElement('div'); main.className = 'adm-item-main';
-      var t = document.createElement('div'); t.className = 'adm-item-title';
-      t.textContent = inv.client + ' · #' + inv.number;
-      var s = document.createElement('div'); s.className = 'adm-item-sub';
-      var due = inv.due_on ? ' · due ' + inv.due_on : '';
-      s.innerHTML = fmt(Number(inv.amount), inv.currency) +
-        (status === 'overdue' ? ' · <span class="due-over">due ' + inv.due_on + '</span>' : due) +
-        (inv.paid_on ? ' · paid ' + inv.paid_on : '');
-      main.appendChild(t); main.appendChild(s);
-
+      var t = document.createElement('div'); t.className = 'adm-item-title'; t.textContent = r.label;
+      main.appendChild(t);
       var acts = document.createElement('div'); acts.className = 'adm-item-acts';
       var badge = document.createElement('span');
-      badge.className = 'badge ' + (INV_BADGE[status] || 'badge-inactive');
-      badge.textContent = status;
+      badge.className = 'badge ' + (summary[r.key] ? r.badge : 'badge-neutral');
+      badge.textContent = summary[r.key];
       acts.appendChild(badge);
-
-      if (INV_NEXT[status]) {
-        var btn = document.createElement('button');
-        btn.className = 'btn btn-sm btn-primary'; btn.type = 'button';
-        btn.textContent = INV_NEXT_LABEL[status];
-        btn.addEventListener('click', async function () {
-          var next = INV_NEXT[status];
-          var patch = { status: next, paid_on: next === 'paid' ? t0 : null };
-          var res2 = await window.sb.from('finance_invoices').update(patch).eq('id', inv.id);
-          if (res2.error) { setMsg('Update failed: ' + res2.error.message, 'err'); return; }
-          loadOverview();
-          loadInvoices();
-        });
-        acts.appendChild(btn);
-      }
-
       li.appendChild(main); li.appendChild(acts);
       listEl.appendChild(li);
     });
+
+    var li2 = document.createElement('li'); li2.className = 'adm-item';
+    var main2 = document.createElement('div'); main2.className = 'adm-item-main';
+    var t2 = document.createElement('div'); t2.className = 'adm-item-title'; t2.textContent = 'Outstanding';
+    var s2 = document.createElement('div'); s2.className = 'adm-item-sub'; s2.textContent = 'sent + overdue';
+    main2.appendChild(t2); main2.appendChild(s2);
+    var acts2 = document.createElement('div'); acts2.className = 'adm-item-acts';
+    var amt = document.createElement('span'); amt.className = 'fin-amt';
+    amt.textContent = fmt(summary.outstanding, mainCurrency());
+    if (summary.overdue) amt.style.color = '#b3261e';
+    acts2.appendChild(amt);
+    li2.appendChild(main2); li2.appendChild(acts2);
+    listEl.appendChild(li2);
   }
-
-  document.getElementById('i-add-btn').addEventListener('click', async function () {
-    var client = (document.getElementById('i-client').value || '').trim();
-    var number = (document.getElementById('i-number').value || '').trim();
-    var amount = parseFloat(document.getElementById('i-amount').value);
-    if (!client || !number) { setMsg('Enter the client and invoice number.', 'err'); return; }
-    if (!isFinite(amount) || amount <= 0) { setMsg('Enter a positive invoice amount.', 'err'); return; }
-
-    var res = await window.sb.from('finance_invoices').insert({
-      client: client,
-      number: number,
-      amount: amount,
-      currency: mainCurrency(),
-      issued_on: window.admin.localDate(),
-      due_on: document.getElementById('i-due').value || null,
-      status: 'draft'
-    });
-    if (res.error) { setMsg('Add failed: ' + res.error.message, 'err'); return; }
-    document.getElementById('i-client').value = '';
-    document.getElementById('i-number').value = '';
-    document.getElementById('i-amount').value = '';
-    setMsg(''); window.admin.toast('Invoice added');
-    loadOverview();
-    loadInvoices();
-  });
-
-  document.getElementById('f-account').addEventListener('change', loadTransactions);
 
   /* adminReady is a promise — immune to the event-vs-registration race. */
   window.adminReady.then(function (s) { if (s) load(); });

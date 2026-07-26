@@ -7,17 +7,19 @@
   function setMsg(t, k) { if (!msg) return; msg.textContent = t || ''; msg.className = 'msg' + (k ? ' ' + k : ''); }
 
   function timeAgo(iso) {
-    if (!iso) return 'never synced';
+    if (!iso) return 'never';
     var mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-    if (mins < 2) return 'synced just now';
-    if (mins < 60) return 'synced ' + mins + 'm ago';
-    if (mins < 2880) return 'synced ' + Math.round(mins / 60) + 'h ago';
-    return 'synced ' + Math.round(mins / 1440) + 'd ago';
+    if (mins < 2) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    if (mins < 2880) return Math.round(mins / 60) + 'h ago';
+    return Math.round(mins / 1440) + 'd ago';
   }
+  function syncedAgo(iso) { return iso ? 'synced ' + timeAgo(iso) : 'never synced'; }
 
   async function load() {
     if (!(await window.adminRoles.requireManager())) return;
     loadAccounts();
+    loadEmail();
     loadLegacy();
     if (window.adminPublish) window.adminPublish.mount(document.getElementById('publish-mount'));
   }
@@ -49,7 +51,7 @@
       var main = document.createElement('div'); main.className = 'adm-item-main';
       var t = document.createElement('div'); t.className = 'adm-item-title'; t.textContent = a.name;
       var s = document.createElement('div'); s.className = 'adm-item-sub';
-      s.textContent = a.provider + ' · ' + a.currency + ' · ' + timeAgo(a.last_synced_at);
+      s.textContent = a.provider + ' · ' + a.currency + ' · ' + syncedAgo(a.last_synced_at);
       main.appendChild(t); main.appendChild(s);
       var acts = document.createElement('div'); acts.className = 'adm-item-acts';
       var badge = document.createElement('span');
@@ -81,6 +83,56 @@
   }
   wireSync('sync-mercury', 'sync-mercury', 'Mercury');
   wireSync('sync-stripe', 'sync-stripe', 'Stripe');
+
+  /* ── Recent email ─────────────────────────────────────────────────── */
+  var KIND_LABEL = {
+    invite: 'Invite', password_reset: 'Password reset',
+    task_assigned: 'Task assigned', digest: 'Digest'
+  };
+
+  async function loadEmail() {
+    var listEl = document.getElementById('email-list');
+    if (!listEl) return;
+    var res = await window.sb.from('email_log')
+      .select('id,to_email,kind,subject,ok,error,created_at')
+      .order('created_at', { ascending: false }).limit(8);
+
+    if (res.error) {
+      /* Almost always "relation does not exist" — migration 0010 not run yet. */
+      listEl.innerHTML =
+        '<li class="dash-empty-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>' +
+          '<p>No email log yet — run migration 0010 to start recording sends.</p>' +
+        '</li>';
+      return;
+    }
+    var rows = res.data || [];
+    if (!rows.length) {
+      listEl.innerHTML =
+        '<li class="dash-empty-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>' +
+          '<p>Nothing sent yet.</p>' +
+        '</li>';
+      return;
+    }
+    listEl.innerHTML = '';
+    rows.forEach(function (m) {
+      var li = document.createElement('li'); li.className = 'adm-item';
+      var main = document.createElement('div'); main.className = 'adm-item-main';
+      var t = document.createElement('div'); t.className = 'adm-item-title';
+      t.textContent = (KIND_LABEL[m.kind] || m.kind) + ' → ' + m.to_email;
+      var sub = document.createElement('div'); sub.className = 'adm-item-sub';
+      sub.textContent = timeAgo(m.created_at) + (m.error ? ' · ' + m.error : '');
+      main.appendChild(t); main.appendChild(sub);
+      var acts = document.createElement('div'); acts.className = 'adm-item-acts';
+      var badge = document.createElement('span');
+      badge.className = 'badge ' + (m.ok ? 'badge-success' : 'badge-danger');
+      badge.textContent = m.ok ? 'sent' : 'failed';
+      acts.appendChild(badge);
+      li.appendChild(main); li.appendChild(acts);
+      listEl.appendChild(li);
+    });
+  }
 
   /* ── Retired allowlist (record only — grants nothing since 0007) ──── */
   async function loadLegacy() {

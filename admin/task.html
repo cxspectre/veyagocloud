@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <a class="adm-back" href="/admin/tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Tasks
+      </a>
+
+      <!-- Shimmers until the task lands, so a cold deep link never flashes empty. -->
+      <ul class="adm-list" id="t-skel"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
+
+      <!-- No id, deleted task, or no permission to see it. Filled by task.js. -->
+      <div id="t-empty" hidden></div>
+
+      <div id="t-body" hidden>
+        <div class="adm-detail-head">
+          <div class="adm-item-icon" id="d-icon"></div>
+          <div class="adm-detail-id">
+            <h1 id="d-title">Task</h1>
+            <div class="adm-detail-meta" id="d-meta"></div>
+          </div>
+        </div>
+
+        <div class="adm-split">
+          <div style="min-width:0">
+            <div class="card-pane" style="margin-bottom:0">
+              <h2>Details</h2>
+
+              <div class="field">
+                <label for="f-title">Title</label>
+                <input class="input" id="f-title" type="text" placeholder="Book flights for the Berlin trip" />
+              </div>
+
+              <div class="field">
+                <label for="f-details">Details</label>
+                <textarea class="input" id="f-details" rows="5" placeholder="Links, context, what done looks like"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="f-assignee">Assigned to</label>
+                <select class="input" id="f-assignee"></select>
+                <p class="hint">The assignee can move the task along, but only managers can change these details.</p>
+              </div>
+
+              <div class="row-2">
+                <div class="field">
+                  <label for="f-priority">Priority</label>
+                  <select class="input" id="f-priority">
+                    <option value="low">Low</option>
+                    <option value="normal">Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="f-due">Due date</label>
+                  <input class="input" id="f-due" type="date" />
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button class="btn btn-primary" id="save-btn" type="button" hidden>Save changes</button>
+                <span class="msg" id="form-msg" role="status" aria-live="polite"></span>
+              </div>
+              <p class="msg" id="ro-note" style="color:var(--muted)" hidden></p>
+            </div>
+          </div>
+
+          <div class="adm-side-sticky">
+            <div class="card-pane">
+              <h2>Move it along</h2>
+              <div class="adm-actions" id="act-list"></div>
+              <p class="msg" id="act-msg" role="status" aria-live="polite"></p>
+              <p class="msg" id="act-note" style="color:var(--muted)" hidden></p>
+            </div>
+
+            <div class="card-pane">
+              <h2>History</h2>
+              <ul class="adm-timeline" id="d-timeline"></ul>
+            </div>
+
+            <div class="adm-danger-zone" id="danger-zone" hidden>
+              <h3>Delete this task</h3>
+              <p>Removes it from the board for everyone. This cannot be undone.</p>
+              <button class="btn btn-danger" id="del-btn" type="button">Delete task</button>
+              <p class="msg" id="del-msg" role="status" aria-live="polite"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=12"></script>
+  <script src="/admin/supabase-config.js?v=12"></script>
+  <script src="/admin/js/client.js?v=12"></script>
+  <script src="/admin/js/auth.js?v=12"></script>
+  <script src="/admin/js/roles.js?v=12"></script>
+  <script src="/admin/js/nav.js?v=12"></script>
+  <script src="/admin/js/task.js?v=12"></script>
+</body>
+</html>
