@@ -130,14 +130,21 @@
       var level = await window.admin.mfaLevel();
       if (level && level.nextLevel === 'aal2' && level.currentLevel !== 'aal2') {
         if (loginEl) {
+          /* Awaiting the TOTP code. Leave adminReady PENDING — a promise only
+             resolves once, so settling it to null here would permanently
+             poison it and every page's data load (which gates on it) would
+             silently no-op after the code is verified. verifyTotp → showShell
+             resolves it with the real session instead. */
           showLogin();
           var factor = await window.admin.mfaFactor();
           pendingFactorId = factor ? factor.id : null;
           showTotpStep();
         } else {
+          /* No login form on this page — navigating away, so settling null is
+             safe (nothing here will render). */
           window.location.href = '/admin/';
+          resolveReady(null);
         }
-        resolveReady(null);
         return;
       }
     } catch(e) {

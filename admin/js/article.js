@@ -681,7 +681,7 @@
 
     if (!params.get('id')) {
       params = new URLSearchParams({ id: article.id });
-      window.history.replaceState(null, '', '/admin/article.html?id=' + encodeURIComponent(article.id));
+      window.history.replaceState(null, '', '/admin/article?id=' + encodeURIComponent(article.id));
     }
     updateMeta();
   }

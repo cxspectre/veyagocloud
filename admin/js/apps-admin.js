@@ -1,6 +1,6 @@
 /* App catalogue list for /admin/apps.html.
    Listing + publish toggle + delete only — the product page itself is composed
-   in /admin/apps-editor.html (Edit / New both route there). */
+   in /admin/apps-editor (Edit / New both route there). */
 (function () {
   'use strict';
 
@@ -40,7 +40,7 @@
   function render(rows) {
     if (!listEl) return;
     if (!rows.length) {
-      listEl.innerHTML = '<li style="color:var(--muted);padding:22px 0;list-style:none">No apps yet. <a href="/admin/apps-editor.html" style="color:var(--blue)">Add the first one →</a></li>';
+      listEl.innerHTML = '<li style="color:var(--muted);padding:22px 0;list-style:none">No apps yet. <a href="/admin/apps-editor" style="color:var(--blue)">Add the first one →</a></li>';
       return;
     }
 
@@ -71,7 +71,7 @@
       pubBadge.textContent = a.published ? 'on catalogue' : 'hidden';
 
       var edit = document.createElement('a'); edit.className = 'btn btn-sm';
-      edit.href = '/admin/apps-editor.html?id=' + encodeURIComponent(a.id); edit.textContent = 'Edit';
+      edit.href = '/admin/apps-editor?id=' + encodeURIComponent(a.id); edit.textContent = 'Edit';
 
       var tog = document.createElement('button'); tog.className = 'btn btn-sm'; tog.type = 'button';
       tog.textContent = a.published ? 'Hide' : 'Show';

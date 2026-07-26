@@ -13,18 +13,23 @@
   var byId = {};        // employee id → row
 
   var STATUS_LABEL = { todo: 'To do', in_progress: 'In progress', blocked: 'Blocked', done: 'Done' };
-  var STATUS_BADGE = { todo: 'badge-inactive', in_progress: 'badge-scheduled', blocked: 'badge-draft', done: 'badge-published' };
+  var STATUS_BADGE = { todo: 'badge-neutral', in_progress: 'badge-info', blocked: 'badge-warn', done: 'badge-success' };
   var NEXT_STATUS = { todo: 'in_progress', in_progress: 'done', blocked: 'in_progress' };
   var NEXT_LABEL  = { todo: 'Start', in_progress: 'Complete', blocked: 'Unblock' };
 
   function setMsg(t, k) { if (!msg) return; msg.textContent = t || ''; msg.className = 'msg' + (k ? ' ' + k : ''); }
 
+  /* Escapes for both text and quoted-attribute contexts — see team.js:esc. */
   function esc(s) {
-    var d = document.createElement('div'); d.textContent = s == null ? '' : String(s);
-    return d.innerHTML;
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
-  function today() { return new Date().toISOString().slice(0, 10); }
+  function today() { return window.admin.localDate(); }
 
   async function load() {
     isManager    = await window.adminRoles.isManager();
@@ -78,17 +83,19 @@
     var blocked = rows.filter(function (r) { return r.status === 'blocked'; }).length;
     var doneWk  = rows.filter(function (r) { return r.status === 'done' && r.completed_at && r.completed_at >= weekAgo; }).length;
 
-    var cards = [
-      { n: open,    l: 'Open' },
-      { n: overdue, l: 'Overdue', color: overdue > 0 ? '#b3261e' : null },
-      { n: blocked, l: 'Blocked', color: blocked > 0 ? '#8a5a00' : null },
-      { n: doneWk,  l: 'Done this week', color: doneWk > 0 ? '#1a7f37' : null }
-    ];
-    wrap.innerHTML = cards.map(function (c) {
-      return '<div class="adm-stat"><div class="adm-stat-n"' +
-        (c.color ? ' style="color:' + c.color + '"' : '') + '>' + c.n +
-        '</div><div class="adm-stat-l">' + c.l + '</div></div>';
-    }).join('');
+    window.admin.statCards(wrap, [
+      { n: open, label: 'Open', color: '#0071e3', n2: 'still to do',
+        icon: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>' },
+      { n: overdue, label: 'Overdue', color: overdue ? '#ff3b30' : '#86868b',
+        n2: overdue ? 'past their due date' : 'nothing late',
+        n2Color: overdue ? '#b3261e' : null,
+        icon: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' },
+      { n: blocked, label: 'Blocked', color: blocked ? '#ff9500' : '#86868b',
+        n2: blocked ? 'needs unblocking' : 'nothing stuck',
+        icon: '<circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/>' },
+      { n: doneWk, label: 'Done this week', color: '#34c759', n2: 'completed in 7 days',
+        icon: '<polyline points="20 6 9 17 4 12"/>' }
+    ]);
   }
 
   /* ── Board ─────────────────────────────────────────────────────────── */
@@ -120,7 +127,7 @@
     if (!task.due_date) return 'nodate';
     if (task.due_date < t0) return 'overdue';
     if (task.due_date === t0) return 'today';
-    var weekOut = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    var weekOut = window.admin.localDate(7);
     if (task.due_date <= weekOut) return 'week';
     return 'later';
   }

@@ -528,7 +528,7 @@
 
     if (!params.get('id')) {
       params = new URLSearchParams({ id: app.id });
-      window.history.replaceState(null, '', '/admin/apps-editor.html?id=' + encodeURIComponent(app.id));
+      window.history.replaceState(null, '', '/admin/apps-editor?id=' + encodeURIComponent(app.id));
     }
   }
   document.getElementById('save-btn').addEventListener('click', function () { save(false); });

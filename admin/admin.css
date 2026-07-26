@@ -187,6 +187,23 @@
 .badge-building { background: #e7f6ec; color: #1a7f37; }
 .badge-graduated { background: #f5f5f7; color: var(--muted-2); }
 
+/* Employee-dashboard badges. The content-status badges above are shared by
+   several pages and reuse colours (published/live/active are all the same
+   green), so roles and severity get their own scale here:
+   red = late/failed, amber = needs attention, blue = in flight, green = done.
+   Role tints match the avatar colours in team.js so a person reads the same
+   in the directory and in the sidebar chip. */
+.badge-danger  { background: #fbeceb; color: #b3261e; }
+.badge-warn    { background: #fff4e5; color: #8a5a00; }
+.badge-info    { background: #eaf1ff; color: #1a56db; }
+.badge-success { background: #e7f6ec; color: #1a7f37; }
+.badge-neutral { background: #f5f5f7; color: var(--muted); }
+
+.badge-role-owner     { background: #e8f0fe; color: #0a4ea8; }
+.badge-role-admin     { background: #f0ebff; color: #4c46b6; }
+.badge-role-assistant { background: #fff4e5; color: #8a5a00; }
+.badge-role-employee  { background: #f5f5f7; color: var(--muted); }
+
 /* ---- Empty state ---- */
 .adm-empty { text-align: center; padding: 48px 24px; color: var(--muted); }
 .adm-empty p { font-size: 0.95rem; margin-top: 8px; }
@@ -254,8 +271,12 @@
 
 /* ---- Dashboard ---- */
 .dash-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 22px; }
-@media (max-width: 900px) { .dash-stats { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 600px) { .dash-stats { grid-template-columns: repeat(2, 1fr); } }
+/* 4-up variant. Must be a class, not an inline style — an inline
+   grid-template-columns outranks every media query below and left the finance
+   and company rows stuck 4-wide on phones. */
+.dash-stats--4 { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { .dash-stats, .dash-stats--4 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .dash-stats, .dash-stats--4 { grid-template-columns: repeat(2, 1fr); } }
 
 .dash-stat {
   background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 16px;
@@ -320,7 +341,8 @@
 }
 .dash-build code { background: rgba(26,86,219,0.08); border-radius: 5px; padding: 1px 5px; font-size: 0.82rem; }
 
-.dash-empty-state { text-align: center; padding: 32px 20px; }
+/* The one empty state for the dashboard-quality pages. Works as li or div. */
+.dash-empty-state { text-align: center; padding: 32px 20px; list-style: none; }
 .dash-empty-state svg { opacity: 0.25; margin: 0 auto 12px; display: block; }
 .dash-empty-state p { font-size: 0.9rem; color: var(--muted); margin: 0 0 14px; }
 

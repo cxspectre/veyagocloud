@@ -73,10 +73,17 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   }
 
+  /* First day of the month N months back. Built via the Date constructor, not
+     setMonth() — setMonth keeps the day-of-month and rolls FORWARD on overflow
+     (Feb 31 → Mar 3), which silently dropped the earliest month from the query
+     while the chart still drew an empty column for it. */
+  function monthStart(monthsBack) {
+    var now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() - monthsBack, 1);
+  }
+
   async function loadOverview() {
-    var sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-    var since = ym(sixMonthsAgo) + '-01';
+    var since = ym(monthStart(5)) + '-01';
 
     var res = await window.sb.from('finance_transactions')
       .select('posted_at,amount').gte('posted_at', since).limit(5000);
@@ -103,7 +110,7 @@
     });
     var cur = mainCurrency();
 
-    var cards = [
+    window.admin.statCards(wrap, [
       { color: '#34c759', label: 'Income this month',   n: fmt(income, cur),
         icon: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' },
       { color: '#ff3b30', label: 'Expenses this month', n: fmt(expense, cur),
@@ -112,15 +119,7 @@
         icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' },
       { color: '#ff9500', label: 'Outstanding invoices', n: fmt(outstanding, cur),
         icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>' }
-    ];
-
-    wrap.innerHTML = cards.map(function (c) {
-      return '<div class="dash-stat" style="--stat-color:' + c.color + ';cursor:default">' +
-        '<div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="' + c.color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + c.icon + '</svg></div>' +
-        '<div class="dash-stat-n" style="font-size:1.45rem">' + c.n + '</div>' +
-        '<div class="dash-stat-label">' + c.label + '</div>' +
-      '</div>';
-    }).join('');
+    ]);
   }
 
   /* Grouped monthly bars, inline SVG — income vs expense per month. */
@@ -129,10 +128,7 @@
     if (!wrap) return;
 
     var months = [];
-    var now = new Date();
-    for (var i = 5; i >= 0; i--) {
-      months.push(ym(new Date(now.getFullYear(), now.getMonth() - i, 1)));
-    }
+    for (var i = 5; i >= 0; i--) months.push(ym(monthStart(i)));
     var totals = {};
     months.forEach(function (m) { totals[m] = { income: 0, expense: 0 }; });
     chartRows.forEach(function (t) {
@@ -182,7 +178,7 @@
     var listEl = document.getElementById('fin-accounts');
     if (!listEl) return;
     if (!accounts.length) {
-      listEl.innerHTML = '<li class="adm-empty"><p>No accounts yet — sync Mercury or add a manual transaction.</p></li>';
+      listEl.innerHTML = '<li class="dash-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg><p>No accounts yet — sync Mercury or add a manual transaction.</p></li>';
       return;
     }
     listEl.innerHTML = '';
@@ -219,7 +215,7 @@
     var listEl = document.getElementById('tx-list');
     if (!listEl) return;
     if (!transactions.length) {
-      listEl.innerHTML = '<div class="adm-empty"><p>No transactions yet — sync Mercury/Stripe or add one manually.</p></div>';
+      listEl.innerHTML = '<div class="dash-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><p>No transactions yet — sync Mercury/Stripe or add one manually.</p></div>';
       return;
     }
     listEl.innerHTML = '';
@@ -327,7 +323,8 @@
 
   /* ── Invoices ──────────────────────────────────────────────────────── */
 
-  var INV_BADGE = { draft: 'badge-inactive', sent: 'badge-scheduled', paid: 'badge-published', overdue: 'badge-draft' };
+  /* overdue is danger-red here, matching the red due-date text on the same row. */
+  var INV_BADGE = { draft: 'badge-neutral', sent: 'badge-info', paid: 'badge-success', overdue: 'badge-danger' };
   var INV_NEXT  = { draft: 'sent', sent: 'paid', overdue: 'paid' };
   var INV_NEXT_LABEL = { draft: 'Mark sent', sent: 'Mark paid', overdue: 'Mark paid' };
 
@@ -343,11 +340,11 @@
     var listEl = document.getElementById('inv-list');
     if (!listEl) return;
     if (!rows.length) {
-      listEl.innerHTML = '<li class="adm-empty"><p>No invoices tracked yet — add one on the right.</p></li>';
+      listEl.innerHTML = '<li class="dash-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><p>No invoices tracked yet — add one on the right.</p></li>';
       return;
     }
     listEl.innerHTML = '';
-    var t0 = new Date().toISOString().slice(0, 10);
+    var t0 = window.admin.localDate();
     rows.forEach(function (inv) {
       var status = (inv.status === 'sent' && inv.due_on && inv.due_on < t0) ? 'overdue' : inv.status;
 
@@ -400,7 +397,7 @@
       number: number,
       amount: amount,
       currency: mainCurrency(),
-      issued_on: new Date().toISOString().slice(0, 10),
+      issued_on: window.admin.localDate(),
       due_on: document.getElementById('i-due').value || null,
       status: 'draft'
     });

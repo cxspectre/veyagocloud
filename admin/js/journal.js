@@ -40,7 +40,7 @@
   function render(rows) {
     if (!listEl) return;
     if (!rows.length) {
-      listEl.innerHTML = '<li style="color:var(--muted);padding:22px 0;list-style:none">No articles yet. <a href="/admin/article.html" style="color:var(--blue)">Write the first one →</a></li>';
+      listEl.innerHTML = '<li style="color:var(--muted);padding:22px 0;list-style:none">No articles yet. <a href="/admin/article" style="color:var(--blue)">Write the first one →</a></li>';
       return;
     }
 
@@ -64,7 +64,7 @@
       var acts = document.createElement('div'); acts.className = 'adm-item-acts';
       var badge = document.createElement('span'); badge.className = 'badge badge-' + a.status; badge.textContent = a.status;
       var edit  = document.createElement('a');   edit.className  = 'btn btn-sm';
-      edit.href = '/admin/article.html?id=' + encodeURIComponent(a.id); edit.textContent = 'Edit';
+      edit.href = '/admin/article?id=' + encodeURIComponent(a.id); edit.textContent = 'Edit';
 
       var tog = document.createElement('button'); tog.className = 'btn btn-sm'; tog.type = 'button';
       tog.textContent = isPub ? 'Unpublish' : 'Publish';

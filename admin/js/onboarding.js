@@ -49,7 +49,7 @@
         selEl.appendChild(o);
       });
       if (!employees.length) {
-        listEl.innerHTML = '<li class="adm-empty"><p>No team members yet — invite someone on the Team page first.</p></li>';
+        listEl.innerHTML = '<li class="dash-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><p>No team members yet — invite someone on the Team page first.</p></li>';
         return;
       }
       /* Deep link from the Team page: /admin/onboarding?emp=<id> */
@@ -60,7 +60,7 @@
       selEl.innerHTML = '<option value="' + selfEmployee.id + '">' + selfEmployee.full_name + '</option>';
       selEl.disabled = true;
     } else {
-      listEl.innerHTML = '<li class="adm-empty"><p>No employee record found for your account.</p></li>';
+      listEl.innerHTML = '<li class="dash-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><p>No employee record found for your account.</p></li>';
       return;
     }
 
@@ -121,7 +121,7 @@
     renderHero();
     if (!listEl) return;
     if (!items.length) {
-      listEl.innerHTML = '<li class="adm-empty"><p>No checklist items yet.</p></li>';
+      listEl.innerHTML = '<li class="dash-empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><p>No checklist items yet.</p></li>';
       return;
     }
     listEl.innerHTML = '';

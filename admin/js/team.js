@@ -11,15 +11,23 @@
   var employees = [];
 
   var ROLES = ['owner', 'admin', 'assistant', 'employee'];
-  var ROLE_BADGE = { owner: 'badge-live', admin: 'badge-published', assistant: 'badge-beta', employee: 'badge-inactive' };
+  var ROLE_BADGE = { owner: 'badge-role-owner', admin: 'badge-role-admin', assistant: 'badge-role-assistant', employee: 'badge-role-employee' };
   var ROLE_COLOR = { owner: '#0071e3', admin: '#5856d6', assistant: '#ff9500', employee: '#86868b' };
   var STATUS_DOT = { active: 'green', invited: 'amber', inactive: 'gray' };
 
   function setMsg(t, k) { if (!msg) return; msg.textContent = t || ''; msg.className = 'msg' + (k ? ' ' + k : ''); }
 
+  /* Escapes for BOTH text and quoted-attribute contexts. The textContent →
+     innerHTML trick escapes & < > but leaves quotes intact, which lets a stored
+     name like `Alex" onmouseover="…` break out of value="…" and inject a live
+     event handler. Quotes must be escaped explicitly. */
   function esc(s) {
-    var d = document.createElement('div'); d.textContent = s == null ? '' : String(s);
-    return d.innerHTML;
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function initials(name) {
@@ -52,16 +60,19 @@
     var open = await window.sb.from('tasks')
       .select('id', { count: 'exact', head: true }).neq('status', 'done');
 
-    var cards = [
-      { n: employees.length,           l: 'Team members' },
-      { n: active,                     l: 'Active' },
-      { n: invited,                    l: 'Invites pending' },
-      { n: open.error ? '–' : (open.count || 0), l: 'Open tasks' }
-    ];
-    wrap.innerHTML = cards.map(function (c) {
-      return '<div class="adm-stat"><div class="adm-stat-n">' + c.n +
-             '</div><div class="adm-stat-l">' + c.l + '</div></div>';
-    }).join('');
+    window.admin.statCards(wrap, [
+      { n: employees.length, label: 'Team members', color: '#0071e3',
+        n2: employees.length === 1 ? 'just you' : 'on the books',
+        icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' },
+      { n: active, label: 'Active', color: '#34c759', n2: 'signed in and working',
+        icon: '<polyline points="20 6 9 17 4 12"/>' },
+      { n: invited, label: 'Invites pending', color: invited ? '#ff9500' : '#86868b',
+        n2: invited ? 'awaiting acceptance' : 'none outstanding',
+        icon: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/>' },
+      { n: open.error ? '–' : (open.count || 0), label: 'Open tasks', color: '#5856d6',
+        n2: 'across the team', href: '/admin/tasks',
+        icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' }
+    ]);
   }
 
   function render() {
@@ -87,6 +98,14 @@
     li.className = 'adm-item adm-item--stack';
     li.style.cursor = 'pointer';
 
+    /* The row is the disclosure control, so it needs button semantics: focusable,
+       Enter/Space activated, and announcing its open/closed state. */
+    var isOpen = e.id === expandedId;
+    li.setAttribute('role', 'button');
+    li.setAttribute('tabindex', '0');
+    li.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    li.setAttribute('aria-label', e.full_name + ' — profile details');
+
     var av = document.createElement('div');
     av.className = 'avatar';
     av.style.background = e.status === 'inactive' ? '#c7c7cc' : (ROLE_COLOR[e.role] || '#86868b');
@@ -105,21 +124,35 @@
     dot.title = e.status;
     acts.appendChild(dot);
     var badge = document.createElement('span');
-    badge.className = 'badge ' + (e.status === 'inactive' ? 'badge-inactive' : (ROLE_BADGE[e.role] || 'badge-inactive'));
+    badge.className = 'badge ' + (e.status === 'inactive' ? 'badge-neutral' : (ROLE_BADGE[e.role] || 'badge-role-employee'));
     badge.textContent = e.status === 'inactive' ? 'inactive' : e.role;
     acts.appendChild(badge);
     var chev = document.createElement('span');
-    chev.className = 'chev' + (e.id === expandedId ? ' open' : '');
+    chev.className = 'chev' + (isOpen ? ' open' : '');
+    chev.setAttribute('aria-hidden', 'true');
     chev.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><polyline points="6 9 12 15 18 9"/></svg>';
     acts.appendChild(chev);
 
     li.appendChild(av); li.appendChild(main); li.appendChild(acts);
 
-    if (e.id === expandedId) li.appendChild(renderDetail(e));
+    if (isOpen) li.appendChild(renderDetail(e));
 
-    li.addEventListener('click', function () {
+    function toggleRow() {
       expandedId = expandedId === e.id ? null : e.id;
       render();
+      /* Keep focus on the row the user just activated so keyboard flow survives
+         the re-render. */
+      var rows = listEl.querySelectorAll('[data-emp="' + e.id + '"]');
+      if (rows.length) rows[0].focus();
+    }
+
+    li.setAttribute('data-emp', e.id);
+    li.addEventListener('click', toggleRow);
+    li.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') {
+        ev.preventDefault();      // Space would scroll the page
+        toggleRow();
+      }
     });
     return li;
   }

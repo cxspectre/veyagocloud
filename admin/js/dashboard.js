@@ -69,10 +69,10 @@
       ? '<div class="dash-status-row"><span class="dash-status-dot green"></span><div>' +
           '<div class="dash-status-label">Announcement active</div>' +
           '<div class="dash-status-sub">' + escHtml((activeAnn.message||'').slice(0,60)) + (activeAnn.message&&activeAnn.message.length>60?'…':'') +
-          ' <a href="/admin/announcements.html">Edit →</a></div></div></div>'
+          ' <a href="/admin/announcements">Edit →</a></div></div></div>'
       : '<div class="dash-status-row"><span class="dash-status-dot gray"></span><div>' +
           '<div class="dash-status-label">No active announcement</div>' +
-          '<div class="dash-status-sub"><a href="/admin/announcements.html">Create one →</a></div></div></div>';
+          '<div class="dash-status-sub"><a href="/admin/announcements">Create one →</a></div></div></div>';
     rows += '<div class="dash-status-row"><span class="dash-status-dot green"></span><div>' +
       '<div class="dash-status-label">Site live</div>' +
       '<div class="dash-status-sub"><a href="https://www.veyago.cloud" target="_blank" rel="noopener">veyago.cloud ↗</a></div></div></div>';
@@ -109,7 +109,7 @@
             '<line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>' +
           '</svg>' +
           '<p>No articles yet.</p>' +
-          '<a class="btn btn-primary btn-sm" href="/admin/article.html">Write first article</a>' +
+          '<a class="btn btn-primary btn-sm" href="/admin/article">Write first article</a>' +
         '</li>';
       return;
     }
@@ -139,7 +139,7 @@
       badge.className = 'badge badge-' + a.status; badge.textContent = a.status;
       var edit = document.createElement('a');
       edit.className = 'btn btn-sm';
-      edit.href = '/admin/article.html?id=' + encodeURIComponent(a.id);
+      edit.href = '/admin/article?id=' + encodeURIComponent(a.id);
       edit.textContent = 'Edit';
 
       acts.appendChild(badge); acts.appendChild(edit);
@@ -157,7 +157,7 @@
     if (!role) return;   // no employee/admin record — keep the row hidden
     var manager = role === 'owner' || role === 'admin';
 
-    var t0 = new Date().toISOString().slice(0, 10);
+    var t0 = window.admin.localDate();
     var monthStart = t0.slice(0, 8) + '01';
 
     var queries = [
@@ -206,21 +206,14 @@
       if (tx) {
         var net = tx.reduce(function (s, r) { return s + Number(r.amount); }, 0);
         var fmtNet = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(net);
-        cards.push({ href: '/admin/finance', color: net >= 0 ? '#34c759' : '#ff3b30', n: fmtNet, nSmall: true, label: 'Net this month',
+        cards.push({ href: '/admin/finance', color: net >= 0 ? '#34c759' : '#ff3b30', n: fmtNet, label: 'Net this month',
           n2: tx.length + ' transactions',
           icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' });
       }
     }
 
     if (!cards.length) return;
-    wrap.innerHTML = cards.map(function (c) {
-      return '<a class="dash-stat" href="' + c.href + '" style="--stat-color:' + c.color + '">' +
-        '<div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="' + c.color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + c.icon + '</svg></div>' +
-        '<div class="dash-stat-n"' + (c.nSmall ? ' style="font-size:1.45rem"' : '') + '>' + c.n + '</div>' +
-        '<div class="dash-stat-n2"' + (c.n2Color ? ' style="color:' + c.n2Color + '"' : '') + '>' + c.n2 + '</div>' +
-        '<div class="dash-stat-label">' + c.label + '</div>' +
-      '</a>';
-    }).join('');
+    window.admin.statCards(wrap, cards);
     wrap.hidden = false;
   }
 

@@ -59,9 +59,16 @@ Deno.serve(async (req) => {
 
     /* Send the invite email. If the auth user already exists, continue and
        just (re)create the employee record linked to them. */
+    /* The app origin must come from config, NOT from req.url — that is the
+       Supabase API domain (https://<ref>.supabase.co), which has no /admin/
+       page, so invitees landed on a 404. Set it once with:
+         supabase secrets set SITE_URL=https://www.veyago.cloud
+       and add <SITE_URL>/admin/ to Auth → URL Configuration → Redirect URLs. */
+    const siteUrl = (Deno.env.get('SITE_URL') ?? 'https://www.veyago.cloud').replace(/\/+$/, '');
+
     const invite = await admin.auth.admin.inviteUserByEmail(email, {
       data: { full_name: fullName },
-      redirectTo: `${new URL(req.url).origin.replace('.functions.', '.')}/admin/`,
+      redirectTo: `${siteUrl}/admin/`,
     });
     let authUserId: string | null = invite.data?.user?.id ?? null;
     if (invite.error && !/already/i.test(invite.error.message)) {

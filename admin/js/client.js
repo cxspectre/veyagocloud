@@ -87,6 +87,50 @@
       return sb.auth.mfa.unenroll({ factorId: factorId });
     },
 
+    /* ── Stat cards ──────────────────────────────────────────────────── */
+
+    /* The one KPI-card component for every admin page, so the row never looks
+       like a different widget depending on which page you're on.
+       cards: [{ n, label, color, icon, n2, n2Color, href }] — icon is the inner
+       markup of a 24x24 stroke SVG; href makes the card a link. */
+    statCards(wrap, cards) {
+      if (!wrap) return;
+      wrap.innerHTML = cards.map(function (c) {
+        var tag = c.href ? 'a' : 'div';
+        /* Formatted values (currency: "$8,423", "-$1,200") get the smaller
+           size; plain counts are passed as numbers and stay full size. */
+        var small = typeof c.n === 'string' && /[^0-9]/.test(c.n);
+        return '<' + tag + ' class="dash-stat"' +
+            (c.href ? ' href="' + c.href + '"' : '') +
+            ' style="--stat-color:' + (c.color || '#0071e3') + (c.href ? '' : ';cursor:default') + '">' +
+          (c.icon
+            ? '<div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="' +
+              (c.color || '#0071e3') +
+              '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + c.icon + '</svg></div>'
+            : '') +
+          '<div class="dash-stat-n"' + (small ? ' style="font-size:1.45rem"' : '') + '>' + c.n + '</div>' +
+          (c.n2 ? '<div class="dash-stat-n2"' + (c.n2Color ? ' style="color:' + c.n2Color + '"' : '') + '>' + c.n2 + '</div>' : '') +
+          '<div class="dash-stat-label">' + c.label + '</div>' +
+        '</' + tag + '>';
+      }).join('');
+    },
+
+    /* ── Dates ───────────────────────────────────────────────────────── */
+
+    /* Local calendar date as YYYY-MM-DD, optionally offset by whole days.
+       Never use toISOString() for this: it converts to UTC, so a user west of
+       UTC in the evening gets tomorrow's date (their due-today tasks read as
+       overdue) and a user east of UTC late at night gets yesterday's. All the
+       date columns compared against this (due_date, posted_at, due_on) are
+       plain calendar dates, so the comparison must be in local terms. */
+    localDate(offsetDays) {
+      var d = new Date();
+      if (offsetDays) d.setDate(d.getDate() + offsetDays);
+      return d.getFullYear() + '-' +
+             String(d.getMonth() + 1).padStart(2, '0') + '-' +
+             String(d.getDate()).padStart(2, '0');
+    },
+
     /* ── Toasts ──────────────────────────────────────────────────────── */
     /* Small bottom-right confirmation toasts for successful actions.
        Errors stay inline next to the form that caused them. */
