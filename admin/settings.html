@@ -18,11 +18,11 @@
           <p>Connected accounts, the publish pipeline, and access.</p>
         </div>
       </div>
-      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
 
       <div class="card-pane">
         <h2>Connected accounts</h2>
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">Pull transactions into the finance ledger. Syncing is safe to repeat — entries are matched on their provider ID, never duplicated.</p>
+        <p class="card-lede">Pull transactions into the finance ledger. Syncing is safe to repeat — entries are matched on their provider ID, never duplicated.</p>
         <ul class="adm-list" id="sync-list"></ul>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
           <button class="btn" id="sync-mercury" type="button">
@@ -40,13 +40,13 @@
         <h2>Email</h2>
         <!-- This pane is a LOG, not a settings surface. Saying so matters: the
              failed-invite message used to send people here to "fix email". -->
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">A record of what was sent. Invites, password resets and task notifications go out through Resend so they arrive branded rather than as plain Supabase mail — if a send fails it shows here, because an invite that never arrives is otherwise invisible. Delivery itself is configured outside the admin, with <code>RESEND_API_KEY</code> set as a Supabase secret from a terminal.</p>
+        <p class="card-lede">A record of what was sent. Invites, password resets and task notifications go out through Resend so they arrive branded rather than as plain Supabase mail — if a send fails it shows here, because an invite that never arrives is otherwise invisible. Delivery itself is configured outside the admin, with <code>RESEND_API_KEY</code> set as a Supabase secret from a terminal.</p>
         <ul class="adm-list" id="email-list"><li class="skel skel-sm"></li><li class="skel skel-sm"></li></ul>
       </div>
 
       <div class="card-pane">
         <h2>Access</h2>
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">Roles on the <a href="/admin/team">Team page</a> are the single source of truth for who can do what. The list below is the retired allowlist, kept only as a record — it no longer grants anything.</p>
+        <p class="card-lede">Roles on the <a href="/admin/team">Team page</a> are the single source of truth for who can do what. The list below is the retired allowlist, kept only as a record — it no longer grants anything.</p>
         <ul class="adm-list" id="legacy-list"></ul>
       </div>
 
@@ -55,7 +55,7 @@
         <!-- The panel used to live here, which is why assistants could not reach
              it: this page is manager-gated twice over. It has its own screen now,
              visible to anyone who can publish or ask to. -->
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">The live site is rebuilt from everything currently marked published. Admins and owners publish directly; an assistant asks an admin to approve first.</p>
+        <p class="card-lede">The live site is rebuilt from everything currently marked published. Admins and owners publish directly; an assistant asks an admin to approve first.</p>
         <a class="btn" href="/admin/publish">Open Publish →</a>
       </div>
     </main>

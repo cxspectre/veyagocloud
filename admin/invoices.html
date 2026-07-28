@@ -33,7 +33,7 @@
           </button>
         </div>
       </div>
-      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
 
       <div class="dash-stats dash-stats--4" id="inv-stats"></div>
 
@@ -51,12 +51,12 @@
       </div>
 
       <div class="adm-split">
-        <div style="min-width:0">
+        <div class="u-min0">
           <ul class="adm-list" id="inv-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
         </div>
 
         <div class="adm-side-sticky">
-          <div class="card-pane" style="margin-bottom:0">
+          <div class="card-pane">
             <h2>New invoice</h2>
             <div class="row-2">
               <div class="field"><label for="i-client">Client</label><input class="input" id="i-client" type="text" placeholder="Acme GmbH" /></div>
@@ -65,7 +65,7 @@
             <div class="field"><label for="i-amount">Amount <span id="i-currency" style="font-weight:400;color:var(--muted-2)"></span></label><input class="input" id="i-amount" type="number" step="0.01" min="0" placeholder="2500.00" /></div>
             <div class="field"><label for="i-issued">Issue date</label><input class="input" id="i-issued" type="date" /></div>
             <div class="field"><label for="i-due">Due date</label><input class="input" id="i-due" type="date" /></div>
-            <div class="field"><label for="i-notes">Notes <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label><textarea class="input" id="i-notes" rows="3" placeholder="PO number, what it covers, payment terms"></textarea></div>
+            <div class="field"><label for="i-notes">Notes <span class="qualifier">(optional)</span></label><textarea class="input" id="i-notes" rows="3" placeholder="PO number, what it covers, payment terms"></textarea></div>
             <div class="form-actions">
               <button class="btn btn-primary" id="i-add-btn" type="button">Create invoice</button>
               <span class="msg" id="i-msg"></span>

@@ -33,7 +33,7 @@
             <input class="input" id="password" type="password" autocomplete="current-password" required />
           </div>
           <p class="msg" id="attempts-msg" role="status" aria-live="polite" style="margin-bottom:8px"></p>
-          <button class="btn btn-primary" type="submit" id="login-btn" style="width:100%;justify-content:center">Sign in</button>
+          <button class="btn btn-primary btn--block" type="submit" id="login-btn" >Sign in</button>
           <p class="msg" id="login-msg" role="status" aria-live="polite" style="margin-top:10px"></p>
           <p style="margin:12px 0 0;text-align:center">
             <button class="btn-link" type="button" id="forgot-btn">Forgot your password?</button>
@@ -50,7 +50,7 @@
             <label for="forgot-email">Email</label>
             <input class="input" id="forgot-email" type="email" autocomplete="username" required />
           </div>
-          <button class="btn btn-primary" type="submit" id="forgot-send" style="width:100%;justify-content:center">Send reset link</button>
+          <button class="btn btn-primary btn--block" type="submit" id="forgot-send" >Send reset link</button>
           <button class="btn" type="button" id="forgot-back" style="width:100%;justify-content:center;margin-top:8px">← Back to sign in</button>
           <p class="msg" id="forgot-msg" role="status" aria-live="polite" style="margin-top:10px"></p>
         </form>
@@ -71,7 +71,7 @@
             <label for="new-password-2">Confirm password</label>
             <input class="input" id="new-password-2" type="password" autocomplete="new-password" required />
           </div>
-          <button class="btn btn-primary" type="submit" id="set-pw-btn" style="width:100%;justify-content:center">Save password and continue</button>
+          <button class="btn btn-primary btn--block" type="submit" id="set-pw-btn" >Save password and continue</button>
           <p class="msg" id="set-pw-msg" role="status" aria-live="polite" style="margin-top:10px"></p>
         </form>
       </div>
@@ -94,7 +94,7 @@
             maxlength="6" placeholder="000 000"
             autocomplete="one-time-code" />
         </div>
-        <button class="btn btn-primary" type="button" id="totp-btn" style="width:100%;justify-content:center">Verify</button>
+        <button class="btn btn-primary btn--block" type="button" id="totp-btn" >Verify</button>
         <button class="btn" type="button" id="totp-back" style="width:100%;justify-content:center;margin-top:8px">← Back</button>
         <p class="msg" id="totp-msg" role="status" aria-live="polite" style="margin-top:10px"></p>
       </div>
@@ -196,7 +196,7 @@
 
         <!-- Recent articles -->
         <div class="card-pane" style="margin-bottom:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="card-head">
             <h2 style="margin:0">Recent articles</h2>
             <div style="display:flex;gap:8px">
               <button class="btn btn-sm" id="refresh-btn" title="Refresh list">

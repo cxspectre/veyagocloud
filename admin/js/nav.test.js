@@ -285,6 +285,59 @@ test('a failed count fails silent rather than breaking the sidebar', async () =>
   assert.ok(window.document.querySelector('.adm-nav a[href="/admin/publish"]'), 'nav still intact');
 });
 
+/* The sidebar is fourteen tab stops and comes before the content in source
+   order on every screen. */
+test('a skip link is injected once, and points at a real target', async () => {
+  const { window } = await mountAt('/admin/');
+  const skips = window.document.querySelectorAll('.adm-skip');
+  assert.equal(skips.length, 1, 'exactly one');
+  const target = window.document.querySelector(skips[0].getAttribute('href'));
+  assert.ok(target, 'href resolves to an element');
+  assert.equal(target.getAttribute('tabindex'), '-1', 'and that element can take focus');
+  assert.equal(window.document.body.firstElementChild, skips[0], 'first thing in the tab order');
+});
+
+/* The drawer is a modal on mobile. aria-expanded was absent from the DOM
+   entirely — confirmed in a live browser before this change. */
+test('the drawer toggle exposes its state', async () => {
+  const { window } = await mountAt('/admin/');
+  const toggle = window.document.getElementById('adm-toggle');
+  const sidebar = window.document.getElementById('adm-sidebar');
+
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+  assert.equal(toggle.getAttribute('aria-controls'), 'adm-sidebar');
+
+  toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+  assert.ok(sidebar.classList.contains('open'));
+
+  toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+});
+
+test('Escape closes the drawer and returns focus to the toggle', async () => {
+  const { window } = await mountAt('/admin/');
+  const toggle = window.document.getElementById('adm-toggle');
+  const sidebar = window.document.getElementById('adm-sidebar');
+
+  toggle.focus();
+  toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+  assert.notEqual(window.document.activeElement, toggle, 'focus moved into the drawer');
+
+  window.document.dispatchEvent(
+    new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+  assert.equal(sidebar.classList.contains('open'), false);
+  assert.equal(window.document.activeElement, toggle, 'focus came back');
+});
+
+test('Escape does nothing while the drawer is closed', async () => {
+  const { window } = await mountAt('/admin/');
+  const ev = new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+  window.document.dispatchEvent(ev);
+  assert.equal(ev.defaultPrevented, false);
+});
+
 test('the signed-in identity chip is filled from the resolved role', async () => {
   const { window } = await mountAt('/admin/', { role: 'owner' });
   const chip = window.document.getElementById('adm-user');

@@ -179,6 +179,20 @@
     var shell = document.querySelector('.adm-shell');
     if (!shell) return;
 
+    /* Skip link, injected here so it exists once rather than in nineteen files.
+       The sidebar is fourteen tab stops deep and comes before the content in
+       source order on every screen. */
+    var main = document.querySelector('.adm-main') || document.querySelector('main');
+    if (main) {
+      if (!main.id) main.id = 'adm-main';
+      if (!main.hasAttribute('tabindex')) main.setAttribute('tabindex', '-1');
+      var skip = document.createElement('a');
+      skip.className = 'adm-skip';
+      skip.href = '#' + main.id;
+      skip.textContent = 'Skip to content';
+      document.body.insertBefore(skip, document.body.firstChild);
+    }
+
     var sidebar = buildSidebar();
     shell.insertBefore(sidebar, shell.firstChild);
 
@@ -189,14 +203,56 @@
     document.body.appendChild(toggle);
     document.body.appendChild(overlay);
 
-    function open()  { sidebar.classList.add('open');    overlay.classList.add('open'); }
-    function close() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+    /* The drawer is a modal on mobile — it covers the page behind an overlay —
+       so it needs the three things a modal owes the keyboard: its state exposed,
+       Escape to leave, and focus kept inside while it is open. It had none of
+       them; aria-expanded was simply absent from the DOM. */
+    var lastFocus = null;
 
+    function open() {
+      lastFocus = document.activeElement;
+      sidebar.classList.add('open');
+      overlay.classList.add('open');
+      toggle.setAttribute('aria-expanded', 'true');
+      var first = sidebar.querySelector('a, button');
+      if (first) first.focus();
+    }
+
+    function close() {
+      if (!sidebar.classList.contains('open')) return;
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      /* Back where they were, or they are dumped at the top of the document
+         with no idea what just happened. */
+      if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
+      lastFocus = null;
+    }
+
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 'adm-sidebar');
     toggle.addEventListener('click', function () {
       sidebar.classList.contains('open') ? close() : open();
     });
     overlay.addEventListener('click', close);
     sidebar.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+
+    document.addEventListener('keydown', function (e) {
+      if (!sidebar.classList.contains('open')) return;
+      if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+      if (e.key !== 'Tab') return;
+
+      /* Cycle within the drawer rather than tabbing into the page underneath,
+         which is inert to the eye but not to the keyboard. */
+      var items = Array.prototype.filter.call(
+        sidebar.querySelectorAll('a[href], button:not([disabled])'),
+        function (el) { return !el.hidden && el.offsetParent !== null; }
+      );
+      if (!items.length) return;
+      var first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
 
     var so = document.getElementById('adm-signout');
     if (so) so.addEventListener('click', function () { window.admin && window.admin.signOut(); });

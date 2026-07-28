@@ -29,14 +29,14 @@
           </button>
         </div>
       </div>
-      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
 
       <div class="dash-stats dash-stats--4" id="ck-stats"></div>
 
       <div class="adm-split">
-        <div style="min-width:0">
+        <div class="u-min0">
           <div class="card-pane">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+            <div class="card-head">
               <h2 style="margin:0">Items</h2>
               <span class="badge badge-inactive" id="ck-count"></span>
             </div>
@@ -57,13 +57,13 @@
         </div>
 
         <div class="adm-side-sticky">
-          <div class="card-pane" style="margin-bottom:0">
+          <div class="card-pane">
             <h2>Add an item</h2>
             <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">It lands at the bottom of its category, unticked, on every active team member's checklist.</p>
             <div class="field"><label for="ck-new-title">Title</label><input class="input" id="ck-new-title" type="text" placeholder="Set up payroll details" /></div>
             <div class="field"><label for="ck-new-category">Category</label><select class="input" id="ck-new-category"></select></div>
             <div class="field">
-              <label for="ck-new-desc">Description <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label>
+              <label for="ck-new-desc">Description <span class="qualifier">(optional)</span></label>
               <input class="input" id="ck-new-desc" type="text" placeholder="What done looks like" />
               <div class="hint">Shown under the title on everyone's checklist — say what finished means, not how to do it.</div>
             </div>

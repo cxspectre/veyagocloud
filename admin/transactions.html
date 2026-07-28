@@ -29,7 +29,7 @@
           </a>
         </div>
       </div>
-      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
 
       <div class="adm-toolbar">
         <label for="f-account">Account</label>
@@ -47,19 +47,19 @@
       </div>
 
       <div class="adm-split">
-        <div style="min-width:0">
-          <div class="card-pane" style="margin-bottom:0">
+        <div class="u-min0">
+          <div class="card-pane">
             <div class="fin-head"><span>Date</span><span>Description</span><span>Category</span><span class="fin-amt">Amount</span></div>
             <div class="fin-list" id="tx-list"><div class="skel skel-sm"></div><div class="skel skel-sm"></div><div class="skel skel-sm"></div><div class="skel skel-sm"></div></div>
           </div>
         </div>
 
         <div class="adm-side-sticky">
-          <div class="card-pane" style="margin-bottom:0">
+          <div class="card-pane">
             <h2>Add transaction</h2>
             <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">Goes into the manual account — the ledger creates one the first time you need it. Synced bank and Stripe lines arrive on their own.</p>
             <div class="field"><label for="m-desc">Description</label><input class="input" id="m-desc" type="text" placeholder="Office rent — July" /></div>
-            <div class="field"><label for="m-amount">Amount <span style="font-weight:400;color:var(--muted-2)">(− = expense)</span></label><input class="input" id="m-amount" type="number" step="0.01" placeholder="-1200.00" /></div>
+            <div class="field"><label for="m-amount">Amount <span class="qualifier">(− = expense)</span></label><input class="input" id="m-amount" type="number" step="0.01" placeholder="-1200.00" /></div>
             <div class="field"><label for="m-date">Date</label><input class="input" id="m-date" type="date" /></div>
             <div class="field"><label for="m-category">Category</label><select class="input" id="m-category"><option value="">Uncategorised</option></select></div>
             <div class="form-actions">

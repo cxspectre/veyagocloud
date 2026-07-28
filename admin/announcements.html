@@ -21,14 +21,14 @@
           <button class="btn btn-primary" id="new-btn" type="button">+ New announcement</button>
         </div>
       </div>
-      <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
       <ul class="adm-list" id="ann-list"></ul>
 
       <section class="card-pane" id="ann-form" hidden style="margin-top:24px">
         <h2 id="form-title">New announcement</h2>
 
         <div class="field">
-          <label for="a-key">Dismiss key <span style="font-weight:400;color:var(--muted-2)">(unique slug — changing it re-shows to everyone who dismissed the previous version)</span></label>
+          <label for="a-key">Dismiss key <span class="qualifier">(unique slug — changing it re-shows to everyone who dismissed the previous version)</span></label>
           <input class="input" id="a-key" type="text" placeholder="kept-launch-v2" />
         </div>
         <div class="field">
@@ -37,7 +37,7 @@
         </div>
         <div class="row-2">
           <div class="field">
-            <label for="a-link-text">Link label <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label>
+            <label for="a-link-text">Link label <span class="qualifier">(optional)</span></label>
             <input class="input" id="a-link-text" type="text" placeholder="Get updates ›" />
           </div>
           <div class="field">
@@ -48,7 +48,7 @@
 
         <label class="field" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:16px">
           <input type="checkbox" id="a-active" style="width:16px;height:16px" />
-          <span style="font-size:.9rem;font-weight:500">Make this the active announcement <span style="font-weight:400;color:var(--muted-2)">(deactivates any other active announcement)</span></span>
+          <span style="font-size:.9rem;font-weight:500">Make this the active announcement <span class="qualifier">(deactivates any other active announcement)</span></span>
         </label>
 
         <div id="ann-preview-wrap" hidden>

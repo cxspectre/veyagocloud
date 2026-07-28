@@ -23,7 +23,7 @@
       .replace(/['’"]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   }
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
-  function setBadge() { badgeEl.textContent = current.status; badgeEl.className = 'badge ' + current.status; }
+  function setBadge() { badgeEl.textContent = current.status; badgeEl.className = 'badge badge-' + current.status; }
   function extOf(url) { var m = String(url || '').match(/\.([a-z0-9]+)(?:\?|$)/i); return m ? m[1].toLowerCase() : ''; }
 
   // ---- list ----
@@ -36,19 +36,30 @@
     renderList(res.data || []);
   }
 
+  /* Rebuilt onto the shared list vocabulary. It used to use list-item /
+     li-main / li-title / li-sub / li-acts and a `.empty` state — six class
+     names with no rules in admin.css or styles.css, so this list has rendered
+     as unstyled stacked text since it was written. */
   function renderList(rows) {
-    if (!rows.length) { listEl.innerHTML = '<li class="empty">No wallpapers yet.</li>'; return; }
+    if (!rows.length) {
+      listEl.innerHTML =
+        '<li class="dash-empty-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 13l5-4 4 4 3-2 5 3"/></svg>' +
+          '<p>No wallpapers yet.</p>' +
+        '</li>';
+      return;
+    }
     listEl.innerHTML = '';
     rows.forEach(function (w) {
-      var li = el('li', 'list-item');
-      var img = el('img', 'thumb'); img.src = w.preview_url || ''; img.alt = '';
-      var main = el('div', 'li-main');
-      main.innerHTML = '<div class="li-title"></div><div class="li-sub"></div>';
-      main.querySelector('.li-title').textContent = w.title || '(untitled)';
-      main.querySelector('.li-sub').textContent = (w.variants || []).length + ' variant(s) · /wallpapers/';
-      var acts = el('div', 'li-acts');
+      var li = el('li', 'adm-item');
+      var img = el('img', 'wp-thumb'); img.src = w.preview_url || ''; img.alt = '';
+      var main = el('div', 'adm-item-main');
+      main.innerHTML = '<div class="adm-item-title"></div><div class="adm-item-sub"></div>';
+      main.querySelector('.adm-item-title').textContent = w.title || '(untitled)';
+      main.querySelector('.adm-item-sub').textContent = (w.variants || []).length + ' variant(s) · /wallpapers/';
+      var acts = el('div', 'adm-item-acts');
       acts.innerHTML =
-        '<span class="badge ' + w.status + '">' + w.status + '</span>' +
+        '<span class="badge badge-' + w.status + '">' + w.status + '</span>' +
         '<button class="btn btn-sm" data-edit>Edit</button>' +
         '<button class="btn btn-sm" data-toggle>' + (w.status === 'published' ? 'Unpublish' : 'Publish') + '</button>' +
         '<button class="btn btn-sm btn-danger" data-del>Delete</button>';
