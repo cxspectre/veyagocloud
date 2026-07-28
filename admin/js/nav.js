@@ -69,6 +69,32 @@
     { label: 'Settings', href: '/admin/settings', manager: true }
   ];
 
+  /* There is no notification mechanism anywhere in this admin, so an approval
+     could sit unseen indefinitely. A count on the nav item is the cheapest
+     honest signal: no new dependency, visible from every screen. It is a
+     snapshot at page load, not a live subscription — the email is what makes a
+     request timely, this is what makes it recoverable when email is not
+     configured. Managers only; nobody else can act on it. */
+  async function badgePendingPublishes(sidebar) {
+    var link = sidebar.querySelector('.adm-nav a[href="/admin/publish"]');
+    if (!link || !window.sb) return;
+
+    var res = await window.sb.from('publish_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    /* Before migration 0011 is applied this table does not exist. A missing
+       badge is the right failure — silence, not an error in the chrome. */
+    if (res.error || !res.count) return;
+
+    var badge = document.createElement('span');
+    badge.className = 'adm-nav-count';
+    badge.textContent = String(res.count);
+    /* The link's accessible name has to carry it too, or the count is
+       decoration for anyone not looking at it. */
+    link.setAttribute('aria-label', 'Publish, ' + res.count + ' waiting for approval');
+    link.appendChild(badge);
+  }
+
   function svgIcon(d) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
   }
@@ -186,6 +212,7 @@
         sidebar.querySelectorAll('[data-manager-only]').forEach(function (a) { a.hidden = !manager; });
         var publisher = await window.adminRoles.isPublisher();
         sidebar.querySelectorAll('[data-publisher-only]').forEach(function (a) { a.hidden = !publisher; });
+        if (manager) badgePendingPublishes(sidebar);
 
         /* Signed-in identity chip above the sign-out button. */
         var r = await window.adminRoles.resolve();

@@ -142,6 +142,33 @@ export function inviteEmail(opts: { name: string; inviterName?: string; actionLi
   };
 }
 
+/* Sent to every active manager when someone asks to publish. Deliberately
+   plain: the decision is made on the Publish screen, where the requester, the
+   note and what has changed since the last build are all visible together. An
+   Approve button in an email would be a decision taken without that context. */
+export function publishRequestEmail(opts: { requesterName: string; note?: string | null; publishUrl: string }) {
+  const who = escapeHtml(opts.requesterName || 'Someone');
+  return {
+    subject: `${opts.requesterName || 'Someone'} wants to publish veyago.cloud`,
+    html: layout({
+      title: 'A publish is waiting for you',
+      preheader: `${opts.requesterName || 'Someone'} asked to publish the site.`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 24px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">A publish is waiting for you</h1>
+        <p style="margin:0 0 14px;"><strong>${who}</strong> asked to publish veyago.cloud.</p>
+        ${opts.note ? `<p style="margin:0 0 14px;padding:12px 14px;background:#f5f5f7;border-radius:10px;">“${escapeHtml(opts.note)}”</p>` : ''}
+        <p style="margin:0;">The whole site is rebuilt from everything currently marked published, so the approval covers all of it. Have a look at what has changed before you decide.</p>
+        ${button(opts.publishUrl, 'Review the request')}
+        <p style="margin:0;font-size:14px;color:${MUTED};">Once you approve, they can publish for the next 24 hours.</p>`,
+    }),
+    text:
+      `${opts.requesterName || 'Someone'} asked to publish veyago.cloud.\n\n` +
+      (opts.note ? `"${opts.note}"\n\n` : '') +
+      `Review it: ${opts.publishUrl}\n\n` +
+      `Once approved, they can publish for the next 24 hours.`,
+  };
+}
+
 export function resetEmail(opts: { actionLink: string }) {
   return {
     subject: 'Reset your Veyago password',

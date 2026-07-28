@@ -256,6 +256,19 @@
       }
     }
 
+    /* Only when there is something to act on. A permanent "0 waiting" card
+       would be one more number to skip past on a screen already full of them. */
+    if (manager) {
+      var pend = await window.sb.from('publish_requests')
+        .select('id', { count: 'exact', head: true }).eq('status', 'pending');
+      if (!pend.error && pend.count) {
+        cards.push({ href: '/admin/publish', color: '#ff9500', n: pend.count,
+          label: pend.count === 1 ? 'Publish request' : 'Publish requests',
+          n2: 'waiting for you', n2Color: '#b3261e',
+          icon: '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>' });
+      }
+    }
+
     if (!cards.length) return;
     window.admin.statCards(wrap, cards);
     wrap.hidden = false;

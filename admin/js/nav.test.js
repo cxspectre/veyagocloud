@@ -21,7 +21,7 @@ const SRC = fs.readFileSync(path.join(__dirname, 'nav.js'), 'utf8');
    DOMContentLoaded while readyState is 'loading', which is exactly what a fresh
    JSDOM reports. Running the source before then registers the listener and
    mounts nothing. */
-async function mountAt(pathname, { role = 'owner', cachedRole = role, session = {} } = {}) {
+async function mountAt(pathname, { role = 'owner', cachedRole = role, session = {}, pending = null } = {}) {
   const dom = new JSDOM(
     '<!doctype html><html><body><div class="adm-shell"><main class="adm-main"></main></div></body></html>',
     {
@@ -46,6 +46,20 @@ async function mountAt(pathname, { role = 'owner', cachedRole = role, session = 
   };
   window.adminReady = session === null ? Promise.resolve(null)
                                        : Promise.resolve({ user: { email: 'test@veyago.cloud' } });
+
+  /* Only stubbed when a test cares: nav.js bails out when window.sb is absent,
+     which is also what happens on a page that failed to boot Supabase. */
+  if (pending !== null) {
+    window.sb = {
+      from: () => ({
+        select: () => ({
+          eq: async () => (pending === 'error'
+            ? { count: null, error: { message: 'relation does not exist' } }
+            : { count: pending, error: null })
+        })
+      })
+    };
+  }
 
   if (window.document.readyState === 'loading') {
     await new Promise((resolve) => window.addEventListener('load', resolve, { once: true }));
@@ -237,6 +251,38 @@ test('a stale employee cache is corrected for a real assistant', async () => {
   const { window } = await mountAt('/admin/', { role: 'assistant', cachedRole: 'employee' });
   assert.equal(window.document.querySelector('.adm-nav a[href="/admin/publish"]').hidden, false,
     'the async check must be able to reveal, not just hide');
+});
+
+/* There is no notification mechanism anywhere in this admin, so the count is
+   the only always-visible signal that an approval is waiting. */
+test('a waiting approval shows a count on Publish, for managers', async () => {
+  const { window } = await mountAt('/admin/', { role: 'admin', pending: 3 });
+  const link = window.document.querySelector('.adm-nav a[href="/admin/publish"]');
+  const badge = link.querySelector('.adm-nav-count');
+  assert.ok(badge, 'badge rendered');
+  assert.equal(badge.textContent, '3');
+  assert.match(link.getAttribute('aria-label'), /3 waiting for approval/,
+    'the count must reach the accessible name, not just the pixels');
+});
+
+test('an assistant gets no count — they cannot act on it', async () => {
+  const { window } = await mountAt('/admin/', { role: 'assistant', pending: 3 });
+  const link = window.document.querySelector('.adm-nav a[href="/admin/publish"]');
+  assert.equal(link.hidden, false, 'they can still reach the screen');
+  assert.equal(link.querySelector('.adm-nav-count'), null);
+});
+
+test('nothing waiting means no badge at all, not a zero', async () => {
+  const { window } = await mountAt('/admin/', { role: 'admin', pending: 0 });
+  assert.equal(window.document.querySelector('.adm-nav-count'), null);
+});
+
+/* Before migration 0011 the table does not exist. Silence is the right
+   failure — an error in the chrome would be worse than no badge. */
+test('a failed count fails silent rather than breaking the sidebar', async () => {
+  const { window } = await mountAt('/admin/', { role: 'admin', pending: 'error' });
+  assert.equal(window.document.querySelector('.adm-nav-count'), null);
+  assert.ok(window.document.querySelector('.adm-nav a[href="/admin/publish"]'), 'nav still intact');
 });
 
 test('the signed-in identity chip is filled from the resolved role', async () => {

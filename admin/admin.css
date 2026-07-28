@@ -1127,3 +1127,12 @@
 /* Row that links through to a detail page. */
 .adm-item--link { cursor: pointer; text-decoration: none; color: inherit; }
 .adm-item--link:hover .adm-item-title { color: #1a56db; }
+
+/* Pending-approval count on the Publish nav item. Sits after the label, so the
+   item still reads as a link first and a counter second. */
+.adm-nav-count {
+  margin-left: auto; flex: none;
+  min-width: 18px; padding: 1px 6px; border-radius: 980px;
+  background: #ff9500; color: #fff;
+  font-size: 0.68rem; font-weight: 700; line-height: 1.5; text-align: center;
+}
