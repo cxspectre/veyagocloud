@@ -132,19 +132,31 @@
        summary has always shown Draft as neutral grey via badge-neutral. Same
        page now, one click apart, so it needed to be one color: neutral, same
        as everywhere else "draft" appears in this product. */
+
+    /* Sent/Overdue/Paid used to lead with a plain invoice COUNT and bury the
+       dollar figure in the small muted subtext below — the opposite of what
+       a finance dashboard's stat row should emphasize. Draft is left as a
+       count on purpose: nothing has been billed yet, so there is no amount
+       to lead with. */
+    function plural(n, noun) { return n + ' ' + noun + (n === 1 ? '' : 's'); }
+
     window.admin.statCards(wrap, [
       { n: draft, label: 'Draft', color: 'var(--muted-2)',
         n2: draft ? 'not sent yet' : 'nothing waiting',
         icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>' },
-      { n: sent, label: 'Sent', color: 'var(--blue-2)',
-        n2: sent ? fmt(sentAmt) + ' awaiting payment' : 'nothing outstanding',
+      { n: fmt(sentAmt), label: 'Sent', color: 'var(--blue-2)',
+        n2: sent ? plural(sent, 'invoice') + ' awaiting payment' : 'nothing outstanding',
         icon: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>' },
-      { n: overdue, label: 'Overdue', color: overdue ? 'var(--ac-danger)' : 'var(--muted-2)',
-        n2: overdue ? fmt(overdueAmt) + ' past due' : 'nothing late',
-        n2Color: overdue ? 'var(--fg-danger)' : null,
+      { n: fmt(overdueAmt), label: 'Overdue', color: overdue ? 'var(--ac-danger)' : 'var(--muted-2)',
+        /* nColor carries the same red emphasis n2Color used to put on the
+           subtext count — now that the dollar figure is what's actually in
+           the hero slot, the urgency signal has to move with it or it just
+           disappears. */
+        nColor: overdue ? 'var(--fg-danger)' : null,
+        n2: overdue ? plural(overdue, 'invoice') + ' past due' : 'nothing late',
         icon: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' },
-      { n: paidMonth, label: 'Paid this month', color: 'var(--ac-success)',
-        n2: paidMonth ? fmt(paidAmt) + ' collected' : 'nothing in yet',
+      { n: fmt(paidAmt), label: 'Paid this month', color: 'var(--ac-success)',
+        n2: paidMonth ? plural(paidMonth, 'invoice') + ' collected' : 'nothing in yet',
         icon: '<polyline points="20 6 9 17 4 12"/>' }
     ]);
   }
@@ -222,20 +234,39 @@
     var title = document.createElement('div'); title.className = 'adm-item-title';
     title.textContent = inv.client + ' · #' + inv.number;
     var sub = document.createElement('div'); sub.className = 'adm-item-sub';
-    /* The row carries only what you scan for — money and dates that are still
-       in play. Issue date and the note itself live in the editor. */
-    sub.innerHTML = esc(fmt(Number(inv.amount), inv.currency)) +
-      (inv.due_on
-        ? (status === 'overdue'
-            ? ' · <span class="due-over">due ' + esc(inv.due_on) + '</span>'
-            : ' · due ' + esc(inv.due_on))
-        : '') +
-      (inv.paid_on ? ' · paid ' + esc(inv.paid_on) : '') +
-      (inv.notes ? ' · 📝' : '');
+    /* The row carries only what you scan for — dates that are still in play.
+       The amount used to live here too, in the same muted caption type as
+       these dates; it now has its own slot in acts, matching what every
+       other money figure on this page (the stat cards, Overview's own
+       recent-activity rows) already does. Issue date and the note itself
+       live in the editor.
+
+       Built as an array and joined rather than concatenated with each part
+       prefixed by " · " — the amount used to always occupy the first slot,
+       so a leading separator could never show. With it gone, a paid invoice
+       that was never given a due date (paid_on set, due_on null) would
+       otherwise render " · paid …" with a stray leading separator. */
+    var subParts = [];
+    if (inv.due_on) {
+      subParts.push(status === 'overdue'
+        ? '<span class="due-over">due ' + esc(inv.due_on) + '</span>'
+        : 'due ' + esc(inv.due_on));
+    }
+    if (inv.paid_on) subParts.push('paid ' + esc(inv.paid_on));
+    if (inv.notes) subParts.push('📝');
+    sub.innerHTML = subParts.join(' · ');
     sub.title = inv.notes || '';
     main.appendChild(title); main.appendChild(sub);
 
     var acts = document.createElement('div'); acts.className = 'adm-item-acts';
+    /* var(--ink), not success/danger — an invoice amount has no income/expense
+       "direction" the way a ledger transaction does. The status badge right
+       next to it already carries overdue/paid; coloring the amount too would
+       just double-encode the same signal. */
+    var amt = document.createElement('span'); amt.className = 'fin-amt';
+    amt.style.color = 'var(--ink)';
+    amt.textContent = fmt(Number(inv.amount), inv.currency);
+    acts.appendChild(amt);
     var badge = document.createElement('span');
     badge.className = 'badge ' + (BADGE[status] || 'badge-neutral');
     badge.textContent = status;
@@ -296,7 +327,7 @@
         '<div class="field"><label for="e-amount">Amount (' + esc(inv.currency || currency) + ')</label>' +
           '<input class="input" id="e-amount" data-f="amount" type="number" step="0.01" min="0" value="' + esc(inv.amount) + '" /></div>' +
         '<div class="field"><label for="e-status">Status</label>' +
-          '<select class="input" id="e-status" data-f="status">' + statusOptions(inv.status) + '</select>' +
+          '<select class="input select" id="e-status" data-f="status">' + statusOptions(inv.status) + '</select>' +
           '<p class="hint">Marking it paid stamps today unless it already has a paid date.</p></div>' +
       '</div>' +
       '<div class="row-2">' +

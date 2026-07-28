@@ -152,3 +152,32 @@ test('a single synced account with mixed known/unknown ids still counts as one',
   });
   assert.ok(subLines.every((s) => !s.includes('Mercury')), 'still suppressed on the second identical row');
 });
+
+/* ── The category picker and the disclosure chevron ──────────────────────
+   The picker used to be permanently boxed on all 45 rows, outweighing the
+   row's own amount; the row gave no sign it expands until you were already
+   hovering it. */
+
+test('the category picker is a plain select-ghost by default, not a permanently boxed control', async () => {
+  const { window } = await mount({ accounts: ONE_ACCOUNT, transactions: [tx(1, 'a1')] });
+  const sel = window.document.querySelector('#tx-list select');
+  assert.ok(sel.classList.contains('select-ghost'));
+  assert.ok(sel.classList.contains('select'), 'still gets the app\'s own chevron/appearance styling');
+});
+
+test('every row carries a closed chevron before anything is expanded', async () => {
+  const { window } = await mount({ accounts: ONE_ACCOUNT, transactions: [tx(1, 'a1'), tx(2, 'a1')] });
+  const chevs = [...window.document.querySelectorAll('#tx-list .fin-amt .chev')];
+  assert.equal(chevs.length, 2);
+  assert.ok(chevs.every((c) => !c.classList.contains('open')));
+});
+
+test('opening a row rotates its chevron open, and only its own', async () => {
+  const { window } = await mount({ accounts: ONE_ACCOUNT, transactions: [tx(1, 'a1'), tx(2, 'a1')] });
+  const rows = [...window.document.querySelectorAll('#tx-list .fin-row')];
+  rows[0].dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
+  const chevs = [...window.document.querySelectorAll('#tx-list .fin-amt .chev')];
+  assert.ok(chevs[0].classList.contains('open'), 'the row that was clicked opens');
+  assert.ok(!chevs[1].classList.contains('open'), 'its sibling stays closed');
+});

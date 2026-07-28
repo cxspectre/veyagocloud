@@ -257,7 +257,13 @@
     desc.appendChild(sub);
 
     var catSel = document.createElement('select');
-    catSel.className = 'input input-sm';
+    /* select-ghost: plain until hovered or focused, rather than a permanently
+       bordered control repeated on all 45 rows outweighing the amount next to
+       it. Tied to interaction state, not to whether category_id is already
+       set — a value-driven toggle would mean a miscategorised-then-cleared
+       row silently reverts to ghost styling with no visual cue anything
+       changed. */
+    catSel.className = 'input input-sm select select-ghost';
     catSel.setAttribute('aria-label', 'Category for ' + t.description);
     catSel.style.width = '100%';
     var none = document.createElement('option'); none.value = ''; none.textContent = '—';
@@ -277,7 +283,16 @@
        amount-color decision — admin.css already defines both, this used to
        hardcode a second, driftable copy of the same two hex values. */
     amt.style.color = t.amount >= 0 ? 'var(--fg-success)' : 'var(--fg-danger)';
-    amt.textContent = fmt(Number(t.amount), t.currency);
+    var amtText = document.createElement('span');
+    amtText.textContent = fmt(Number(t.amount), t.currency);
+    /* The only visual sign a row expands used to be a background tint that
+       only appeared once you were already hovering it — reusing the same
+       chevron component checklist.js/member.js/team.js already use elsewhere
+       for exactly this. */
+    var chev = document.createElement('span'); chev.className = 'chev' + (isOpen ? ' open' : '');
+    chev.setAttribute('aria-hidden', 'true');
+    chev.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="6 9 12 15 18 9"/></svg>';
+    amt.appendChild(amtText); amt.appendChild(chev);
 
     row.appendChild(date); row.appendChild(desc); row.appendChild(catSel); row.appendChild(amt);
 
@@ -329,7 +344,7 @@
           '<input class="input" id="d-cp" data-f="counterparty" type="text" value="' + esc(t.counterparty) + '" placeholder="Who it went to or came from" /></div>' +
       '</div>' +
       '<div class="field"><label for="d-cat">Category</label>' +
-        '<select class="input" id="d-cat" data-f="category_id">' + categoryOptions(t.category_id) + '</select></div>' +
+        '<select class="input select" id="d-cat" data-f="category_id">' + categoryOptions(t.category_id) + '</select></div>' +
       '<div class="field"><label for="d-note">Note</label>' +
         '<textarea class="input" id="d-note" data-f="note" rows="2" placeholder="Receipt reference, what it was for, who to ask">' + esc(t.note) + '</textarea>' +
         '<p class="hint">Only visible here — nothing is sent to the bank.</p></div>' +

@@ -237,6 +237,14 @@
 .input.input-sm { width: auto; font-size: var(--t-small); padding: 5px 9px; border-radius: 8px; }
 .textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
 .select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236e6e73' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 10px; padding-right: 32px; }
+/* .select's 32px arrow gutter was sized for the full-height .input — on a
+   select that also carries .input-sm (the ledger's inline category picker,
+   the toolbar filters) that left almost nothing for the option text at the
+   smaller height. .input.input-sm's `padding: 5px 9px` shorthand and this
+   rule's `padding-right` are equal specificity (two classes each), so this
+   wins on source order for the one property they share; top/bottom/left stay
+   .input.input-sm's 5px/9px. */
+.select.input-sm { padding-right: 26px; background-position: right 9px center; background-size: 8px; }
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 @media (max-width: 620px) { .row-2, .row-3 { grid-template-columns: 1fr; } }
@@ -266,7 +274,11 @@
 .adm-item-acts { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
 
 /* ---- Badges ---- */
-.badge { font-size: var(--t-eyebrow); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 980px; white-space: nowrap; }
+/* var(--t-small), not --t-eyebrow — a status badge is content someone reads
+   (overdue, urgent, failed), not a section caption; --t-eyebrow is this
+   system's token for the latter (.adm-subhead, .fin-head, .dash-stat-label)
+   and was never the intended size for a value the badge exists to show. */
+.badge { font-size: var(--t-small); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 980px; white-space: nowrap; }
 .badge-draft { background: var(--bg-warn); color: var(--fg-warn); }
 .badge-published { background: var(--bg-success); color: var(--fg-success); }
 .badge-live { background: var(--bg-success); color: var(--fg-success); }
@@ -1053,15 +1065,54 @@
   grid-template-columns: 84px minmax(140px, 1fr) minmax(90px, 170px) minmax(90px, 120px);
   gap: 10px; align-items: center;
 }
+/* Capped rather than left to run edge-to-edge: with only one flexible track
+   (description) and short real-world descriptions ("SUPABASE", "APPLE.COM/
+   BILL"), an uncapped row on a wide screen left a dead gap between the text
+   and the category/amount columns. Capping the shared parent keeps the header
+   row and every list row bounded to the same width, same pattern already used
+   at .ape-canvas (max-width + margin:auto) elsewhere in this file. Below 760px
+   this is a no-op — nothing shrinks past what the container already gives. */
+.fin-head, .fin-list { max-width: 760px; }
 .fin-head { font-size: var(--t-eyebrow); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted-2); padding: 0 14px 8px; border-bottom: 1px solid var(--hair-soft); margin-bottom: 6px; }
-.fin-row { background: #fff; padding: 9px 14px; border-radius: 10px; }
+/* Padding and radius match .adm-item's (13px 14px / 14px) — the ledger row
+   used to be visibly shorter and squarer-cornered than every other list row
+   in the admin for no reason tied to what it actually needs (a native
+   per-row <select>, which is why it stays its own grid rather than becoming
+   an .adm-item outright). */
+.fin-row { background: #fff; padding: 13px 14px; border-radius: 14px; }
 .fin-row:hover { background: var(--bg-soft); }
-.fin-list { display: grid; gap: 4px; }
+.fin-list { display: grid; gap: var(--s-1); }
 .fin-date { font-size: var(--t-small); color: var(--muted); white-space: nowrap; }
 .fin-desc { min-width: 0; }
-.fin-desc b { display: block; font-size: var(--t-sub); font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* var(--t-body), matching .adm-item-title — the ledger's description is this
+   row's title in every sense .adm-item-title is elsewhere; it had been one
+   step smaller for no reason tied to its content. */
+.fin-desc b { display: block; font-size: var(--t-body); font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fin-desc span { font-size: var(--t-eyebrow); color: var(--muted-2); }
-.fin-amt { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* inline-flex, not block: the ledger row nests a .chev disclosure indicator
+   inside .fin-amt (see transactions.js) so the two stay aligned as a pair
+   flush to the row's right edge. A single text node — the only content .fin-
+   amt carries everywhere else (Recent activity, the invoice-summary total) —
+   lays out identically either way. */
+.fin-amt { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+/* Ledger's inline category picker: plain until hovered or focused, so it
+   stops permanently outweighing the row's own amount on every one of 45
+   rows. :not(:focus) keeps a simultaneous hover+focus from fighting the real
+   .select:focus rule below for which border-color wins. */
+.select-ghost { border-color: transparent; background-color: transparent; }
+.select-ghost:hover:not(:focus) { border-color: var(--hair); background-color: #fff; }
+
+/* Overview's net-per-month chart. The bar geometry lives in an <svg>, but the
+   legend and axis labels are real HTML siblings of it, not <text> inside the
+   scaled viewBox — SVG text resizes with the viewBox on every viewport width,
+   real text sized from this system's own tokens does not. */
+.fin-chart svg { display: block; width: 100%; height: 200px; }
+.fin-chart-legend { display: flex; gap: 16px; font-size: var(--t-small); color: var(--muted); margin-bottom: 8px; }
+.fin-chart-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+/* Six equal columns, matching the six equal month-groups the SVG's own
+   viewBox divides its width into — same proportional centers, so a label
+   lands under its bar without either element knowing the other's markup. */
+.fin-chart-labels { display: grid; grid-template-columns: repeat(6, 1fr); margin-top: 4px; font-size: var(--t-eyebrow); color: var(--muted-2); text-align: center; }
 /* Real phones only. The minmax() floors above already stop a narrow container
    from crushing the columns, so this is about genuinely tiny screens, where the
    date and the category picker are the two things worth dropping. */

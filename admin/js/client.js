@@ -136,15 +136,20 @@
 
     /* The one KPI-card component for every admin page, so the row never looks
        like a different widget depending on which page you're on.
-       cards: [{ n, label, color, icon, n2, n2Color, href }] — icon is the inner
-       markup of a 24x24 stroke SVG; href makes the card a link. */
+       cards: [{ n, label, color, icon, n2, n2Color, nColor, href }] — icon is
+       the inner markup of a 24x24 stroke SVG; href makes the card a link. */
     statCards(wrap, cards) {
       if (!wrap) return;
       wrap.innerHTML = cards.map(function (c) {
         var tag = c.href ? 'a' : 'div';
-        /* Formatted values (currency: "$8,423", "-$1,200") get the smaller
-           size; plain counts are passed as numbers and stay full size. */
-        var small = typeof c.n === 'string' && /[^0-9]/.test(c.n);
+        /* Shrink only when the figure is actually long enough to risk crowding
+           a stat card — NOT "contains a currency symbol or comma", which used
+           to fire on every formatted dollar amount regardless of length and
+           meant Finance's headline numbers never reached the card's real
+           2rem hero size. Punctuation is stripped before counting so
+           "$1,234,567.89" is judged on its 9 significant digits, not its
+           13 characters. */
+        var small = typeof c.n === 'string' && String(c.n).replace(/[,.$]/g, '').length > 7;
         return '<' + tag + ' class="dash-stat"' +
             (c.href ? ' href="' + c.href + '"' : '') +
             ' style="--stat-color:' + (c.color || '#0071e3') + (c.href ? '' : ';cursor:default') + '">' +
@@ -153,7 +158,7 @@
               (c.color || '#0071e3') +
               '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + c.icon + '</svg></div>'
             : '') +
-          '<div class="dash-stat-n"' + (small ? ' style="font-size:1.45rem"' : '') + '>' + c.n + '</div>' +
+          '<div class="dash-stat-n"' + ((small || c.nColor) ? ' style="' + (small ? 'font-size:1.45rem;' : '') + (c.nColor ? 'color:' + c.nColor : '') + '"' : '') + '>' + c.n + '</div>' +
           (c.n2 ? '<div class="dash-stat-n2"' + (c.n2Color ? ' style="color:' + c.n2Color + '"' : '') + '>' + c.n2 + '</div>' : '') +
           '<div class="dash-stat-label">' + c.label + '</div>' +
         '</' + tag + '>';

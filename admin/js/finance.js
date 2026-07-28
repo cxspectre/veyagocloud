@@ -110,6 +110,12 @@
       if (a >= 0) income += a; else expense += Math.abs(a);
     });
     var cur = mainCurrency();
+    var netAmt = income - expense;
+    /* The one card here whose sign changes what it MEANS, not just its value
+       — a fixed blue told the same story whether the month was profitable or
+       not. Green over zero, red under it, the existing blue for an exact
+       break-even (no signal either way is itself a kind of signal). */
+    var netColor = netAmt > 0 ? 'var(--ac-success)' : netAmt < 0 ? 'var(--ac-danger)' : 'var(--blue-2)';
 
     /* Each color below is a CSS custom property, not a literal — admin.css
        already defines --ac-success/--ac-danger/--ac-warn/--blue-2 as the exact
@@ -122,7 +128,7 @@
         icon: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' },
       { color: 'var(--ac-danger)', label: 'Expenses this month', n: fmt(expense, cur),
         icon: '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>' },
-      { color: 'var(--blue-2)', label: 'Net this month',      n: fmt(income - expense, cur),
+      { color: netColor, label: 'Net this month',      n: fmt(netAmt, cur),
         icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' },
       { color: 'var(--ac-warn)', label: 'Outstanding invoices', n: fmt(outstanding, cur),
         href: '#invoices',
@@ -130,49 +136,63 @@
     ]);
   }
 
-  /* Grouped monthly bars, inline SVG — income vs expense per month. */
+  /* Net per month, not grouped income/expense bars. "Am I profitable this
+     month" is a trend-of-one-number question — a paired bar chart makes the
+     reader do the subtraction themselves, twelve times, before they can
+     answer it. A losing month now reads as a bar below the line, not as
+     "the red bar happens to be taller than the green one this time."
+
+     Two things NOT done in inline SVG on purpose, both because an SVG's
+     internal coordinate system scales with the viewBox on resize while real
+     text does not: the axis-month labels and the legend are ordinary HTML
+     siblings of the <svg>, not <text> elements inside it, sized by this
+     system's own type tokens so they hold their actual pixel size at every
+     viewport width instead of stretching with the chart. */
   function renderChart() {
     var wrap = document.getElementById('fin-chart');
     if (!wrap) return;
 
     var months = [];
     for (var i = 5; i >= 0; i--) months.push(ym(monthStart(i)));
-    var totals = {};
-    months.forEach(function (m) { totals[m] = { income: 0, expense: 0 }; });
+    var net = {};
+    months.forEach(function (m) { net[m] = 0; });
     chartRows.forEach(function (t) {
       var m = t.posted_at.slice(0, 7);
-      if (!totals[m]) return;
-      if (t.amount >= 0) totals[m].income += Number(t.amount);
-      else totals[m].expense += Math.abs(Number(t.amount));
+      if (m in net) net[m] += Number(t.amount);
     });
 
-    var max = 1;
-    months.forEach(function (m) { max = Math.max(max, totals[m].income, totals[m].expense); });
+    var maxAbs = 1;
+    months.forEach(function (m) { maxAbs = Math.max(maxAbs, Math.abs(net[m])); });
 
-    var W = 640, H = 240, PAD = 28, plotH = H - PAD - 20;
-    var groupW = (W - PAD * 2) / months.length;
-    var barW = Math.min(30, groupW / 3);
+    var W = 640, H = 200, PAD_V = 14, mid = H / 2, plotHalf = mid - PAD_V;
+    var groupW = W / months.length;
+    var barW = Math.min(36, groupW * 0.5);
+    var cur = mainCurrency();
 
     var bars = '';
     months.forEach(function (m, i) {
-      var x0 = PAD + i * groupW + groupW / 2;
-      var hIn = Math.max(2, Math.round((totals[m].income  / max) * plotH));
-      var hEx = Math.max(2, Math.round((totals[m].expense / max) * plotH));
-      /* fill/stroke as an inline style, not a bare presentation attribute —
-         style="" is unambiguously CSS, so var() always resolves there. */
-      bars +=
-        '<rect x="' + (x0 - barW - 2) + '" y="' + (20 + plotH - hIn) + '" width="' + barW + '" height="' + hIn + '" rx="3" style="fill:var(--ac-success)"><title>' + m + ' income: ' + totals[m].income.toFixed(2) + '</title></rect>' +
-        '<rect x="' + (x0 + 2) + '" y="' + (20 + plotH - hEx) + '" width="' + barW + '" height="' + hEx + '" rx="3" style="fill:var(--ac-danger)" opacity="0.85"><title>' + m + ' expenses: ' + totals[m].expense.toFixed(2) + '</title></rect>' +
-        '<text x="' + x0 + '" y="' + (H - 4) + '" text-anchor="middle" font-size="11" style="fill:var(--muted-2)">' + m.slice(5) + '/' + m.slice(2, 4) + '</text>';
+      var x0 = i * groupW + groupW / 2;
+      var h = Math.max(2, Math.round((Math.abs(net[m]) / maxAbs) * plotHalf));
+      var up = net[m] >= 0;
+      /* style="", not a bare fill attribute — style="" is unambiguously CSS,
+         so var() always resolves there. */
+      bars += '<rect x="' + (x0 - barW / 2) + '" y="' + (up ? mid - h : mid) + '" width="' + barW + '" height="' + h +
+        '" rx="3" style="fill:var(' + (up ? '--ac-success' : '--ac-danger') + ')">' +
+        '<title>' + m + ' net: ' + fmt(net[m], cur) + '</title></rect>';
     });
 
     wrap.innerHTML =
-      '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Monthly income and expenses">' +
-        '<line x1="' + PAD + '" y1="' + (20 + plotH) + '" x2="' + (W - PAD) + '" y2="' + (20 + plotH) + '" style="stroke:var(--hair-soft)" stroke-width="1"/>' +
+      '<div class="fin-chart-legend">' +
+        '<span><i style="background:var(--ac-success)"></i>Profit</span>' +
+        '<span><i style="background:var(--ac-danger)"></i>Loss</span>' +
+      '</div>' +
+      '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Net profit or loss by month, last 6 months">' +
+        '<line x1="0" y1="' + mid + '" x2="' + W + '" y2="' + mid + '" style="stroke:var(--hair-soft)" stroke-width="1"/>' +
         bars +
-        '<g font-size="11"><rect x="' + PAD + '" y="2" width="10" height="10" rx="2" style="fill:var(--ac-success)"/><text x="' + (PAD + 14) + '" y="11" style="fill:var(--muted-2)">Income</text>' +
-        '<rect x="' + (PAD + 78) + '" y="2" width="10" height="10" rx="2" style="fill:var(--ac-danger)" opacity="0.85"/><text x="' + (PAD + 92) + '" y="11" style="fill:var(--muted-2)">Expenses</text></g>' +
-      '</svg>';
+      '</svg>' +
+      '<div class="fin-chart-labels">' +
+        months.map(function (m) { return '<span>' + m.slice(5) + '/' + m.slice(2, 4) + '</span>'; }).join('') +
+      '</div>';
   }
 
   /* ── Accounts panel ────────────────────────────────────────────────── */
@@ -223,11 +243,11 @@
     var rows = res.data || [];
     if (!rows.length) {
       listEl.innerHTML =
-        '<div class="dash-empty-state">' +
+        '<li class="dash-empty-state">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' +
           '<p>No transactions yet — sync an account or add one on the ledger.</p>' +
           '<a class="btn btn-sm btn-primary" href="#transactions">Open the ledger</a>' +
-        '</div>';
+        '</li>';
       return;
     }
 
@@ -255,9 +275,25 @@
     return n;
   }
 
+  /* "Jul 15", not the toLocaleDateString(...,{year:'numeric'}) every other
+     date in this admin uses — those are standalone dates with room to spare;
+     this one shares a single sub-line with the account and counterparty, and
+     everything here is within the current 6-month window anyway, so the year
+     is not information, just width. */
+  function shortDate(iso) {
+    var d = new Date(iso + 'T00:00:00');
+    return isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  /* Built on .adm-item, the same row component every other list in this admin
+     uses — it used to be a bespoke 4-column .fin-row (a component that exists
+     for the ledger's per-row category <select>, which this list doesn't
+     have), the only list on this tab not sharing the rest of the product's
+     look. */
   function recentRow(t, showAccount) {
+    var li = document.createElement('li');
     var row = document.createElement('a');
-    row.className = 'fin-row adm-item--link';
+    row.className = 'adm-item adm-item--link';
     /* Must be a real query string, not "#transactions?tx=…" — everything after
        a "#" is the fragment, and transactions.js reads its deep link from
        location.search (which a fragment is invisible to). The query differs
@@ -266,31 +302,42 @@
        /admin/transactions page, just landing on the shared document now. */
     row.href = '/admin/finance?tx=' + encodeURIComponent(t.id) + '#transactions';
 
-    var date = document.createElement('span'); date.className = 'fin-date';
-    date.textContent = t.posted_at.slice(5) + (t.status === 'pending' ? ' ⏳' : '');
-    date.title = t.posted_at + (t.status === 'pending' ? ' (pending)' : '');
+    var isIncome = Number(t.amount) >= 0;
+    var icon = document.createElement('div'); icon.className = 'adm-item-icon';
+    /* Same up/down arrow paths the Income/Expenses stat cards already use —
+       a direction glyph, not a person's initials, since a transaction has no
+       "who" the way a team member row does. */
+    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="' + (isIncome ? 'var(--ac-success)' : 'var(--ac-danger)') +
+      '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (isIncome
+        ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>'
+        : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>') +
+      '</svg>';
 
-    var desc = document.createElement('div'); desc.className = 'fin-desc';
-    var b = document.createElement('b'); b.textContent = t.description; b.title = t.description;
-    desc.appendChild(b);
+    var main = document.createElement('div'); main.className = 'adm-item-main';
+    var title = document.createElement('div'); title.className = 'adm-item-title';
+    title.textContent = t.description;
     var acctName = showAccount ? ((accounts.find(function (a) { return a.id === t.account_id; }) || {}).name || '') : '';
-    /* A div carrying .adm-item-sub, not a bare span: the class brings the
-       one-line ellipsis, and only a block box can actually clip to it. */
-    var sub = document.createElement('div');
-    sub.className = 'adm-item-sub';
-    sub.textContent = [acctName, t.counterparty].filter(Boolean).join(' · ');
-    sub.title = sub.textContent;
-    desc.appendChild(sub);
+    var sub = document.createElement('div'); sub.className = 'adm-item-sub';
+    sub.textContent = [
+      shortDate(t.posted_at) + (t.status === 'pending' ? ' ⏳' : ''),
+      acctName,
+      t.counterparty
+    ].filter(Boolean).join(' · ');
+    sub.title = t.posted_at + (t.status === 'pending' ? ' (pending)' : '');
+    main.appendChild(title); main.appendChild(sub);
 
-    var cat = document.createElement('span'); cat.className = 'fin-date';
+    var acts = document.createElement('div'); acts.className = 'adm-item-acts';
+    var cat = document.createElement('span'); cat.className = 'badge badge-neutral';
     cat.textContent = catById[t.category_id] || 'Uncategorised';
-
     var amt = document.createElement('span'); amt.className = 'fin-amt';
-    amt.style.color = t.amount >= 0 ? 'var(--fg-success)' : 'var(--fg-danger)';
+    amt.style.color = isIncome ? 'var(--fg-success)' : 'var(--fg-danger)';
     amt.textContent = fmt(Number(t.amount), t.currency);
+    acts.appendChild(cat); acts.appendChild(amt);
 
-    row.appendChild(date); row.appendChild(desc); row.appendChild(cat); row.appendChild(amt);
-    return row;
+    row.appendChild(icon); row.appendChild(main); row.appendChild(acts);
+    li.appendChild(row);
+    return li;
   }
 
   /* ── Invoice summary ───────────────────────────────────────────────── */

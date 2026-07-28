@@ -90,3 +90,57 @@ test('a backslash anywhere is rejected rather than normalised', () => {
   assert.equal(admin.safeAdminPath('/admin/team\\..\\..\\evil'), null);
   assert.equal(admin.safeAdminPath('/admin\\team'), null);
 });
+
+/* ── statCards ────────────────────────────────────────────────────────────
+   Used by 7 admin pages (dashboard, team, tasks, checklist, and Finance's own
+   3 tabs) — shared, high blast radius if the size/color logic drifts. */
+
+const { JSDOM: JSDOM2 } = require('jsdom');
+function wrapEl() {
+  return new JSDOM2('<!doctype html><div id="w"></div>').window.document.getElementById('w');
+}
+
+test('a plain count stays at full size regardless of digit count', () => {
+  const wrap = wrapEl();
+  admin.statCards(wrap, [{ n: 123456789, label: 'Count' }]);
+  const n = wrap.querySelector('.dash-stat-n');
+  assert.equal(n.getAttribute('style'), null, 'a number is never shrunk, no matter how long');
+});
+
+test('a short currency figure keeps the full 2rem hero size', () => {
+  const wrap = wrapEl();
+  admin.statCards(wrap, [{ n: '$524.16', label: 'Income this month' }]);
+  const n = wrap.querySelector('.dash-stat-n');
+  assert.equal(n.getAttribute('style'), null,
+    'a short dollar amount must not be shrunk just for containing a $ and a .');
+});
+
+test('a genuinely long currency figure still shrinks to fit', () => {
+  const wrap = wrapEl();
+  admin.statCards(wrap, [{ n: '$12,345,678.90', label: 'Lifetime revenue' }]);
+  const n = wrap.querySelector('.dash-stat-n');
+  assert.match(n.getAttribute('style') || '', /font-size:\s*1\.45rem/);
+});
+
+test('nColor tints the hero number without forcing the shrink path', () => {
+  const wrap = wrapEl();
+  admin.statCards(wrap, [{ n: '-$524.16', label: 'Net this month', nColor: 'var(--ac-danger)' }]);
+  const n = wrap.querySelector('.dash-stat-n');
+  assert.match(n.getAttribute('style'), /color:var\(--ac-danger\)/);
+  assert.ok(!/font-size/.test(n.getAttribute('style')), 'a short figure with a color must not also shrink');
+});
+
+test('nColor and the shrink path combine when both apply', () => {
+  const wrap = wrapEl();
+  admin.statCards(wrap, [{ n: '-$12,345,678.90', label: 'Net', nColor: 'var(--ac-danger)' }]);
+  const style = wrap.querySelector('.dash-stat-n').getAttribute('style');
+  assert.match(style, /font-size:\s*1\.45rem/);
+  assert.match(style, /color:var\(--ac-danger\)/);
+});
+
+test('n2Color is unaffected by the nColor addition', () => {
+  const wrap = wrapEl();
+  admin.statCards(wrap, [{ n: 3, label: 'Overdue', n2: '$400 past due', n2Color: 'var(--fg-danger)' }]);
+  const n2 = wrap.querySelector('.dash-stat-n2');
+  assert.match(n2.getAttribute('style'), /color:var\(--fg-danger\)/);
+});
