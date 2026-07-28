@@ -29,6 +29,10 @@ const EVENT_TYPE = 'publish-site';
    to ship content, a general 'employee' is not automatically given the keys to
    the public site. Widen here if that changes. */
 const PUBLISHERS = ['owner', 'admin', 'assistant'];
+/* How long an admin's approval stays spendable. Long enough to cover a normal
+   working day, short enough that a grant cannot be sat on. */
+const APPROVAL_TTL_MS = 24 * 60 * 60 * 1000;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TRIGGERS = ['manual', 'cron', 'api'];
 
 const CORS = {
@@ -71,15 +75,64 @@ Deno.serve(async (req) => {
     const user = userData.user;
 
     let trigger = 'manual';
+    let approvalId: string | null = null;
     try {
       const body = await req.json();
       if (body?.trigger) trigger = String(body.trigger);
+      if (body?.approval_id) approvalId = String(body.approval_id);
     } catch (_) { /* empty body is fine */ }
     if (!TRIGGERS.includes(trigger)) return json({ error: 'Invalid trigger' }, 400);
 
     /* Service role: browser clients have no write policy on build_runs at all
        (see migration 0008), so this insert is the only way a row is created. */
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    /* ── Approval gate ────────────────────────────────────────────────────
+       An assistant may publish, but only against an approval an admin granted
+       (migration 0011). Owners and admins are unaffected — requiring them to
+       approve themselves would be ceremony, not control.
+
+       This sits above the build_runs insert deliberately: everything before it
+       is reads, so a refusal here leaves no orphan 'queued' row that would sit
+       in the history forever looking like a build that never finished. */
+    const needsApproval = String(role) === 'assistant';
+    if (needsApproval) {
+      if (!approvalId || !UUID_RE.test(approvalId)) {
+        return json({
+          error: 'Publishing needs an admin’s approval. Request one from the Publish screen.',
+          needsApproval: true,
+        }, 403);
+      }
+
+      const { data: appr, error: apprErr } = await admin
+        .from('publish_requests')
+        .select('id,status,requested_by,decided_at,build_run_id')
+        .eq('id', approvalId)
+        .maybeSingle();
+
+      if (apprErr) return json({ error: 'Could not check the approval: ' + apprErr.message }, 500);
+      if (!appr || appr.requested_by !== user.id) {
+        return json({ error: 'That approval does not belong to you.', needsApproval: true }, 403);
+      }
+      if (appr.status !== 'approved' || appr.build_run_id) {
+        return json({
+          error: appr.status === 'published' ? 'That approval has already been used.'
+               : appr.status === 'pending'   ? 'That request has not been approved yet.'
+               : 'That approval is no longer valid (' + appr.status + ').',
+          needsApproval: true,
+        }, 403);
+      }
+      /* A grant the assistant holds is a stored capability, so it is bounded:
+         approving on Monday must not let a publish fire on Friday against a
+         site nobody reviewed. */
+      const decidedAt = appr.decided_at ? Date.parse(appr.decided_at) : NaN;
+      if (isNaN(decidedAt) || Date.now() - decidedAt > APPROVAL_TTL_MS) {
+        return json({
+          error: 'That approval has expired. Ask for a fresh one.',
+          needsApproval: true,
+        }, 403);
+      }
+    }
 
     const { data: run, error: runErr } = await admin
       .from('build_runs')
@@ -92,6 +145,29 @@ Deno.serve(async (req) => {
       .select()
       .single();
     if (runErr) return json({ error: 'Could not record the build: ' + runErr.message }, 500);
+
+    /* Spend the approval. The .eq/.is filters make this atomic in Postgres:
+       two concurrent publishes racing the same grant, only one row matches and
+       the loser gets zero. Doing it AFTER the insert means the losing caller
+       has already created a run, so that run is marked failed rather than left
+       queued forever — the alternative (spend first) would burn the approval
+       if the insert then failed. */
+    if (needsApproval && approvalId) {
+      const { data: spent, error: spendErr } = await admin
+        .from('publish_requests')
+        .update({ status: 'published', build_run_id: run.id })
+        .eq('id', approvalId)
+        .eq('status', 'approved')
+        .is('build_run_id', null)
+        .select('id');
+
+      if (spendErr || !spent || spent.length === 0) {
+        await admin.from('build_runs')
+          .update({ status: 'failed', error: 'Approval was already used by another publish.', finished_at: new Date().toISOString() })
+          .eq('id', run.id);
+        return json({ error: 'That approval was just used by another publish.', needsApproval: true }, 409);
+      }
+    }
 
     /* A THROWN fetch (DNS failure, TLS reset, egress timeout) would otherwise
        skip the failure handling below and leave the row queued forever — no
