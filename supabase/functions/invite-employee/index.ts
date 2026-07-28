@@ -9,6 +9,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { inviteEmail, sendEmail } from '../_shared/email.ts';
+import { mintSignInLink } from '../_shared/invite-link.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -78,8 +79,8 @@ Deno.serve(async (req) => {
 
     /* ── Preflight ──────────────────────────────────────────────────────
        Everything above this line is reads and env lookups. Everything below
-       writes: createUser, generateLink (which mints a token), the employees
-       upsert, the send, the log. So a dry run must return HERE — the whole
+       writes: generateLink (which creates the account and mints a token), the
+       employees upsert, the send, the log. So a dry run must return HERE — the whole
        point is to tell the caller that delivery is impossible BEFORE an
        account exists that nobody can sign into.
 
@@ -118,38 +119,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    /* createUser + generateLink instead of inviteUserByEmail: inviteUserByEmail
-       sends Supabase's own unbranded mail, and an invite is the first thing a
-       new hire ever sees from the company. Creating the user separately lets us
-       mint the link and deliver it ourselves through Resend. */
-    let authUserId: string | null = null;
-
-    const created = await admin.auth.admin.createUser({
+    /* ONE call creates the account and mints the link. It used to be two —
+       createUser then generateLink — and _shared/invite-link.ts sets out, with
+       the server's own source, why that combination could never succeed. The
+       ordering matters as much as the fix: nothing is written anywhere until
+       there is a link in hand, so a failure here leaves no account stranded
+       without an employees row to explain it. */
+    const minted = await mintSignInLink(admin, {
       email,
-      email_confirm: true,                       // the invite link is the confirmation
-      user_metadata: { full_name: fullName },
+      fullName,
+      redirectTo: `${siteUrl}/admin/`,
     });
-    if (created.data?.user) {
-      authUserId = created.data.user.id;
-    } else if (created.error && !/already|registered|exists/i.test(created.error.message)) {
-      return json({ error: 'Could not create the account: ' + created.error.message }, 400);
-    }
+    if (!minted.ok) return json({ error: minted.error }, 400);
 
+    /* generateLink returns the account it just touched, so the common path
+       needs no lookup at all. The fallback covers an account that predates this
+       function; listUsers pages, and one page is the practical ceiling for a
+       team directory. */
+    let authUserId = minted.userId;
     if (!authUserId) {
       const existing = await admin.auth.admin.listUsers({ perPage: 1000 });
       authUserId = existing.data?.users?.find((u) => u.email?.toLowerCase() === email)?.id ?? null;
-    }
-
-    /* An invite link for a brand-new user, a recovery link for someone who
-       already had an account — both land on the "choose a password" step. */
-    const linkType = created.data?.user ? 'invite' : 'recovery';
-    const link = await admin.auth.admin.generateLink({
-      type: linkType as 'invite' | 'recovery',
-      email,
-      options: { redirectTo: `${siteUrl}/admin/` },
-    });
-    if (link.error || !link.data?.properties?.action_link) {
-      return json({ error: 'Could not generate the invite link: ' + (link.error?.message ?? 'unknown') }, 400);
     }
 
     const { data: employee, error: empErr } = await admin
@@ -170,16 +160,16 @@ Deno.serve(async (req) => {
       .single();
     if (empErr) return json({ error: 'Employee record failed: ' + empErr.message }, 400);
 
-    /* Supabase invite links last 24h; recovery links last 1h. linkType already
-       records which one was minted, so the email, the response and the client's
-       countdown can all agree instead of all assuming 24. */
-    const expiryHours = linkType === 'invite' ? 24 : 1;
+    /* Invite links last 24h, recovery links 1h. The minter reports which one it
+       actually produced, so the email, the response and the invitee's countdown
+       all agree instead of all assuming 24. */
+    const expiryHours = minted.expiryHours;
 
     const tpl = inviteEmail({
       name: fullName,
       inviterName: inviterName,
       role: role,
-      actionLink: link.data.properties.action_link,
+      actionLink: minted.actionLink,
       expiryHours,
     });
     const sent = await sendEmail({ to: email, ...tpl });
@@ -196,8 +186,8 @@ Deno.serve(async (req) => {
     /* The record exists either way. The email is what may have failed, and the
        caller needs to know — without it they cannot get in at all.
 
-       On failure we also hand back the sign-in link. It was already minted at
-       generateLink above and was previously thrown away, which left the admin
+       On failure we also hand back the sign-in link. It was already minted
+       above and was previously thrown away, which left the admin
        with an account nobody could reach and no way to fix it by hand. It is
        returned ONLY when the send failed: this is a single-use credential, so
        it should not be sitting in a response body that nothing needs it in.
@@ -205,12 +195,12 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       employee,
-      invited: linkType === 'invite',
+      invited: !minted.existingAccount,
       emailSent: sent.ok,
       emailError: sent.ok ? null : (sent.skipped
         ? 'Email is not configured yet (RESEND_API_KEY is not set), so no invite was delivered.'
         : sent.error),
-      actionLink: sent.ok ? null : link.data.properties.action_link,
+      actionLink: sent.ok ? null : minted.actionLink,
       expiryHours,
       sentAt: new Date().toISOString(),
     });

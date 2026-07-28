@@ -8,7 +8,7 @@
     "start": "python3 tools/serve.py 8765",
     "build": "node tools/build.js",
     "build:essays": "node tools/build-essays.js",
-    "test": "node --test \"tools/lib/*.test.js\" \"tools/*.test.js\" \"admin/js/*.test.js\""
+    "test": "node --test \"tools/lib/*.test.js\" \"tools/*.test.js\" \"admin/js/*.test.js\" \"supabase/functions/_shared/*.test.js\""
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.45.0",

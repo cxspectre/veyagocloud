@@ -457,14 +457,16 @@
       window.location.href = '/admin/member?id=' + encodeURIComponent(out.employee.id) + '#welcome';
       return;
     } catch (err) {
-      /* The server creates the auth user and the employees row before it
-         attempts the send, so a throw does NOT mean nothing happened. Saying
-         "could not add them" full stop would send the manager off to create a
-         duplicate. Re-submitting is safe — the function falls back to
-         listUsers + a recovery link for an address that already exists. */
+      /* This used to advise checking the Team directory, which was the one
+         place the person could not be: the old server created the auth account
+         BEFORE it minted the link, so the failure it most often produced left
+         an account with no employees row at all. The server no longer writes
+         anything until it holds a link, and an account that was invited but
+         never accepted can always be re-invited, so re-submitting genuinely
+         does pick up where this stopped. */
       setErr('review-err', 'Could not finish adding ' + draft.name + ': ' + err.message +
-        ' An account for ' + draft.email + ' may already have been created — check the Team ' +
-        'directory before trying again. Sending the same address again is safe.');
+        ' Nothing was emailed. Sending the same address again is safe — it carries on ' +
+        'from wherever this stopped.');
       sending = false;
       btn.disabled = false;
       btn.textContent = was;
