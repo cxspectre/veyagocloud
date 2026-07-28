@@ -56,7 +56,7 @@ function harness(opts = {}) {
     kind: 'article',
     root: window.document.querySelector('.ae-root'),
     status: window.document.getElementById('save-hint'),
-    publishHref: '/admin/settings',
+    publishHref: '/admin/publish',
     snapshot: () => state.payload,
     restore: (p) => { state.restored = p; },
     recordId: () => state.recordId,
@@ -120,7 +120,7 @@ test('markClean drops the mirror and renders saved-but-not-live with a publish l
   const hint = window.document.getElementById('save-hint');
   assert.match(hint.textContent, /not live yet/);
   const link = hint.querySelector('a');
-  assert.equal(link.getAttribute('href'), '/admin/settings');
+  assert.equal(link.getAttribute('href'), '/admin/publish');
 });
 
 test('the pre-id mirror is removed once the row gets an id, so it cannot resurface', async () => {

@@ -84,10 +84,10 @@
     loadSiteStatus();
   }
 
-  /* Reads the same build_runs history the Settings publish panel renders, and
+  /* Reads the same build_runs history the Publish screen renders, and
      says only what that history supports. Deliberately does NOT recompute the
-     "N changes waiting" count — publish.js:56 owns that query, and a second
-     copy here would be one more thing to keep in step. */
+     "N changes waiting" count — publish.js pendingCount() owns that query, and
+     a second copy here would be one more thing to keep in step. */
   async function loadSiteStatus() {
     var dot   = document.getElementById('site-status-dot');
     var label = document.getElementById('site-status-label');

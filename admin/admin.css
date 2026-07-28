@@ -1327,3 +1327,15 @@
   /* Nothing scrolls on paper — an overflow container would clip the content. */
   .adm-shell--editor, .ae-root, .ae-body, .ae-canvas-wrap { height: auto; overflow: visible; }
 }
+
+/* "Recently deleted" disclosure (deleted-pane.js). Quiet by default — it is
+   the exception, not a section of the page. */
+.deleted-pane { border-style: dashed; }
+.deleted-summary {
+  cursor: pointer; font-size: var(--t-sub); font-weight: 600;
+  color: var(--muted); list-style: none;
+}
+.deleted-summary::-webkit-details-marker { display: none; }
+.deleted-summary::before { content: "▸ "; }
+.deleted-pane[open] .deleted-summary::before { content: "▾ "; }
+.deleted-pane[open] .deleted-summary { margin-bottom: var(--s-2); }

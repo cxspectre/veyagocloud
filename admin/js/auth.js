@@ -158,7 +158,7 @@
 
   /* ── Session lapse ────────────────────────────────────────────────────
      Shown when the session ends without the user asking. Deliberately not a
-     redirect and not a modal: 17 of the 18 admin pages have no login card, and
+     redirect and not a modal: almost every admin page has no login card, and
      two of them are editors whose unsaved work only exists in the DOM. The user
      signs in through a second tab — Supabase shares the session through storage,
      so this page recovers in place and the draft is never touched. */

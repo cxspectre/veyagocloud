@@ -545,7 +545,7 @@
     kind:        'app',
     root:        document.querySelector('.ae-root'),
     status:      saveHint,
-    publishHref: '/admin/settings',
+    publishHref: '/admin/publish',
     snapshot:    snapshot,
     restore:     restoreSnapshot,
     recordId:    function () { return app.id; },

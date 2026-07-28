@@ -43,6 +43,16 @@
       .order('created_at', { ascending: false });
     if (res.error) { setMsg('Could not load: ' + res.error.message, 'err'); return; }
     render(res.data || []);
+
+    /* The other half of soft delete. 0012 kept staff SELECT wide so the admin
+       could put things back, and the delete confirm promises exactly that. */
+    if (window.adminDeletedPane) {
+      window.adminDeletedPane.mount(
+        document.getElementById('ann-list').parentNode,
+        { table: 'site_announcements', cols: 'id,message', isManager: isManager,
+          titleOf: function (r) { return r.message; }, onRestore: load }
+      );
+    }
   }
 
   function render(rows) {
@@ -100,7 +110,7 @@
       var res2 = await window.sb.from('site_announcements').update({ active: true }).eq('id', a.id);
       if (res2.error) { setMsg(res2.error.message, 'err'); return; }
     }
-    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
+    setMsg('Saved · not live yet. Publish it from the Publish screen.', 'ok');
     load();
   }
 
@@ -119,7 +129,7 @@
       : window.sb.from('site_announcements').insert(data);
     var res = await q;
     if (res.error) { setMsg('Save failed: ' + res.error.message, 'err'); return; }
-    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
+    setMsg('Saved · not live yet. Publish it from the Publish screen.', 'ok');
     closeForm(); load();
   }
 

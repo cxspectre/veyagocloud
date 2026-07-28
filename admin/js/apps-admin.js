@@ -40,6 +40,16 @@
       return;
     }
     render(res.data || []);
+
+    /* The other half of soft delete. 0012 kept staff SELECT wide so the admin
+       could put things back, and the delete confirm promises exactly that. */
+    if (window.adminDeletedPane) {
+      window.adminDeletedPane.mount(
+        document.getElementById('apps-list').parentNode,
+        { table: 'apps', cols: 'id,name', isManager: isManager,
+          titleOf: function (r) { return r.name; }, onRestore: load }
+      );
+    }
   }
 
   function sectionCount(a) {
@@ -99,7 +109,7 @@
   async function toggle(a) {
     var res = await window.sb.from('apps').update({ published: !a.published }).eq('id', a.id);
     if (res.error) { setMsg(res.error.message, 'err'); return; }
-    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
+    setMsg('Saved · not live yet. Publish it from the Publish screen.', 'ok');
     load();
   }
 

@@ -1,6 +1,6 @@
 /* Global command palette — Cmd/Ctrl+K. Load after client.js and roles.js.
 
-   Eighteen screens and, before this, no way to find anything: the only search
+   Twenty screens and, before this, no way to find anything: the only search
    affordance in the whole admin was a description filter on the transactions
    ledger. Everything else was "remember which list it is on, go there, scroll".
 

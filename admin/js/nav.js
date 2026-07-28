@@ -179,9 +179,10 @@
     var shell = document.querySelector('.adm-shell');
     if (!shell) return;
 
-    /* Skip link, injected here so it exists once rather than in nineteen files.
-       The sidebar is fourteen tab stops deep and comes before the content in
-       source order on every screen. */
+    /* Skip link, injected here so it exists once rather than per page. The
+       whole sidebar comes before the content in source order on every screen,
+       so without this every screen starts with the same long tab journey.
+       Deliberately no count: NAV has grown twice since this was written. */
     var main = document.querySelector('.adm-main') || document.querySelector('main');
     if (main) {
       if (!main.id) main.id = 'adm-main';

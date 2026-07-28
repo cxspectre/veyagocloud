@@ -43,6 +43,15 @@
       .order('published_at', { ascending: false, nullsFirst: false });
     if (res.error) { setMsg('Could not load wallpapers: ' + res.error.message, 'err'); return; }
     renderList(res.data || []);
+
+    /* The other half of soft delete. 0012 kept staff SELECT wide so the admin
+       could put things back, and four confirms promise exactly that. */
+    if (window.adminDeletedPane) {
+      window.adminDeletedPane.mount(
+        document.getElementById('wp-list').parentNode,
+        { table: 'wallpapers', cols: 'id,title', titleOf: function (r) { return r.title; }, isManager: isManager, onRestore: loadList }
+      );
+    }
   }
 
   /* Rebuilt onto the shared list vocabulary. It used to use list-item /
@@ -169,7 +178,7 @@
     if (res.error) { setMsg('Save failed: ' + res.error.message, 'err'); return; }
     current.id = res.data.id; current.status = res.data.status; current.published_at = res.data.published_at;
     setBadge();
-    setMsg((publish ? 'Published' : 'Saved') + ' · not live yet. Publish the site from Settings.', 'ok');
+    setMsg((publish ? 'Published' : 'Saved') + ' · not live yet. Publish it from the Publish screen.', 'ok');
     loadList();
   }
 
@@ -178,7 +187,7 @@
     var patch = { status: publish ? 'published' : 'draft', published_at: publish ? (w.published_at || new Date().toISOString()) : w.published_at };
     var res = await window.sb.from('wallpapers').update(patch).eq('id', w.id);
     if (res.error) { setMsg(res.error.message, 'err'); return; }
-    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
+    setMsg('Saved · not live yet. Publish it from the Publish screen.', 'ok');
     loadList();
   }
 

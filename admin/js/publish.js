@@ -421,10 +421,18 @@
     async function cancelRequest(btn) {
       if (!myRequest) return;
       btn.disabled = true;
+      /* .select() so zero rows is distinguishable from success: the RLS policy
+         only matches while the row is still pending, and PostgREST reports a
+         non-match as no rows rather than as an error. */
       var res = await window.sb.from('publish_requests')
-        .update({ status: 'cancelled' }).eq('id', myRequest.id);
+        .update({ status: 'cancelled' }).eq('id', myRequest.id).select('id');
       btn.disabled = false;
       if (res.error) { setMsg('Could not withdraw it: ' + res.error.message, 'err'); return; }
+      if (!res.data || !res.data.length) {
+        setMsg('That request is no longer pending — an admin may have just decided it.', 'err');
+        refresh();
+        return;
+      }
       window.admin.toast('Request withdrawn');
       refresh();
     }
@@ -433,11 +441,19 @@
       btn.disabled = true;
       /* decided_by / decided_at are stamped by the guard trigger, not here — a
          client must not be able to claim who approved something, or when. */
+      /* .eq('status','pending') is what makes two admins deciding at once
+         safe — but a lost race returns zero rows and no error, so without
+         .select() the loser is told their decision stuck. */
       var res = await window.sb.from('publish_requests')
         .update({ status: status, decision_note: note || null })
-        .eq('id', request.id).eq('status', 'pending');
+        .eq('id', request.id).eq('status', 'pending').select('id');
       btn.disabled = false;
       if (res.error) { window.admin.toast('Could not save that: ' + res.error.message); return; }
+      if (!res.data || !res.data.length) {
+        window.admin.toast('Someone else already decided that request.');
+        refresh();
+        return;
+      }
       window.admin.toast(status === 'approved' ? 'Approved' : 'Declined');
       refresh();
     }
@@ -502,8 +518,9 @@
     };
   }
 
-  /* Back-compat: settings.js mounted this with a bare element and no options.
-     Resolves the role itself so an old call site still renders correctly. */
+  /* No current caller — settings.js stopped mounting the panel when it moved
+     to /admin/publish. Kept so a page can mount it without resolving the role
+     itself, which is the only thing create() cannot do for you. */
   async function mount(root, opts) {
     if (!root) return null;
     if (opts) return create(root, opts);

@@ -17,7 +17,7 @@
    Four guards, cheapest first:
      1. a local mirror written ~1s after you stop typing
      2. beforeunload, so closing the tab or reloading asks
-     3. in-page link interception, so the 15 one-click exits ask
+     3. in-page link interception, so every one-click exit asks
      4. Cmd/Ctrl+S, so the habit works
    Plus a recovery offer on load when a mirror is newer than the stored row. */
 (function () {
@@ -72,7 +72,7 @@
       opts.status.className = 'ae-save-hint ok';
       opts.status.textContent = verb + ' · not live yet · ';
       var a = document.createElement('a');
-      a.href = opts.publishHref || '/admin/settings';
+      a.href = opts.publishHref || '/admin/publish';
       a.textContent = 'Publish →';
       opts.status.appendChild(a);
     }
@@ -141,8 +141,8 @@
     });
 
     /* ── Guard 3: in-page links ───────────────────────────────────────
-       The editors put a back link in the topbar and the sidebar injects
-       nine more. Any of them is one click from discarding the draft, and
+       The editors put a back link in the topbar and the sidebar injects the
+       rest. Any of them is one click from discarding the draft, and
        beforeunload does not fire reliably for same-document navigations
        started by script, so intercept the click itself.
 
