@@ -677,6 +677,18 @@
   /* Hoisted so the mutators above can call it regardless of source order. */
   function markDirty() { if (guard) guard.markDirty(); }
 
+  /* Paste cleaning. The build allows only p/strong/em/a/ul/ol/li/br and runs in
+     Node, so anything richer used to be stored, rendered convincingly in this
+     canvas, published, and then deleted by the build without a word. Cleaning
+     on paste removes nothing the build would have kept — it just makes the loss
+     visible now, and says what went. */
+  if (window.adminPasteClean) {
+    window.adminPasteClean.attach(document.querySelector('.ae-root'), function (note) {
+      setHint(note);
+      markDirty();
+    });
+  }
+
   /* ── Gather for save ─────────────────────────────────────────────── */
   function gather() {
     var title = (titleEl.textContent || '').trim();

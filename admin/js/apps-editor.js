@@ -556,6 +556,15 @@
   /* Hoisted so the section mutators above can call it regardless of order. */
   function markDirty() { if (guard) guard.markDirty(); }
 
+  /* See article.js — the build strips anything outside its allowlist, so paste
+     is cleaned here rather than silently at build time. */
+  if (window.adminPasteClean) {
+    window.adminPasteClean.attach(document.querySelector('.ae-root'), function (note) {
+      setHint(note);
+      markDirty();
+    });
+  }
+
   async function save(publish) {
     var data = gather();
     if (!data.name) { nameField.focus(); setHint('Add an app name first.', 'err'); return; }
