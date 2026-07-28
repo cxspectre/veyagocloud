@@ -3,7 +3,6 @@
 (function () {
   'use strict';
 
-  var page = document.getElementById('wp-page');
   var msg = document.getElementById('msg');
   var listEl = document.getElementById('wp-list');
   var formEl = document.getElementById('wp-form');
@@ -149,7 +148,7 @@
     if (res.error) { setMsg('Save failed: ' + res.error.message, 'err'); return; }
     current.id = res.data.id; current.status = res.data.status; current.published_at = res.data.published_at;
     setBadge();
-    setMsg((publish ? 'Published' : 'Saved') + '. Run `npm run build` and push to update the live site.', 'ok');
+    setMsg((publish ? 'Published' : 'Saved') + ' · not live yet. Publish the site from Settings.', 'ok');
     loadList();
   }
 
@@ -158,7 +157,7 @@
     var patch = { status: publish ? 'published' : 'draft', published_at: publish ? (w.published_at || new Date().toISOString()) : w.published_at };
     var res = await window.sb.from('wallpapers').update(patch).eq('id', w.id);
     if (res.error) { setMsg(res.error.message, 'err'); return; }
-    setMsg('Saved. Run `npm run build` and push to update the live site.', 'ok');
+    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
     loadList();
   }
 
@@ -184,11 +183,14 @@
   document.getElementById('w-save').addEventListener('click', function () { save(false); });
   document.getElementById('w-publish').addEventListener('click', function () { save(true); });
 
+  /* adminReady resolves only once Supabase holds a valid JWT, so the queries
+     below run with a correct auth.uid(). This was the last controller still on
+     the older requireSession() path — and because that path also unhid a
+     `wp-page` element that does not exist, it threw before ever reaching
+     loadList(), leaving the list permanently empty. auth.js reveals .adm-shell. */
   async function boot() {
-    if (!window.admin) return;
-    var s = await window.admin.requireSession('/admin/');
+    var s = await (window.adminReady || Promise.resolve(null));
     if (!s) return;
-    page.hidden = false;
     loadList();
   }
   boot();

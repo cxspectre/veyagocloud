@@ -89,7 +89,7 @@
   async function toggle(a) {
     var res = await window.sb.from('apps').update({ published: !a.published }).eq('id', a.id);
     if (res.error) { setMsg(res.error.message, 'err'); return; }
-    setMsg('Saved. Run npm run build to update the live site.', 'ok');
+    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
     load();
   }
 

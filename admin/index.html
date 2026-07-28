@@ -144,12 +144,15 @@
           <div class="dash-stat-n2" id="stat-apps-pub"></div>
           <div class="dash-stat-label">Apps</div>
         </a>
-        <a class="dash-stat" href="/admin/projects" style="--stat-color:#ff9500">
+        <!-- Not a link: there is no /admin/projects screen. The count is real
+             (dashboard.js queries the projects table), so it stays; the dead
+             navigation does not. Make this an <a> again when the screen exists. -->
+        <div class="dash-stat dash-stat--static" style="--stat-color:#ff9500">
           <div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
           <div class="dash-stat-n" id="stat-projects">—</div>
           <div class="dash-stat-n2" id="stat-projects-pub"></div>
           <div class="dash-stat-label">Projects</div>
-        </a>
+        </div>
         <a class="dash-stat" href="/admin/announcements" style="--stat-color:#ff3b30">
           <div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
           <div class="dash-stat-n" id="stat-ann-status" style="font-size:1rem;letter-spacing:0;margin-top:4px">—</div>

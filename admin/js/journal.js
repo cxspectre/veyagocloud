@@ -85,7 +85,7 @@
       .update({ status: publish ? 'published' : 'draft', published_at: publish ? (a.published_at || new Date().toISOString()) : a.published_at })
       .eq('id', a.id);
     if (res.error) { setMsg(res.error.message, 'err'); return; }
-    setMsg('Saved. Run npm run build to update the live site.', 'ok');
+    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
     load();
   }
 

@@ -88,7 +88,7 @@
       var res2 = await window.sb.from('site_announcements').update({ active: true }).eq('id', a.id);
       if (res2.error) { setMsg(res2.error.message, 'err'); return; }
     }
-    setMsg('Saved. Run npm run build and push to update the live site.', 'ok');
+    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
     load();
   }
 
@@ -107,7 +107,7 @@
       : window.sb.from('site_announcements').insert(data);
     var res = await q;
     if (res.error) { setMsg('Save failed: ' + res.error.message, 'err'); return; }
-    setMsg('Saved. Run npm run build and push to update the live site.', 'ok');
+    setMsg('Saved · not live yet. Publish the site from Settings.', 'ok');
     closeForm(); load();
   }
 

@@ -73,10 +73,54 @@
       : '<div class="dash-status-row"><span class="dash-status-dot gray"></span><div>' +
           '<div class="dash-status-label">No active announcement</div>' +
           '<div class="dash-status-sub"><a href="/admin/announcements">Create one →</a></div></div></div>';
-    rows += '<div class="dash-status-row"><span class="dash-status-dot green"></span><div>' +
-      '<div class="dash-status-label">Site live</div>' +
+    /* The publish row starts neutral and is filled by loadSiteStatus(). It used
+       to be a hardcoded green "Site live" dot behind no query at all, so the
+       home screen read healthy even when published rows had never been shipped. */
+    rows += '<div class="dash-status-row" id="site-status-row">' +
+      '<span class="dash-status-dot gray" id="site-status-dot"></span><div>' +
+      '<div class="dash-status-label" id="site-status-label">Checking publish status…</div>' +
       '<div class="dash-status-sub"><a href="https://www.veyago.cloud" target="_blank" rel="noopener">veyago.cloud ↗</a></div></div></div>';
     statusPanel.innerHTML = rows;
+    loadSiteStatus();
+  }
+
+  /* Reads the same build_runs history the Settings publish panel renders, and
+     says only what that history supports. Deliberately does NOT recompute the
+     "N changes waiting" count — publish.js:56 owns that query, and a second
+     copy here would be one more thing to keep in step. */
+  async function loadSiteStatus() {
+    var dot   = document.getElementById('site-status-dot');
+    var label = document.getElementById('site-status-label');
+    if (!dot || !label) return;
+
+    var res = await window.sb.from('build_runs')
+      .select('status,finished_at')
+      .order('started_at', { ascending: false }).limit(5);
+
+    if (res.error) {
+      label.textContent = 'Publish status unavailable';
+      return;
+    }
+
+    var runs     = res.data || [];
+    var inFlight = runs.filter(function (r) { return r.status === 'queued' || r.status === 'running'; })[0];
+    var lastGood = runs.filter(function (r) { return r.status === 'success'; })[0];
+    var lastRun  = runs[0];
+
+    if (inFlight) {
+      dot.className = 'dash-status-dot amber';
+      label.textContent = 'Publishing now…';
+    } else if (lastRun && lastRun.status === 'failed') {
+      dot.className = 'dash-status-dot red';
+      label.textContent = 'Last publish failed';
+    } else if (lastGood) {
+      dot.className = 'dash-status-dot green';
+      var on = fmt(lastGood.finished_at);
+      label.textContent = 'Published' + (on ? ' ' + on : '');
+    } else {
+      dot.className = 'dash-status-dot gray';
+      label.textContent = 'Never published from here';
+    }
   }
 
   /* ── Articles ── */
@@ -311,8 +355,14 @@
         : 'no due date';
       main.appendChild(title); main.appendChild(sub);
       var acts = document.createElement('div'); acts.className = 'adm-item-acts';
+      /* Deep-link to the task itself, not the board. The staff home is the only
+         screen an employee lands on, and pointing it at /admin/tasks left the
+         task detail page — where the description, history and status live —
+         reachable from a single link in the whole product (tasks.js:192). */
       var open = document.createElement('a');
-      open.className = 'btn btn-sm'; open.href = '/admin/tasks'; open.textContent = 'Open';
+      open.className = 'btn btn-sm';
+      open.href = '/admin/task?id=' + encodeURIComponent(t.id);
+      open.textContent = 'Open';
       acts.appendChild(open);
       li.appendChild(icon); li.appendChild(main); li.appendChild(acts);
       listEl.appendChild(li);
