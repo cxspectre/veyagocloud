@@ -5,19 +5,20 @@
 
   var PATH = window.location.pathname;
 
-  /* Seven screens are not in the sidebar because they are the second level of a
-     section: a member belongs to Team, an article to Journal, and so on. Without
-     this map they matched no NAV href, so the sidebar highlighted nothing on
-     exactly the screens where you are deepest — both editors and every detail
-     page. Each one now lights its parent instead. */
+  /* Detail screens are the second level of a section: a member belongs to Team,
+     an article to Journal. They are not nav destinations — you arrive at one
+     specific record, never at "members" in general — so they stay out of the
+     list and light their parent instead. Without this the sidebar highlighted
+     nothing on exactly the screens where you are deepest.
+
+     Checklist, Transactions and Invoices are NOT here: they are destinations in
+     their own right (Transactions and Invoices own every finance write), so
+     they earn their own entries below and highlight themselves. */
   var PARENT = {
-    article:      'journal',
+    article:       'journal',
     'apps-editor': 'apps',
-    member:       'team',
-    task:         'tasks',
-    checklist:    'onboarding',
-    transactions: 'finance',
-    invoices:     'finance'
+    member:        'team',
+    task:          'tasks'
   };
 
   /* Resolve the current page to a canonical key for active-link matching.
@@ -45,7 +46,16 @@
     { label: 'Tasks',         href: '/admin/tasks',          icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
     { label: 'Team',          href: '/admin/team',           icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' },
     { label: 'Onboarding',    href: '/admin/onboarding',     icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>' },
-    { label: 'Finance',       href: '/admin/finance',        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', manager: true }
+    /* The company-wide template. Editing it changes every employee's list, which
+       is exactly why it should not be findable only through one small header
+       button on a page about a single person. */
+    { label: 'Checklist',     href: '/admin/checklist',      sub: true, manager: true },
+    { label: 'Finance',       href: '/admin/finance',        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', manager: true },
+    /* Finance itself is read-only by design (finance.js:1-6). These two own every
+       finance write in the product and had no nav entry at all, so every mutation
+       sat two clicks deep behind a screen that cannot perform it. */
+    { label: 'Transactions',  href: '/admin/transactions',   sub: true, manager: true },
+    { label: 'Invoices',      href: '/admin/invoices',       sub: true, manager: true }
   ];
 
   /* Footer links live under the user chip rather than in the main list. */
@@ -81,10 +91,15 @@
            async role check. Cosmetic only — RLS guards the data. */
         var cachedRole = (window.adminRoles && window.adminRoles.cachedRole) ? window.adminRoles.cachedRole() : null;
         var cachedManager = cachedRole === 'owner' || cachedRole === 'admin';
-        var attrs = (cls ? ' class="' + cls + '" aria-current="page"' : '') +
+        /* Sub-items are indented under the item above and carry no icon — the
+           indent is the relationship, and a second icon column would only
+           compete with the parent's. */
+        var classes = (item.sub ? 'adm-nav-sub' : '') + (cls ? (item.sub ? ' ' : '') + cls : '');
+        var attrs = (classes ? ' class="' + classes + '"' : '') +
+                    (cls ? ' aria-current="page"' : '') +
                     (item.manager ? ' data-manager-only' + (cachedManager ? '' : ' hidden') : '');
         navHtml += '<a href="' + item.href + '"' + attrs + '>' +
-          svgIcon(item.icon) + item.label +
+          (item.sub ? '' : svgIcon(item.icon)) + item.label +
         '</a>';
       }
     });

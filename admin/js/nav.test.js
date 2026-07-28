@@ -64,24 +64,56 @@ async function mountAt(pathname, { role = 'owner', cachedRole = role, session = 
   };
 }
 
-test('the sidebar mounts with the expected top-level items', async () => {
+test('the sidebar lists every screen a user can navigate to', async () => {
   const { allHrefs } = await mountAt('/admin/');
   assert.deepEqual(allHrefs, [
     '/admin/', '/admin/journal', '/admin/wallpapers', '/admin/apps', '/admin/announcements',
-    '/admin/tasks', '/admin/team', '/admin/onboarding', '/admin/finance'
+    '/admin/tasks', '/admin/team', '/admin/onboarding', '/admin/checklist',
+    '/admin/finance', '/admin/transactions', '/admin/invoices'
   ]);
 });
 
-/* Each of these used to highlight nothing at all. */
+/* Transactions and Invoices own every finance write and had no entry at all;
+   Checklist edits every employee's list from one small header button. */
+test('the finance write screens and the checklist template are reachable from the nav', async () => {
+  const { allHrefs } = await mountAt('/admin/');
+  for (const href of ['/admin/transactions', '/admin/invoices', '/admin/checklist']) {
+    assert.ok(allHrefs.includes(href), href + ' must be in the sidebar');
+  }
+});
+
+test('second-level destinations render indented and without an icon', async () => {
+  const { window } = await mountAt('/admin/');
+  for (const href of ['/admin/checklist', '/admin/transactions', '/admin/invoices']) {
+    const a = window.document.querySelector('.adm-nav a[href="' + href + '"]');
+    assert.ok(a.classList.contains('adm-nav-sub'), href + ' is a sub item');
+    assert.equal(a.querySelector('svg'), null, href + ' carries no icon');
+  }
+  // ...and top-level items still do have one.
+  assert.ok(window.document.querySelector('.adm-nav a[href="/admin/finance"] svg'));
+});
+
+/* Detail screens are not destinations, so they light their parent instead.
+   Each of these used to highlight nothing at all. */
 const PARENT_CASES = [
   ['/admin/article',      '/admin/journal',    'Journal'],
   ['/admin/apps-editor',  '/admin/apps',       'Apps'],
   ['/admin/member',       '/admin/team',       'Team'],
-  ['/admin/task',         '/admin/tasks',      'Tasks'],
-  ['/admin/checklist',    '/admin/onboarding', 'Onboarding'],
-  ['/admin/transactions', '/admin/finance',    'Finance'],
-  ['/admin/invoices',     '/admin/finance',    'Finance']
+  ['/admin/task',         '/admin/tasks',      'Tasks']
 ];
+
+/* These are first-class now, so they highlight themselves rather than a parent. */
+test('checklist, transactions and invoices highlight themselves', async () => {
+  for (const [route, label] of [
+    ['/admin/checklist', 'Checklist'],
+    ['/admin/transactions', 'Transactions'],
+    ['/admin/invoices', 'Invoices']
+  ]) {
+    const { activeHrefs, activeLabels } = await mountAt(route);
+    assert.deepEqual(activeHrefs, [route], route);
+    assert.deepEqual(activeLabels, [label], route);
+  }
+});
 
 for (const [route, expectedHref, expectedLabel] of PARENT_CASES) {
   test(`${route} highlights its parent, ${expectedLabel}`, async () => {
