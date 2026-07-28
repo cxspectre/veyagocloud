@@ -98,11 +98,13 @@
       .order('created_at', { ascending: false }).limit(8);
 
     if (res.error) {
-      /* Almost always "relation does not exist" — migration 0010 not run yet. */
+      /* Almost always "relation does not exist" — the email_log migration has
+         not been applied. Say what it means for the reader, not which numbered
+         file is missing; the migration number belongs in this comment. */
       listEl.innerHTML =
         '<li class="dash-empty-state">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>' +
-          '<p>No email log yet — run migration 0010 to start recording sends.</p>' +
+          '<p>Send history is not being recorded yet, so a failed invite will not show up here.</p>' +
         '</li>';
       return;
     }

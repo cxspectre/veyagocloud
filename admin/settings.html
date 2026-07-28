@@ -38,7 +38,9 @@
 
       <div class="card-pane">
         <h2>Email</h2>
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">Invites, password resets and task notifications are sent through Resend so they arrive branded rather than as plain Supabase mail. If a send fails it shows here — an invite that never arrives is otherwise invisible.</p>
+        <!-- This pane is a LOG, not a settings surface. Saying so matters: the
+             failed-invite message used to send people here to "fix email". -->
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">A record of what was sent. Invites, password resets and task notifications go out through Resend so they arrive branded rather than as plain Supabase mail — if a send fails it shows here, because an invite that never arrives is otherwise invisible. Delivery itself is configured outside the admin, with <code>RESEND_API_KEY</code> set as a Supabase secret from a terminal.</p>
         <ul class="adm-list" id="email-list"><li class="skel skel-sm"></li><li class="skel skel-sm"></li></ul>
       </div>
 
@@ -50,7 +52,11 @@
 
       <div class="card-pane">
         <h2>Publishing</h2>
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">The live site is rebuilt from published rows. Anyone on the team can publish; every run is checked before it goes out and can be rolled back.</p>
+        <!-- Was "Anyone on the team can publish", on a page gated twice: settings.js
+             requireManager() redirects everyone else, and nav.js hides the link. The
+             deploy function does authorise assistants (PUBLISHERS), but no screen
+             exposes that to them, so the claim was false of the product. -->
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">The live site is rebuilt from published rows. Publishing is limited to admins and owners; every run is checked before it goes out and can be rolled back.</p>
         <div id="publish-mount"></div>
       </div>
     </main>

@@ -158,10 +158,21 @@
         });
         if (out.emailSent === false) {
           /* The record exists but they never got the link — say so loudly,
-             otherwise this looks like success and the person never appears. */
-          setMsg('Added ' + name + ', but the invite email did NOT send: ' +
+             otherwise this looks like success and the person never appears.
+
+             This used to say "fix email in Settings". Settings cannot fix it:
+             its Email pane is a read-only send log. Delivery depends on
+             RESEND_API_KEY, a Supabase secret set from a terminal, so name that
+             instead of routing the manager to a screen that cannot help. */
+          setMsg('Added ' + name + ' — but the invite email did not send: ' +
                  (out.emailError || 'unknown error') +
-                 ' — fix email in Settings, then use "Resend invite" on their profile.', 'err');
+                 ' Delivery needs RESEND_API_KEY set as a Supabase secret from a terminal ' +
+                 '(supabase secrets set RESEND_API_KEY=…). Once it is set, use ' +
+                 '"Resend invite" on their profile.', 'err');
+          /* #msg sits above the stat row while the invite panel is sticky at the
+             top of the viewport, so at the moment of clicking this message is
+             off-screen — the one message that must not be missed. */
+          if (msg && msg.scrollIntoView) msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
           setMsg('');
           window.admin.toast(out.invited
