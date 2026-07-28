@@ -307,6 +307,8 @@
   background: var(--stat-color, var(--hair)); border-radius: 3px 0 0 3px;
 }
 .dash-stat:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
+/* A card with no screen behind it must not advertise one. */
+.dash-stat--static:hover { box-shadow: none; transform: none; }
 .dash-stat-icon { margin-bottom: 10px; opacity: 0.55; }
 .dash-stat-icon svg { width: 18px; height: 18px; display: block; }
 .dash-stat-n { font-size: 2rem; font-weight: 700; letter-spacing: -0.04em; color: var(--ink); line-height: 1; }
@@ -347,7 +349,10 @@
   width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0;
 }
 .dash-status-dot.green { background: #34c759; }
-.dash-status-dot.yellow { background: #ff9500; }
+/* .amber, matching the name .dot already uses (admin.css:824), so the two dot
+   systems stop disagreeing about what to call the same colour. */
+.dash-status-dot.amber { background: #ff9500; }
+.dash-status-dot.red { background: #ff3b30; }
 .dash-status-dot.gray { background: var(--muted-2); }
 .dash-status-label { font-size: 0.88rem; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
 .dash-status-sub { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
@@ -390,9 +395,33 @@
 }
 .ae-back { flex-shrink: 0; }
 .ae-topbar-center { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
-.ae-save-hint { font-size: 0.8rem; color: var(--muted); margin: 0; white-space: nowrap; }
+/* Truncates rather than pushing the Save/Publish buttons off-screen: this slot
+   also carries raw Supabase error strings, which can be long. */
+.ae-save-hint { font-size: 0.8rem; color: var(--muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ae-save-hint.ok { color: #1a7f37; }
 .ae-save-hint.err { color: #b3261e; }
+.ae-save-hint a { color: inherit; text-decoration: underline; }
+
+/* Session-lapse banner (auth.js). Fixed rather than in-flow because it must
+   appear on any of the 18 screens, including the two full-height editors. */
+.adm-session-lapsed {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 500;
+  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 20px; background: #b3261e; color: #fff;
+  font-size: 0.86rem; line-height: 1.45;
+  box-shadow: 0 -2px 14px rgba(0,0,0,0.18);
+}
+.adm-session-lapsed .btn { background: #fff; border-color: #fff; color: #b3261e; flex-shrink: 0; }
+.adm-session-lapsed .btn:hover { background: #f5f5f7; border-color: #f5f5f7; }
+
+/* Recovered-draft banner (editor-guard.js). Sits above the topbar as the first
+   flex child of .ae-root so it cannot be missed, and never auto-applies. */
+.ae-recover {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
+  padding: 10px 16px; background: #fff8e6; border-bottom: 1px solid #f0d9a0;
+  font-size: 0.85rem; color: #7a5300;
+}
+.ae-recover span { flex: 1; min-width: 200px; }
 .ae-topbar-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
 /* ---- Body: meta sidebar + canvas ---- */

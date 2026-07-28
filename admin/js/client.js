@@ -35,7 +35,12 @@
       return sb.auth.signInWithPassword({ email: email, password: password });
     },
 
+    /* signingOut tells auth.js this SIGNED_OUT was asked for, so it shows the
+       login card rather than the "your session has ended" banner. */
+    signingOut: false,
+
     async signOut() {
+      this.signingOut = true;
       try { sessionStorage.removeItem('veyago.admin.role'); } catch (e) {}
       await sb.auth.signOut();
       window.location.href = '/admin/';

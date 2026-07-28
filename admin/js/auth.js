@@ -110,6 +110,57 @@
     el.className = 'msg' + (kind ? ' ' + kind : '');
   }
 
+  /* ── Session lapse ────────────────────────────────────────────────────
+     Shown when the session ends without the user asking. Deliberately not a
+     redirect and not a modal: 17 of the 18 admin pages have no login card, and
+     two of them are editors whose unsaved work only exists in the DOM. The user
+     signs in through a second tab — Supabase shares the session through storage,
+     so this page recovers in place and the draft is never touched. */
+  var lapsedBar = null;
+
+  function showSessionLapsed() {
+    if (lapsedBar) return;
+
+    /* The login card is right here, so just show it — but reset the card first.
+       showLogin() only toggles the two containers; it does not choose a step or
+       clear shellShown. Without both, a lapse on /admin/ leaves two dead ends:
+       an MFA user gets the bare TOTP panel with no password fields, and because
+       shellShown is still true, showShell() short-circuits so signing back in
+       never re-reveals the dashboard. */
+    if (loginEl) {
+      shellShown = false;
+      pendingFactorId = null;
+      showStep(step1);
+      showLogin();
+      return;
+    }
+
+    lapsedBar = document.createElement('div');
+    lapsedBar.className = 'adm-session-lapsed';
+    lapsedBar.setAttribute('role', 'alert');
+
+    var msg = document.createElement('span');
+    msg.textContent = 'Your session has ended, so nothing can be saved right now. ' +
+                      'Anything unsaved on this page is kept on this device.';
+
+    var link = document.createElement('a');
+    link.className = 'btn btn-sm';
+    link.href = '/admin/';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'Sign in again →';
+
+    lapsedBar.appendChild(msg);
+    lapsedBar.appendChild(link);
+    document.body.appendChild(lapsedBar);
+  }
+
+  function clearSessionLapsed() {
+    if (!lapsedBar) return;
+    lapsedBar.remove();
+    lapsedBar = null;
+  }
+
   /* ── TOTP step ────────────────────────────────────────────────────── */
   var pendingFactorId = null;
 
@@ -164,11 +215,26 @@
       return;
     }
 
+    /* A session can end without the user asking — a revoked token, a failed
+       refresh after a laptop sleeps, or a sign-out in another tab. Before this
+       branch existed, SIGNED_OUT fell through the filter below and nothing
+       happened at all: the shell stayed rendered and every control stayed live,
+       so the next Save failed with a raw JWT error and the only route back to a
+       login form (/admin/) discarded whatever was on screen. Never navigate
+       here — the page may be an editor holding unsaved work. */
+    if (event === 'SIGNED_OUT') {
+      if (!(window.admin && window.admin.signingOut)) showSessionLapsed();
+      return;
+    }
+
     /* INITIAL_SESSION fires on every page load once the stored session has been
        fully restored — without it, navigating between admin pages with a live
        session never reveals the shell (blank page). */
     if (event !== 'SIGNED_IN' && event !== 'TOKEN_REFRESHED' && event !== 'INITIAL_SESSION') return;
     if (!session) return;
+    /* Signing in again in another tab shares the session through storage, so a
+       lapsed page can recover in place rather than being reloaded. */
+    clearSessionLapsed();
     if (shellShown) return; // already showing — no re-dispatch needed
 
     // MFA check

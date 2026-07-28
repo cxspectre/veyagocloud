@@ -294,7 +294,7 @@
           btn.addEventListener('click', function (e) {
             e.stopPropagation();
             var k = btn.dataset.toggle;
-            if (sections[idx]) { sections[idx][k] = !sections[idx][k]; renderCanvas(); }
+            if (sections[idx]) { sections[idx][k] = !sections[idx][k]; markDirty(); renderCanvas(); }
           });
         });
       }
@@ -331,6 +331,7 @@
           try {
             var url = await window.admin.upload('article-media', file, 'app-media');
             if (sections[idx]) sections[idx].image = url;
+            markDirty();
             setHint('Image uploaded.', 'ok');
             renderCanvas();
           } catch (err) { setHint('Upload failed: ' + (err && err.message || err), 'err'); }
@@ -393,6 +394,7 @@
   /* ── Mutations ──────────────────────────────────────────────────────── */
   function addSection(type, afterIdx) {
     sections.splice(afterIdx + 1, 0, blank(type));
+    markDirty();
     renderCanvas();
     selectSection(afterIdx + 1);
     setTimeout(function () {
@@ -400,22 +402,22 @@
       if (el) el.focus();
     }, 30);
   }
-  function removeSection(idx) { sections.splice(idx, 1); selectedIdx = -1; renderCanvas(); }
+  function removeSection(idx) { sections.splice(idx, 1); selectedIdx = -1; markDirty(); renderCanvas(); }
   function moveSection(idx, dir) {
     var to = idx + dir;
     if (to < 0 || to >= sections.length) return;
     var tmp = sections[idx]; sections[idx] = sections[to]; sections[to] = tmp;
-    renderCanvas(); selectSection(to);
+    markDirty(); renderCanvas(); selectSection(to);
   }
   function addItem(idx) {
     var s = sections[idx]; if (!s || !s.items) return;
     s.items.push(s.type === 'cards' ? card(s.items.length) : { title:'', text:'' });
-    renderCanvas(); selectSection(idx);
+    markDirty(); renderCanvas(); selectSection(idx);
   }
   function delItem(idx, j) {
     var s = sections[idx]; if (!s || !s.items) return;
     s.items.splice(j, 1);
-    renderCanvas(); selectSection(idx);
+    markDirty(); renderCanvas(); selectSection(idx);
   }
 
   /* ── Add-section popup ──────────────────────────────────────────────── */
@@ -477,6 +479,7 @@
     try {
       var url = await window.admin.upload('article-media', f, 'app-icons');
       iconUrlField.value = url; showIcon(url);
+      markDirty();
       document.getElementById('ap-icon-status').textContent = 'Uploaded.';
     } catch (err) { document.getElementById('ap-icon-status').textContent = 'Upload failed: ' + (err && err.message || err); }
   });
@@ -502,6 +505,57 @@
     };
   }
 
+  /* ── Unsaved-work guard ───────────────────────────────────────────
+     Same contract as the article editor — see js/editor-guard.js for why the
+     draft is mirrored to this device rather than autosaved to Postgres. */
+  var FIELDS = ['ap-name','ap-slug','ap-tagline','ap-desc','ap-category','ap-status',
+                'ap-window','ap-platforms','ap-pricing','ap-store','ap-product','ap-icon'];
+
+  function snapshot() {
+    var f = {};
+    FIELDS.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) f[id] = el.value;
+    });
+    var pub = document.getElementById('ap-published');
+    return {
+      fields: f,
+      published: !!(pub && pub.checked),
+      slugManual: !!slugField._manual,
+      sections: sections
+    };
+  }
+
+  function restoreSnapshot(p) {
+    var f = p.fields || {};
+    FIELDS.forEach(function (id) { if (id in f) fill(id, f[id]); });
+    var pub = document.getElementById('ap-published');
+    if (pub) pub.checked = !!p.published;
+    slugField._manual = !!p.slugManual;
+    showIcon(f['ap-icon'] || '');
+    sections = Array.isArray(p.sections) ? JSON.parse(JSON.stringify(p.sections)) : [];
+    /* setBadge() reads app.status AND app.published, so both have to come back
+       or the badge describes the row rather than the restored draft. */
+    app.status = f['ap-status'] || app.status;
+    app.published = !!p.published;
+    setBadge(); updateUrl(); renderCanvas();
+  }
+
+  var guard = window.adminEditorGuard.create({
+    kind:        'app',
+    root:        document.querySelector('.ae-root'),
+    status:      saveHint,
+    publishHref: '/admin/settings',
+    snapshot:    snapshot,
+    restore:     restoreSnapshot,
+    recordId:    function () { return app.id; },
+    rowStamp:    function () { return app.updated_at; },
+    save:        function (publish) { return save(publish); }
+  });
+
+  /* Hoisted so the section mutators above can call it regardless of order. */
+  function markDirty() { if (guard) guard.markDirty(); }
+
   async function save(publish) {
     var data = gather();
     if (!data.name) { nameField.focus(); setHint('Add an app name first.', 'err'); return; }
@@ -523,8 +577,11 @@
     app.id = res.data.id;
     app.status = res.data.status;
     app.published = res.data.published;
+    app.updated_at = res.data.updated_at;
     setBadge();
-    setHint((publish ? 'Published to catalogue' : 'Saved') + ' · run npm run build to deploy', 'ok');
+    /* Saving writes the row; the catalogue page only changes when the site is
+       rebuilt, so say that and link to where it happens. */
+    guard.markClean(publish ? 'Published to catalogue' : 'Saved');
 
     if (!params.get('id')) {
       params = new URLSearchParams({ id: app.id });
@@ -543,6 +600,7 @@
       sections = [blank('hero'), blank('feature')];
       app.status = statusField.value || 'in-development';
       setBadge(); renderCanvas(); updateUrl();
+      guard.offerRecovery(document.querySelector('.ae-root'));
       return;
     }
     setHint('Loading…');
@@ -551,6 +609,7 @@
     var a = res.data;
 
     app.id = a.id; app.status = a.status; app.published = a.published;
+    app.updated_at = a.updated_at;
     fill('ap-name', a.name); fill('ap-slug', a.slug); slugField._manual = true;
     fill('ap-tagline', a.tagline); fill('ap-desc', a.description);
     fill('ap-status', a.status || 'in-development'); fill('ap-window', a.launch_window);
@@ -563,6 +622,9 @@
     sections = Array.isArray(a.layout) ? JSON.parse(JSON.stringify(a.layout)) : [];
     setBadge(); updateUrl(); renderCanvas();
     setHint('');
+    /* After the row is in place, so a mirror older than the row is discarded
+       instead of offered. */
+    guard.offerRecovery(document.querySelector('.ae-root'));
   }
 
   /* ── Boot ───────────────────────────────────────────────────────────── */

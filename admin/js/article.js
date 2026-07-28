@@ -9,7 +9,9 @@
   /* ── State ──────────────────────────────────────────────────────────── */
   var blocks = [];
   var selectedIdx = -1;
-  var article = { id: null, status: 'draft', published_at: null };
+  /* updated_at is tracked so the unsaved-work guard can tell a recovered local
+     draft from one the stored row has already superseded. */
+  var article = { id: null, status: 'draft', published_at: null, updated_at: null };
   var params = new URLSearchParams(window.location.search);
 
   /* ── DOM refs ─────────────────────────────────────────────────────── */
@@ -92,6 +94,7 @@
       var url = await window.admin.upload('article-media', f, 'covers');
       coverUrlField.value = url;
       showCover(url);
+      markDirty();
       setHint('Cover uploaded.', 'ok');
     } catch(err) { setHint('Upload failed: ' + (err && err.message || err), 'err'); }
   });
@@ -442,6 +445,7 @@
           if (old.text != null && nb.text != null) nb.text = old.text;
           if (old.html != null && nb.html != null) nb.html = old.html;
           blocks[idx] = nb;
+          markDirty();
           selectBlock(idx);
           renderCanvas();
         });
@@ -514,6 +518,7 @@
           try {
             var url = await window.admin.upload('article-media', f, 'inline');
             blocks[idx].url = url;
+            markDirty();
             setHint('Uploaded.', 'ok');
             renderCanvas();
             selectBlock(idx);
@@ -580,6 +585,7 @@
   function addBlock(type, afterIdx) {
     var b = blank(type);
     blocks.splice(afterIdx + 1, 0, b);
+    markDirty();
     renderCanvas();
     selectBlock(afterIdx + 1);
     // Focus the new block's editable
@@ -592,6 +598,7 @@
   function removeBlock(idx) {
     blocks.splice(idx, 1);
     selectedIdx = -1;
+    markDirty();
     renderCanvas();
   }
 
@@ -599,6 +606,7 @@
     var to = idx + dir;
     if (to < 0 || to >= blocks.length) return;
     var tmp = blocks[idx]; blocks[idx] = blocks[to]; blocks[to] = tmp;
+    markDirty();
     renderCanvas();
     selectBlock(to);
   }
@@ -617,6 +625,57 @@
     slugField._manual = !!slugField.value;
     syncSlug();
   });
+
+  /* ── Unsaved-work guard ───────────────────────────────────────────
+     The canvas is manual-save-only, so everything typed between two clicks
+     of Save lives in memory alone. editor-guard.js mirrors it to this device
+     and makes every exit ask first. Typing and field changes are caught by a
+     delegated listener on .ae-root; the structural edits that fire no input
+     event (add/remove/move/retype a block, finish an upload) call markDirty
+     directly. */
+
+  /* The raw in-progress state, deliberately NOT gather() — gather() drops
+     half-typed blocks, which is exactly what a recovered draft needs to keep. */
+  function snapshot() {
+    return {
+      title:      titleEl.textContent || '',
+      dek:        dekEl.textContent || '',
+      slug:       slugField.value || '',
+      slugManual: !!slugField._manual,
+      excerpt:    excerptField.value || '',
+      cover:      coverUrlField.value || '',
+      blocks:     blocks
+    };
+  }
+
+  function restoreSnapshot(p) {
+    titleEl.textContent   = p.title || '';
+    dekEl.textContent     = p.dek || '';
+    slugField.value       = p.slug || '';
+    slugField._manual     = !!p.slugManual;
+    excerptField.value    = p.excerpt || '';
+    coverUrlField.value   = p.cover || '';
+    showCover(p.cover || '');
+    blocks = Array.isArray(p.blocks) ? JSON.parse(JSON.stringify(p.blocks)) : [];
+    syncSlug();
+    renderCanvas();
+    updateMeta();
+  }
+
+  var guard = window.adminEditorGuard.create({
+    kind:        'article',
+    root:        document.querySelector('.ae-root'),
+    status:      saveHint,
+    publishHref: '/admin/settings',
+    snapshot:    snapshot,
+    restore:     restoreSnapshot,
+    recordId:    function () { return article.id; },
+    rowStamp:    function () { return article.updated_at; },
+    save:        function (publish) { return save(publish); }
+  });
+
+  /* Hoisted so the mutators above can call it regardless of source order. */
+  function markDirty() { if (guard) guard.markDirty(); }
 
   /* ── Gather for save ─────────────────────────────────────────────── */
   function gather() {
@@ -676,8 +735,11 @@
     article.id           = res.data.id;
     article.status       = res.data.status;
     article.published_at = res.data.published_at;
+    article.updated_at   = res.data.updated_at;
     setBadge();
-    setHint((publish ? 'Published' : 'Saved') + ' · run npm run build to deploy', 'ok');
+    /* Saving writes the row; the public site only changes when the site is
+       rebuilt, so say that and link to where it happens. */
+    guard.markClean(publish ? 'Published' : 'Saved');
 
     if (!params.get('id')) {
       params = new URLSearchParams({ id: article.id });
@@ -692,7 +754,11 @@
   /* ── Load from Supabase ──────────────────────────────────────────── */
   async function load() {
     var id = params.get('id');
-    if (!id) { renderCanvas(); syncSlug(); return; }
+    if (!id) {
+      renderCanvas(); syncSlug();
+      guard.offerRecovery(document.querySelector('.ae-root'));
+      return;
+    }
 
     setHint('Loading…');
     var res = await window.sb.from('articles').select('*').eq('id', id).single();
@@ -702,6 +768,7 @@
     article.id           = a.id;
     article.status       = a.status;
     article.published_at = a.published_at;
+    article.updated_at   = a.updated_at;
 
     titleEl.textContent  = a.title  || '';
     dekEl.textContent    = a.dek    || '';
@@ -716,6 +783,9 @@
     syncSlug();
     renderCanvas();
     setHint('');
+    /* After the row is in place, so a mirror older than the row is discarded
+       instead of offered. */
+    guard.offerRecovery(document.querySelector('.ae-root'));
   }
 
   /* ── Boot ────────────────────────────────────────────────────────── */
