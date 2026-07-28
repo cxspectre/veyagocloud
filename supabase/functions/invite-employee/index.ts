@@ -170,11 +170,17 @@ Deno.serve(async (req) => {
       .single();
     if (empErr) return json({ error: 'Employee record failed: ' + empErr.message }, 400);
 
+    /* Supabase invite links last 24h; recovery links last 1h. linkType already
+       records which one was minted, so the email, the response and the client's
+       countdown can all agree instead of all assuming 24. */
+    const expiryHours = linkType === 'invite' ? 24 : 1;
+
     const tpl = inviteEmail({
       name: fullName,
       inviterName: inviterName,
       role: role,
       actionLink: link.data.properties.action_link,
+      expiryHours,
     });
     const sent = await sendEmail({ to: email, ...tpl });
 
@@ -205,6 +211,7 @@ Deno.serve(async (req) => {
         ? 'Email is not configured yet (RESEND_API_KEY is not set), so no invite was delivered.'
         : sent.error),
       actionLink: sent.ok ? null : link.data.properties.action_link,
+      expiryHours,
       sentAt: new Date().toISOString(),
     });
   } catch (err) {

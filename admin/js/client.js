@@ -74,7 +74,14 @@
 
     async signOut() {
       this.signingOut = true;
-      try { sessionStorage.removeItem('veyago.admin.role'); } catch (e) {}
+      /* The invite outcome can hold a single-use sign-in link, and the invite
+         draft holds a half-written record. Signing out is the one moment the
+         app knows for certain that neither should survive. */
+      try {
+        sessionStorage.removeItem('veyago.admin.role');
+        sessionStorage.removeItem('veyago.admin.invite-outcome');
+        sessionStorage.removeItem('veyago.admin.invite-draft');
+      } catch (e) {}
       await sb.auth.signOut();
       window.location.href = '/admin/';
     },

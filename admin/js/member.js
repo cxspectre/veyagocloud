@@ -25,7 +25,7 @@
 
   var ROLE_BADGE  = { owner: 'badge-role-owner', admin: 'badge-role-admin', assistant: 'badge-role-assistant', employee: 'badge-role-employee' };
   var ROLE_COLOR  = { owner: '#0071e3', admin: '#5856d6', assistant: '#ff9500', employee: '#86868b' };
-  /* Must match the role descriptions on team.html.
+  /* Must match the role cards in member-new.js (ROLES).
 
      Assistant and Employee read identically because they ARE identical in the
      product today: all four roles write content via is_staff() (migration 0007),
@@ -210,6 +210,29 @@
     }
   }
 
+  /* The one thing that rescues a failed send. Shared so the handoff panel and
+     the Resend button cannot drift — Resend is the dedicated rescue screen and
+     was the path that threw the link away. */
+  function rescueBox(actionLink, expiryHours) {
+    var box = document.createElement('div');
+    box.className = 'adm-notice adm-notice--warn';
+    var h = document.createElement('h3');
+    h.textContent = 'Send them this link yourself';
+    var p = document.createElement('p');
+    p.textContent = 'The account exists, but the invite email did not go out. This link lets ' +
+      member.full_name + ' set a password and sign in. It works once' +
+      (expiryHours ? ', and expires in about ' + expiryHours + ' hour' + (expiryHours === 1 ? '' : 's') : '') + '.';
+    var input = document.createElement('input');
+    input.className = 'input';
+    input.readOnly = true;
+    input.value = actionLink;
+    input.style.marginTop = '8px';
+    input.setAttribute('aria-label', 'One-time sign-in link');
+    input.addEventListener('focus', function () { input.select(); });
+    box.appendChild(h); box.appendChild(p); box.appendChild(input);
+    return box;
+  }
+
   function renderWelcome() {
     var panel = document.getElementById('m-welcome');
     if (!panel) return;
@@ -239,22 +262,18 @@
     var linkSlot = document.getElementById('m-welcome-link');
     linkSlot.innerHTML = '';
     if (outcome.actionLink) {
-      var box = document.createElement('div');
-      box.className = 'adm-notice adm-notice--warn';
-      var h = document.createElement('h3');
-      h.textContent = 'Send them this link yourself';
-      var p = document.createElement('p');
-      p.textContent = 'The account exists, but the invite email did not go out. This link lets ' +
-        member.full_name + ' set a password and sign in. It works once.';
-      var input = document.createElement('input');
-      input.className = 'input';
-      input.readOnly = true;
-      input.value = outcome.actionLink;
-      input.style.marginTop = '8px';
-      input.setAttribute('aria-label', 'One-time sign-in link');
-      input.addEventListener('focus', function () { input.select(); });
-      box.appendChild(h); box.appendChild(p); box.appendChild(input);
-      linkSlot.appendChild(box);
+      linkSlot.appendChild(rescueBox(outcome.actionLink, outcome.expiryHours));
+      /* Shown once is enough. Strip the credential from the stored copy so it
+         does not sit in sessionStorage for the life of the tab. */
+      try {
+        var stripped = Object.assign({}, outcome, { actionLink: null, linkShown: true });
+        sessionStorage.setItem(OUTCOME_KEY, JSON.stringify(stripped));
+      } catch (e) {}
+    } else if (outcome.linkShown) {
+      var note = document.createElement('p');
+      note.className = 'msg';
+      note.textContent = 'The one-time sign-in link was shown once. Use Resend invite for a fresh one.';
+      linkSlot.appendChild(note);
     }
 
     renderExpiry(outcome);
@@ -266,19 +285,29 @@
   /* The invite email promises 24 hours and nothing in the schema records when it
      was sent, so the flow hands the timestamp over directly. Without it we say
      nothing rather than guess from created_at, which does not move on a resend. */
+  /* sentAt is stamped by the CLIENT at the moment the response arrived, not by
+     the server: both ends of this subtraction have to come from the same clock
+     or a skewed laptop reports a fresh invite as already expired. */
   function renderExpiry(outcome) {
     var el = document.getElementById('m-welcome-expiry');
     if (!el) return;
-    if (!outcome.sentAt || !outcome.actionLink && !outcome.steps) { el.textContent = ''; return; }
-
-    var sent = new Date(outcome.sentAt).getTime();
+    var sent = outcome.sentAt ? new Date(outcome.sentAt).getTime() : NaN;
     if (isNaN(sent)) { el.textContent = ''; return; }
+
     var hours = outcome.expiryHours || 24;
+    var age  = Date.now() - sent;
     var left = Math.round((sent + hours * 3600000 - Date.now()) / 3600000);
 
-    el.textContent = left > 0
-      ? 'Invited just now — the sign-in link expires in about ' + left + ' hour' + (left === 1 ? '' : 's') + '.'
-      : 'That invite link has expired. Use Resend invite to send a fresh one.';
+    if (left <= 0) {
+      el.textContent = 'That sign-in link has expired. Use Resend invite to send a fresh one.';
+      return;
+    }
+    /* Both halves of the sentence are derived, so they cannot contradict each
+       other on a tab left open overnight. */
+    var when = age < 3600000 ? 'Invited just now'
+             : 'Invited ' + Math.round(age / 3600000) + ' hour' + (Math.round(age / 3600000) === 1 ? '' : 's') + ' ago';
+    el.textContent = when + ' — the sign-in link expires in about ' +
+      left + ' hour' + (left === 1 ? '' : 's') + '.';
   }
 
   /* ── Identity block ────────────────────────────────────────────────── */
@@ -287,7 +316,15 @@
     /* Resend is an identity action now, shown while the invite is still
        outstanding. Managers only — it calls a managers-only function. */
     var resend = document.getElementById('m-resend');
-    if (resend) resend.hidden = !(isManager && member.status === 'invited');
+    if (resend) {
+      var wasHidden = resend.hidden;
+      resend.hidden = !(isManager && member.status === 'invited');
+      /* The slot sits between two buttons in the identity header, so a ~190
+         character failure string parks itself in the page header and used to
+         survive every later re-render — including the one that removes the
+         button it belonged to. */
+      if (resend.hidden && !wasHidden) slotMsg('m-resend-msg', '');
+    }
 
     var av = document.getElementById('m-avatar');
     av.textContent = initials(member.full_name);
@@ -374,6 +411,10 @@
     renderHead();
     renderFacts();
     renderDanger();
+    /* Idempotent and self-gating, so calling it with the panel closed is a
+       no-op — but correcting a typo in the name while the handoff is open is
+       exactly when it would otherwise go stale. */
+    renderWelcome();
     window.admin.toast('Saved ' + member.full_name);
   }
 
@@ -431,9 +472,15 @@
            arrive, and without it they still cannot get in. Say so plainly. */
         /* Settings cannot fix this — its Email pane is a read-only log.
            Delivery depends on RESEND_API_KEY, a Supabase secret. */
-        slotMsg('m-resend-msg', 'The record is fine, but the invite email did NOT send: ' +
-          (out.emailError || 'unknown error') +
+        slotMsg('m-resend-msg', 'The invite email did NOT send: ' + (out.emailError || 'unknown error') +
           ' Delivery needs RESEND_API_KEY set as a Supabase secret from a terminal.', 'err');
+        /* This is the dedicated rescue screen, so it must offer the rescue. */
+        var slot = document.getElementById('m-welcome-link');
+        if (slot && out.actionLink) {
+          slot.innerHTML = '';
+          slot.appendChild(rescueBox(out.actionLink, out.expiryHours));
+          document.getElementById('m-welcome').hidden = false;
+        }
       } else {
         slotMsg('m-resend-msg', '');
         window.admin.toast('Invite resent to ' + member.email);

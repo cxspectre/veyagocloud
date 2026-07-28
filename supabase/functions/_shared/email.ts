@@ -112,9 +112,15 @@ function fallbackLink(href: string): string {
 
 /* ── Templates ─────────────────────────────────────────────────────────── */
 
-export function inviteEmail(opts: { name: string; inviterName?: string; actionLink: string; role: string }) {
+/* expiryHours is passed in rather than hardcoded: invite-employee mints an
+   INVITE link for a brand-new user (24h) but a RECOVERY link for an address
+   that already has an auth user (1h), and both are delivered with this same
+   template. Promising 24 hours on the recovery path was simply untrue. */
+export function inviteEmail(opts: { name: string; inviterName?: string; actionLink: string; role: string; expiryHours?: number }) {
   const first = String(opts.name || '').trim().split(/\s+/)[0] || 'there';
   const from = opts.inviterName ? `${escapeHtml(opts.inviterName)} has` : 'You have been';
+  const hours = opts.expiryHours ?? 24;
+  const window = hours === 1 ? 'in 1 hour' : `in ${hours} hours`;
   return {
     subject: 'Your Veyago account is ready',
     html: layout({
@@ -125,14 +131,14 @@ export function inviteEmail(opts: { name: string; inviterName?: string; actionLi
         <p style="margin:0 0 14px;">${from} added you to the Veyago dashboard as <strong>${escapeHtml(opts.role)}</strong>.</p>
         <p style="margin:0;">Click below to choose a password. You'll need it every time you sign in, so pick something you can remember or save it to your password manager.</p>
         ${button(opts.actionLink, 'Set your password')}
-        <p style="margin:0;font-size:14px;color:${MUTED};">This link expires in 24 hours. If it has, ask for a new invite — nothing is lost.</p>
+        <p style="margin:0;font-size:14px;color:${MUTED};">This link expires ${window}. If it has, ask for a new invite — nothing is lost.</p>
         ${fallbackLink(opts.actionLink)}`,
     }),
     text:
       `Welcome, ${first}\n\n` +
       `You've been added to the Veyago dashboard as ${opts.role}.\n\n` +
       `Set your password:\n${opts.actionLink}\n\n` +
-      `This link expires in 24 hours.`,
+      `This link expires ${window}.`,
   };
 }
 

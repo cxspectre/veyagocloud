@@ -40,17 +40,24 @@
   var draft = { name: '', email: '', title: '', start: '', role: '' };
   var directory = [];
   var preflight = null;      // { emailReady, reason, remedy, preview }
+  var preflightFor = null;   // the email+role the cached verdict describes
   var dashboardItemId = null;
   var sending = false;
 
   function $(id) { return document.getElementById(id); }
   function show(el, on) { if (el) el.hidden = !on; }
 
+  /* Unhide first, then write. A role="alert" node that is hidden is not in the
+     accessibility tree, so writing into it and revealing it afterwards is a
+     visibility change, not a content mutation — screen readers announce
+     nothing. Clearing and setting on a later tick also makes an identical
+     repeat message announce again. */
   function setErr(id, text) {
     var el = $(id);
     if (!el) return;
-    el.textContent = text || '';
     el.hidden = !text;
+    el.textContent = '';
+    if (text) setTimeout(function () { el.textContent = text; }, 0);
   }
 
   /* ── Draft ────────────────────────────────────────────────────────
@@ -111,9 +118,19 @@
 
   function renderStep() {
     var idx = currentStep();
-    /* Never let a pasted ?step=review skip the decisions it depends on. */
+    /* Never let a pasted ?step=review, or Back/Forward, skip the decisions it
+       depends on — including the typed confirmation, which is the whole point
+       of step 2's friction and used to be enforced only by the Continue
+       button. */
     if (idx >= 1 && !stepOneValid()) idx = 0;
-    if (idx >= 2 && !draft.role) idx = 1;
+    if (idx >= 2 && (!draft.role || !elevatedOk())) idx = 1;
+
+    /* A clamp without this leaves the address bar asserting a step the user is
+       not on, and because the clamp re-applies on every popstate, Back would
+       re-render the screen they are already looking at. */
+    if (idx !== currentStep()) {
+      window.history.replaceState(null, '', '/admin/member-new?step=' + STEPS[idx].key);
+    }
 
     STEPS.forEach(function (s, i) { show($(s.el), i === idx); });
     renderRail(idx);
@@ -284,9 +301,25 @@
      employees upsert had committed, so the failure was half-succeeded by
      construction: an account existed that nobody could sign into. */
   async function runPreflight() {
+    /* Keyed on what it actually describes. Clearing the cache only on the
+       Continue button left popstate able to re-show a verdict — and an email
+       preview — computed for a different role. */
+    var key = draft.email + '|' + draft.role;
+    if (preflight && preflightFor === key) return paintPreflight();
+    preflight = null;
+
+    /* The pending state is rendered, not markup: the original #preflight-msg is
+       destroyed by the first paint, so a re-check had no way to say it was
+       working. Send stays disabled until a verdict exists — a stale verdict
+       must never be actionable. */
     var slot = $('preflight-slot');
-    var msg = $('preflight-msg');
-    if (preflight) return paintPreflight();
+    slot.innerHTML = '';
+    slot.setAttribute('aria-busy', 'true');
+    var pending = document.createElement('p');
+    pending.className = 'msg';
+    pending.textContent = 'Checking that email can be delivered…';
+    slot.appendChild(pending);
+    $('send-btn').disabled = true;
 
     try {
       preflight = await window.adminRoles.invokeFn('invite-employee', {
@@ -298,18 +331,24 @@
         start_date: draft.start || null
       });
     } catch (err) {
-      /* A preflight that cannot run must not silently allow the send. */
-      preflight = { emailReady: false, reason: 'Could not check email delivery: ' + err.message, remedy: null };
+      /* A preflight that cannot run must not silently allow the send — but it
+         also must not claim a cause it has not established. "Could not check"
+         is a different fact from "email is not configured". */
+      preflight = { emailReady: false, unavailable: true, remedy: null,
+                    reason: 'The check could not run: ' + err.message };
     }
+    preflightFor = key;
     paintPreflight();
   }
 
   function paintPreflight() {
     var slot = $('preflight-slot');
     slot.innerHTML = '';
+    slot.removeAttribute('aria-busy');
 
     var box = document.createElement('div');
     var send = $('send-btn');
+    send.disabled = false;
 
     if (preflight.emailReady) {
       box.className = 'adm-notice adm-notice--ok';
@@ -325,7 +364,9 @@
     } else {
       box.className = 'adm-notice adm-notice--danger';
       var h = document.createElement('h3');
-      h.textContent = 'Email is not configured, so the invite cannot be delivered.';
+      h.textContent = preflight.unavailable
+        ? 'Could not check whether the invite can be delivered.'
+        : 'Email is not configured, so the invite cannot be delivered.';
       var why = document.createElement('p');
       why.textContent = preflight.reason || '';
       box.appendChild(h); box.appendChild(why);
@@ -347,6 +388,11 @@
       /* srcdoc + sandbox: the preview is server-rendered HTML and must not run
          script or reach the page around it. */
       $('preview-frame').srcdoc = preflight.preview.html;
+    } else {
+      /* A failed re-check must not leave the previous run's preview on screen
+         claiming to describe this one. */
+      show($('preview-wrap'), false);
+      $('preview-frame').removeAttribute('srcdoc');
     }
   }
 
@@ -354,6 +400,14 @@
   async function send() {
     if (sending) return;
     setErr('review-err', '');
+
+    /* Re-checked here, not just on the Continue button: a manager role must not
+       be grantable by any route that skipped step 2's typed confirmation. */
+    if (!draft.role || !elevatedOk()) {
+      setErr('review-err', 'Confirm the role on the previous step before sending.');
+      goStep(1, true);
+      return;
+    }
 
     var btn = $('send-btn');
     sending = true;
@@ -373,9 +427,14 @@
       });
 
       outcome.employee = out.employee;
-      outcome.sentAt = out.sentAt || new Date().toISOString();
+      /* Stamped from THIS clock, not the server's: the countdown subtracts it
+         from Date.now() on the next page, and mixing clocks makes a skewed
+         laptop report a brand-new invite as already expired. */
+      outcome.sentAt = new Date().toISOString();
       outcome.actionLink = out.actionLink || null;
-      outcome.expiryHours = EXPIRY_HOURS;
+      /* Invite links last 24h, recovery links 1h — the server knows which it
+         minted, so take its word rather than assuming. */
+      outcome.expiryHours = out.expiryHours || EXPIRY_HOURS;
 
       outcome.steps.push({ ok: true, text: out.invited ? 'Account created' : 'Linked to their existing account' });
       outcome.steps.push({ ok: true, text: 'Added to the team as ' + ((roleDef(draft.role) || {}).title || draft.role) });
@@ -390,11 +449,21 @@
 
       clearDraft();
       try { sessionStorage.setItem('veyago.admin.invite-outcome', JSON.stringify(outcome)); } catch (e) {}
+      /* Deliberately NOT resetting the button here. Assigning location.href only
+         schedules the navigation; a finally block would run immediately after
+         and re-enable Send for the whole unload window, letting a second invite
+         mint a second link and silently invalidate the first. */
       window.location.href = '/admin/member?id=' + encodeURIComponent(out.employee.id) + '#welcome';
       return;
     } catch (err) {
-      setErr('review-err', 'Could not add them: ' + err.message);
-    } finally {
+      /* The server creates the auth user and the employees row before it
+         attempts the send, so a throw does NOT mean nothing happened. Saying
+         "could not add them" full stop would send the manager off to create a
+         duplicate. Re-submitting is safe — the function falls back to
+         listUsers + a recovery link for an address that already exists. */
+      setErr('review-err', 'Could not finish adding ' + draft.name + ': ' + err.message +
+        ' An account for ' + draft.email + ' may already have been created — check the Team ' +
+        'directory before trying again. Sending the same address again is safe.');
       sending = false;
       btn.disabled = false;
       btn.textContent = was;
@@ -465,8 +534,10 @@
       goStep(1);
     });
 
-    $('back-person').addEventListener('click', function () { goStep(0); });
-    $('back-access').addEventListener('click', function () { goStep(1); });
+    /* Replace rather than push: going backwards inside the flow used to append
+       entries, so the browser's own Back button walked the user FORWARD. */
+    $('back-person').addEventListener('click', function () { goStep(0, true); });
+    $('back-access').addEventListener('click', function () { goStep(1, true); });
 
     $('elevated-confirm').addEventListener('input', function () { setErr('access-err', ''); });
 
@@ -477,7 +548,6 @@
         $('elevated-confirm').focus();
         return;
       }
-      preflight = null;            // re-check: the role is part of the preview
       goStep(2);
     });
 

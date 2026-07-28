@@ -420,17 +420,21 @@
 /* Step rail. Rendered from one array so the labels cannot drift from the
    steps; the numbers are content, not decoration, so they are in the markup. */
 .flow-rail { display: flex; align-items: center; gap: 8px; margin: 0 0 26px; flex-wrap: wrap; }
-.flow-step { display: flex; align-items: center; gap: 8px; color: var(--muted-2); font-size: 0.88rem; }
+/* --muted, not --muted-2: 4.66:1 on the page background vs 3.33:1, which fails
+   AA at this size. The upcoming chip also needs a surface that is not the page
+   colour — var(--bg-card) is #f5f5f7, identical to the page, so the marker was
+   literally invisible until it was reached. */
+.flow-step { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.88rem; }
 .flow-step .n {
   width: 24px; height: 24px; border-radius: 50%; flex: none;
   display: grid; place-items: center;
   font-size: 0.76rem; font-weight: 700;
-  background: var(--bg-card); color: var(--muted-2);
+  background: #fff; border: 1px solid var(--hair); color: var(--muted);
 }
 .flow-step.done { color: var(--muted); }
-.flow-step.done .n { background: #1a7f37; color: #fff; }
+.flow-step.done .n { background: #1a7f37; border-color: #1a7f37; color: #fff; }
 .flow-step.current { color: var(--ink); font-weight: 600; }
-.flow-step.current .n { background: var(--blue-2); color: #fff; }
+.flow-step.current .n { background: var(--blue-2); border-color: var(--blue-2); color: #fff; }
 .flow-sep { flex: 1; height: 1px; background: var(--hair); min-width: 16px; }
 @media (max-width: 620px) { .flow-sep { display: none; } .flow-rail { gap: 12px; } }
 
@@ -453,7 +457,7 @@
 .check-row { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; cursor: pointer; }
 .check-row input { margin: 2px 0 0; flex: none; accent-color: var(--blue-2); width: 16px; height: 16px; }
 .check-row-title { font-size: 0.9rem; color: var(--ink); }
-.check-row-sub { font-size: 0.8rem; color: var(--muted-2); margin-top: 2px; line-height: 1.45; }
+.check-row-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; line-height: 1.45; }
 .check-row input:disabled + div .check-row-title { color: var(--muted-2); }
 
 /* Block-level notice. Errors were inline .msg text only, which is too quiet
@@ -1049,8 +1053,17 @@
 .input:focus-visible, .adm-signout:focus-visible,
 /* Keep new interactive surfaces on this list — it is explicit, not a wildcard,
    so anything added elsewhere is invisible to the keyboard until named here. */
-.radio-card:focus-within, .check-row:focus-within, .cp-input:focus-visible {
+.radio-card:has(input:focus-visible), .check-row:has(input:focus-visible),
+.cp-input:focus-visible {
   outline: 2px solid var(--blue-2); outline-offset: 2px;
+}
+/* Fallback where :has() is unsupported. Kept in its own rule so a browser that
+   cannot parse the selector above still gets a ring, and one that can is not
+   given a mouse-click ring by :focus-within. */
+@supports not selector(:has(*)) {
+  .radio-card:focus-within, .check-row:focus-within {
+    outline: 2px solid var(--blue-2); outline-offset: 2px;
+  }
 }
 
 /* ── Detail pages ─────────────────────────────────────────────────────────
