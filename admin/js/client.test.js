@@ -46,7 +46,7 @@ const admin = load();
 test('accepts a plain admin path', () => {
   assert.equal(admin.safeAdminPath('/admin/team'), '/admin/team');
   assert.equal(admin.safeAdminPath('/admin/member?id=abc-123'), '/admin/member?id=abc-123');
-  assert.equal(admin.safeAdminPath('/admin/transactions?tx=9#row'), '/admin/transactions?tx=9#row');
+  assert.equal(admin.safeAdminPath('/admin/finance?tx=9#transactions'), '/admin/finance?tx=9#transactions');
 });
 
 /* Each of these is a valid value for location.href that leaves the site. */

@@ -2,83 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Transactions · Veyago Admin</title>
   <meta name="robots" content="noindex,nofollow" />
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/admin/admin.css" />
+  <!-- Transactions became a tab on /admin/finance rather than its own page —
+       see finance.html's header comment. This file stays only so an old
+       bookmark, browser-history entry, or pasted link (including one carrying
+       ?tx=<id>, which finance.js's recent-activity rows still hand out) keeps
+       landing somewhere real instead of 404ing. -->
+  <script>
+    location.replace('/admin/finance' + location.search + '#transactions');
+  </script>
 </head>
-<body>
-  <div class="adm-shell" id="adm-shell" hidden>
-    <main class="adm-main">
-      <a class="adm-back" href="/admin/finance">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        Finance
-      </a>
-
-      <div class="adm-page-head">
-        <div>
-          <h1>Transactions</h1>
-          <p>Every line from Mercury, Stripe and manual entries. Click a row to edit it.</p>
-        </div>
-        <div class="adm-actions">
-          <a class="btn" href="/admin/invoices">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            Invoices
-          </a>
-        </div>
-      </div>
-      <p class="msg" id="msg" role="status" aria-live="polite"></p>
-
-      <div class="adm-toolbar">
-        <label for="f-account">Account</label>
-        <select class="input input-sm" id="f-account">
-          <option value="all">All accounts</option>
-        </select>
-        <label for="f-category">Category</label>
-        <select class="input input-sm" id="f-category">
-          <option value="all">All categories</option>
-          <option value="none">Uncategorised</option>
-        </select>
-        <label for="f-search">Search</label>
-        <input class="input input-sm" id="f-search" type="search" placeholder="Description or counterparty" />
-        <span class="adm-toolbar-count" id="tx-count"></span>
-      </div>
-
-      <div class="adm-split">
-        <div class="u-min0">
-          <div class="card-pane">
-            <div class="fin-head"><span>Date</span><span>Description</span><span>Category</span><span class="fin-amt">Amount</span></div>
-            <div class="fin-list" id="tx-list"><div class="skel skel-sm"></div><div class="skel skel-sm"></div><div class="skel skel-sm"></div><div class="skel skel-sm"></div></div>
-          </div>
-        </div>
-
-        <div class="adm-side-sticky">
-          <div class="card-pane">
-            <h2>Add transaction</h2>
-            <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">Goes into the manual account — the ledger creates one the first time you need it. Synced bank and Stripe lines arrive on their own.</p>
-            <div class="field"><label for="m-desc">Description</label><input class="input" id="m-desc" type="text" placeholder="Office rent — July" /></div>
-            <div class="field"><label for="m-amount">Amount <span class="qualifier">(− = expense)</span></label><input class="input" id="m-amount" type="number" step="0.01" placeholder="-1200.00" /></div>
-            <div class="field"><label for="m-date">Date</label><input class="input" id="m-date" type="date" /></div>
-            <div class="field"><label for="m-category">Category</label><select class="input" id="m-category"><option value="">Uncategorised</option></select></div>
-            <div class="form-actions">
-              <button class="btn btn-primary" id="m-add-btn" type="button">Add transaction</button>
-              <span class="msg" id="m-msg"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <script src="/admin/vendor/supabase.js?v=12"></script>
-  <script src="/admin/supabase-config.js?v=12"></script>
-  <script src="/admin/js/client.js?v=12"></script>
-  <script src="/admin/js/auth.js?v=12"></script>
-  <script src="/admin/js/roles.js?v=12"></script>
-  <script src="/admin/js/nav.js?v=12"></script>
-  <script src="/admin/js/palette.js?v=12"></script>
-  <script src="/admin/js/transactions.js?v=12"></script>
-</body>
+<body></body>
 </html>

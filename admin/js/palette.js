@@ -33,9 +33,12 @@
     { label: 'Team',          href: '/admin/team',         keywords: 'people staff employees hire invite directory' },
     { label: 'Onboarding',    href: '/admin/onboarding',   keywords: 'new hire progress checklist' },
     { label: 'Checklist',     href: '/admin/checklist',    keywords: 'onboarding template items company' },
-    { label: 'Finance',       href: '/admin/finance',      keywords: 'money revenue overview accounts' },
-    { label: 'Transactions',  href: '/admin/transactions', keywords: 'ledger spend expenses payments money' },
-    { label: 'Invoices',      href: '/admin/invoices',     keywords: 'billing clients owed money' },
+    /* Transactions and Invoices are tabs on this same page now, not separate
+       screens — targeting the #hash directly still gets someone straight to
+       the right one in one ⌘K, rather than landing on Overview every time. */
+    { label: 'Finance',       href: '/admin/finance',                keywords: 'money revenue overview accounts' },
+    { label: 'Transactions',  href: '/admin/finance#transactions',   keywords: 'ledger spend expenses payments money' },
+    { label: 'Invoices',      href: '/admin/finance#invoices',       keywords: 'billing clients owed money' },
     { label: 'Account',       href: '/admin/account',      keywords: 'password two factor mfa me profile' },
     { label: 'Settings',      href: '/admin/settings',     keywords: 'email integrations stripe mercury connected accounts' }
   ];

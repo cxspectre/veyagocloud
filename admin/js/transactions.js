@@ -8,7 +8,7 @@
   var COLS = 'id,account_id,posted_at,description,counterparty,amount,currency,category_id,status,source,note';
   var PAGE = 200;
 
-  var msg     = document.getElementById('msg');
+  var msg     = document.getElementById('msg-transactions');
   var listEl  = document.getElementById('tx-list');
   var countEl = document.getElementById('tx-count');
   var accEl   = document.getElementById('f-account');
@@ -22,7 +22,8 @@
   var expandedId = null;      // transaction whose editor is open
   var reqSeq = 0;             // guards against a slow request overwriting a fast one
 
-  /* Deep link from the Finance overview: /admin/transactions?tx=<id>. */
+  /* Deep link from the Overview tab's recent-activity row:
+     /admin/finance?tx=<id>#transactions. */
   var deepLinkId = new URLSearchParams(window.location.search).get('tx');
 
   function setMsg(t, k) { if (!msg) return; msg.textContent = t || ''; msg.className = 'msg' + (k ? ' ' + k : ''); }
@@ -250,7 +251,10 @@
     catSel.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
 
     var amt = document.createElement('span'); amt.className = 'fin-amt';
-    amt.style.color = t.amount >= 0 ? '#1a7f37' : '#b3261e';
+    /* Same tokens finance.js's own recent-activity row uses for this exact
+       amount-color decision — admin.css already defines both, this used to
+       hardcode a second, driftable copy of the same two hex values. */
+    amt.style.color = t.amount >= 0 ? 'var(--fg-success)' : 'var(--fg-danger)';
     amt.textContent = fmt(Number(t.amount), t.currency);
 
     row.appendChild(date); row.appendChild(desc); row.appendChild(catSel); row.appendChild(amt);

@@ -260,7 +260,7 @@ test('Enter navigates to the highlighted result', () => {
   input.dispatchEvent(new window.Event('input', { bubbles: true }));
   press(window, 'Enter', { on: input });
 
-  assert.deepEqual(navigated, ['/admin/invoices']);
+  assert.deepEqual(navigated, ['/admin/finance#invoices']);
   assert.equal(window.document.querySelector('.cp-overlay').hidden, true, 'closes on navigate');
 });
 

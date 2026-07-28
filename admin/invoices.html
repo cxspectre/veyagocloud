@@ -2,87 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Invoices · Veyago Admin</title>
   <meta name="robots" content="noindex,nofollow" />
-  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css" />
-  <link rel="stylesheet" href="/admin/admin.css" />
+  <!-- Invoices became a tab on /admin/finance rather than its own page — see
+       finance.html's header comment. This file stays only so an old bookmark
+       or pasted link keeps landing somewhere real instead of 404ing. -->
+  <script>
+    location.replace('/admin/finance' + location.search + '#invoices');
+  </script>
 </head>
-<body>
-  <div class="adm-shell" id="adm-shell" hidden>
-    <main class="adm-main">
-      <a class="adm-back" href="/admin/finance">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-        Finance
-      </a>
-
-      <div class="adm-page-head">
-        <div>
-          <h1>Invoices</h1>
-          <p>What you have billed, what is late, and what has landed.</p>
-        </div>
-        <div class="adm-actions">
-          <a class="btn" href="/admin/transactions">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-            Transactions
-          </a>
-          <button class="btn btn-primary" id="inv-jump" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New invoice
-          </button>
-        </div>
-      </div>
-      <p class="msg" id="msg" role="status" aria-live="polite"></p>
-
-      <div class="dash-stats dash-stats--4" id="inv-stats"></div>
-
-      <div class="adm-toolbar">
-        <label for="f-status">Status</label>
-        <select class="input input-sm" id="f-status">
-          <option value="open">Open</option>
-          <option value="all">All</option>
-          <option value="draft">Draft</option>
-          <option value="sent">Sent</option>
-          <option value="overdue">Overdue</option>
-          <option value="paid">Paid</option>
-        </select>
-        <span class="adm-toolbar-count" id="inv-count"></span>
-      </div>
-
-      <div class="adm-split">
-        <div class="u-min0">
-          <ul class="adm-list" id="inv-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
-        </div>
-
-        <div class="adm-side-sticky">
-          <div class="card-pane">
-            <h2>New invoice</h2>
-            <div class="row-2">
-              <div class="field"><label for="i-client">Client</label><input class="input" id="i-client" type="text" placeholder="Acme GmbH" /></div>
-              <div class="field"><label for="i-number">Invoice #</label><input class="input" id="i-number" type="text" placeholder="2026-014" /></div>
-            </div>
-            <div class="field"><label for="i-amount">Amount <span id="i-currency" style="font-weight:400;color:var(--muted-2)"></span></label><input class="input" id="i-amount" type="number" step="0.01" min="0" placeholder="2500.00" /></div>
-            <div class="field"><label for="i-issued">Issue date</label><input class="input" id="i-issued" type="date" /></div>
-            <div class="field"><label for="i-due">Due date</label><input class="input" id="i-due" type="date" /></div>
-            <div class="field"><label for="i-notes">Notes <span class="qualifier">(optional)</span></label><textarea class="input" id="i-notes" rows="3" placeholder="PO number, what it covers, payment terms"></textarea></div>
-            <div class="form-actions">
-              <button class="btn btn-primary" id="i-add-btn" type="button">Create invoice</button>
-              <span class="msg" id="i-msg"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <script src="/admin/vendor/supabase.js?v=12"></script>
-  <script src="/admin/supabase-config.js?v=12"></script>
-  <script src="/admin/js/client.js?v=12"></script>
-  <script src="/admin/js/auth.js?v=12"></script>
-  <script src="/admin/js/roles.js?v=12"></script>
-  <script src="/admin/js/nav.js?v=12"></script>
-  <script src="/admin/js/palette.js?v=12"></script>
-  <script src="/admin/js/invoices.js?v=12"></script>
-</body>
+<body></body>
 </html>

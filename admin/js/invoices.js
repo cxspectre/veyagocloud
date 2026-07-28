@@ -9,7 +9,7 @@
   var COLS = 'id,number,client,amount,currency,status,issued_on,due_on,paid_on,notes';
   var PAGE = 200;
 
-  var msg     = document.getElementById('msg');
+  var msg     = document.getElementById('msg-invoices');
   var listEl  = document.getElementById('inv-list');
   var countEl = document.getElementById('inv-count');
   var filtEl  = document.getElementById('f-status');
@@ -126,18 +126,24 @@
       else if (s === 'paid' && inv.paid_on && inv.paid_on.slice(0, 7) === month) { paidMonth++; paidAmt += a; }
     });
 
+    /* Tokens, not hex — admin.css already defines every one of these. Draft
+       used to be purple here (#5856d6, actually --role-admin's badge color,
+       borrowed for an unrelated reason) while the Overview tab's own invoice
+       summary has always shown Draft as neutral grey via badge-neutral. Same
+       page now, one click apart, so it needed to be one color: neutral, same
+       as everywhere else "draft" appears in this product. */
     window.admin.statCards(wrap, [
-      { n: draft, label: 'Draft', color: draft ? '#5856d6' : '#86868b',
+      { n: draft, label: 'Draft', color: 'var(--muted-2)',
         n2: draft ? 'not sent yet' : 'nothing waiting',
         icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>' },
-      { n: sent, label: 'Sent', color: '#0071e3',
+      { n: sent, label: 'Sent', color: 'var(--blue-2)',
         n2: sent ? fmt(sentAmt) + ' awaiting payment' : 'nothing outstanding',
         icon: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>' },
-      { n: overdue, label: 'Overdue', color: overdue ? '#ff3b30' : '#86868b',
+      { n: overdue, label: 'Overdue', color: overdue ? 'var(--ac-danger)' : 'var(--muted-2)',
         n2: overdue ? fmt(overdueAmt) + ' past due' : 'nothing late',
-        n2Color: overdue ? '#b3261e' : null,
+        n2Color: overdue ? 'var(--fg-danger)' : null,
         icon: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' },
-      { n: paidMonth, label: 'Paid this month', color: '#34c759',
+      { n: paidMonth, label: 'Paid this month', color: 'var(--ac-success)',
         n2: paidMonth ? fmt(paidAmt) + ' collected' : 'nothing in yet',
         icon: '<polyline points="20 6 9 17 4 12"/>' }
     ]);
@@ -209,7 +215,7 @@
 
     var icon = document.createElement('div'); icon.className = 'adm-item-icon';
     icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="' +
-      (status === 'overdue' ? '#b3261e' : status === 'paid' ? '#1a7f37' : 'var(--muted-2)') +
+      (status === 'overdue' ? 'var(--fg-danger)' : status === 'paid' ? 'var(--fg-success)' : 'var(--muted-2)') +
       '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
 
     var main = document.createElement('div'); main.className = 'adm-item-main';

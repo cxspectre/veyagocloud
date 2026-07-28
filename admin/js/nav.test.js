@@ -86,26 +86,26 @@ test('the sidebar lists every screen a user can navigate to', async () => {
     '/admin/', '/admin/journal', '/admin/wallpapers', '/admin/apps', '/admin/announcements',
     '/admin/publish',
     '/admin/tasks', '/admin/team', '/admin/onboarding', '/admin/checklist',
-    '/admin/finance', '/admin/transactions', '/admin/invoices'
+    '/admin/finance'
   ]);
 });
 
-/* Transactions and Invoices own every finance write and had no entry at all;
-   Checklist edits every employee's list from one small header button. */
-test('the finance write screens and the checklist template are reachable from the nav', async () => {
+/* Checklist edits every employee's list from one small header button, so it
+   needed a real entry rather than being buried behind Onboarding. Transactions
+   and Invoices used to be listed here too — they were promoted once, for the
+   same reason, back when Finance was read-only and they had no nav entry at
+   all. Now they are tabs on /admin/finance rather than separate URLs, so
+   there is nothing left for a second sidebar entry to point at. */
+test('the checklist template is reachable from the nav', async () => {
   const { allHrefs } = await mountAt('/admin/');
-  for (const href of ['/admin/transactions', '/admin/invoices', '/admin/checklist']) {
-    assert.ok(allHrefs.includes(href), href + ' must be in the sidebar');
-  }
+  assert.ok(allHrefs.includes('/admin/checklist'), '/admin/checklist must be in the sidebar');
 });
 
 test('second-level destinations render indented and without an icon', async () => {
   const { window } = await mountAt('/admin/');
-  for (const href of ['/admin/checklist', '/admin/transactions', '/admin/invoices']) {
-    const a = window.document.querySelector('.adm-nav a[href="' + href + '"]');
-    assert.ok(a.classList.contains('adm-nav-sub'), href + ' is a sub item');
-    assert.equal(a.querySelector('svg'), null, href + ' carries no icon');
-  }
+  const a = window.document.querySelector('.adm-nav a[href="/admin/checklist"]');
+  assert.ok(a.classList.contains('adm-nav-sub'), '/admin/checklist is a sub item');
+  assert.equal(a.querySelector('svg'), null, '/admin/checklist carries no icon');
   // ...and top-level items still do have one.
   assert.ok(window.document.querySelector('.adm-nav a[href="/admin/finance"] svg'));
 });
@@ -127,17 +127,11 @@ test('member-new maps to Team in its own right, not via member', async () => {
   assert.deepEqual(activeHrefs, ['/admin/team']);
 });
 
-/* These are first-class now, so they highlight themselves rather than a parent. */
-test('checklist, transactions and invoices highlight themselves', async () => {
-  for (const [route, label] of [
-    ['/admin/checklist', 'Checklist'],
-    ['/admin/transactions', 'Transactions'],
-    ['/admin/invoices', 'Invoices']
-  ]) {
-    const { activeHrefs, activeLabels } = await mountAt(route);
-    assert.deepEqual(activeHrefs, [route], route);
-    assert.deepEqual(activeLabels, [label], route);
-  }
+/* First-class in its own right, so it highlights itself rather than a parent. */
+test('checklist highlights itself', async () => {
+  const { activeHrefs, activeLabels } = await mountAt('/admin/checklist');
+  assert.deepEqual(activeHrefs, ['/admin/checklist']);
+  assert.deepEqual(activeLabels, ['Checklist']);
 });
 
 for (const [route, expectedHref, expectedLabel] of PARENT_CASES) {
@@ -180,7 +174,7 @@ test('every form of the dashboard route highlights Home', async () => {
 
 test('exactly one item is ever active', async () => {
   const routes = ['/admin/', '/admin/journal', '/admin/article', '/admin/member',
-                  '/admin/invoices', '/admin/task', '/admin/checklist'];
+                  '/admin/finance', '/admin/task', '/admin/checklist'];
   for (const route of routes) {
     assert.equal((await mountAt(route)).activeHrefs.length, 1, route);
   }
@@ -200,8 +194,8 @@ test('non-active items carry no aria-current', async () => {
 
 /* Finance is manager-only. These run the real adminReady path, so they cover
    the async reveal rather than just the cached-role first paint. */
-test('an employee on a finance sub-screen never gets Finance revealed', async () => {
-  const { window } = await mountAt('/admin/invoices', { role: 'employee' });
+test('an employee on the finance page never gets Finance revealed', async () => {
+  const { window } = await mountAt('/admin/finance', { role: 'employee' });
   const finance = window.document.querySelector('.adm-nav a[href="/admin/finance"]');
   assert.equal(finance.hidden, true, 'still hidden after the async isManager() check');
 });

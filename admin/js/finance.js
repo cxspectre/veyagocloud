@@ -1,13 +1,16 @@
-/* Finance OVERVIEW. Read-only on purpose: headline stats, the 6-month chart,
-   the accounts panel, the eight most recent transactions and an invoice
-   summary. Everything you can DO lives on its own page —
-   /admin/transactions (the full ledger) and /admin/invoices (invoice
-   management) — so this page never grows a form again.
+/* Finance OVERVIEW tab. Read-only on purpose: headline stats, the 6-month
+   chart, the accounts panel, the eight most recent transactions and an
+   invoice summary. Everything you can DO lives in the other two tabs on this
+   same page — Transactions (transactions.js, the full ledger) and Invoices
+   (invoices.js, invoice management) — so this tab never grows a form again.
    Managers only — non-managers are bounced to the dashboard. */
 (function () {
   'use strict';
 
-  var msg = document.getElementById('msg');
+  /* Scoped to this panel — finance.js, transactions.js and invoices.js now
+     share one document (/admin/finance's three tabs), and each had its own
+     unscoped #msg. */
+  var msg = document.getElementById('msg-overview');
 
   var accounts = [];
   var catById = {};        // category id → name, for the recent-activity column
@@ -108,15 +111,21 @@
     });
     var cur = mainCurrency();
 
+    /* Each color below is a CSS custom property, not a literal — admin.css
+       already defines --ac-success/--ac-danger/--ac-warn/--blue-2 as the exact
+       hex this used to hardcode a second time. Feeding the DOM a var()
+       reference instead of a copy of the value means there is only one place
+       these colors live; if admin.css's palette ever moves (a theme, a dark
+       mode), this stat row moves with it instead of quietly going stale. */
     window.admin.statCards(wrap, [
-      { color: '#34c759', label: 'Income this month',   n: fmt(income, cur),
+      { color: 'var(--ac-success)', label: 'Income this month',   n: fmt(income, cur),
         icon: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' },
-      { color: '#ff3b30', label: 'Expenses this month', n: fmt(expense, cur),
+      { color: 'var(--ac-danger)', label: 'Expenses this month', n: fmt(expense, cur),
         icon: '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>' },
-      { color: '#0071e3', label: 'Net this month',      n: fmt(income - expense, cur),
+      { color: 'var(--blue-2)', label: 'Net this month',      n: fmt(income - expense, cur),
         icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' },
-      { color: '#ff9500', label: 'Outstanding invoices', n: fmt(outstanding, cur),
-        href: '/admin/invoices',
+      { color: 'var(--ac-warn)', label: 'Outstanding invoices', n: fmt(outstanding, cur),
+        href: '#invoices',
         icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>' }
     ]);
   }
@@ -149,18 +158,20 @@
       var x0 = PAD + i * groupW + groupW / 2;
       var hIn = Math.max(2, Math.round((totals[m].income  / max) * plotH));
       var hEx = Math.max(2, Math.round((totals[m].expense / max) * plotH));
+      /* fill/stroke as an inline style, not a bare presentation attribute —
+         style="" is unambiguously CSS, so var() always resolves there. */
       bars +=
-        '<rect x="' + (x0 - barW - 2) + '" y="' + (20 + plotH - hIn) + '" width="' + barW + '" height="' + hIn + '" rx="3" fill="#34c759"><title>' + m + ' income: ' + totals[m].income.toFixed(2) + '</title></rect>' +
-        '<rect x="' + (x0 + 2) + '" y="' + (20 + plotH - hEx) + '" width="' + barW + '" height="' + hEx + '" rx="3" fill="#ff3b30" opacity="0.85"><title>' + m + ' expenses: ' + totals[m].expense.toFixed(2) + '</title></rect>' +
-        '<text x="' + x0 + '" y="' + (H - 4) + '" text-anchor="middle" font-size="11" fill="#86868b">' + m.slice(5) + '/' + m.slice(2, 4) + '</text>';
+        '<rect x="' + (x0 - barW - 2) + '" y="' + (20 + plotH - hIn) + '" width="' + barW + '" height="' + hIn + '" rx="3" style="fill:var(--ac-success)"><title>' + m + ' income: ' + totals[m].income.toFixed(2) + '</title></rect>' +
+        '<rect x="' + (x0 + 2) + '" y="' + (20 + plotH - hEx) + '" width="' + barW + '" height="' + hEx + '" rx="3" style="fill:var(--ac-danger)" opacity="0.85"><title>' + m + ' expenses: ' + totals[m].expense.toFixed(2) + '</title></rect>' +
+        '<text x="' + x0 + '" y="' + (H - 4) + '" text-anchor="middle" font-size="11" style="fill:var(--muted-2)">' + m.slice(5) + '/' + m.slice(2, 4) + '</text>';
     });
 
     wrap.innerHTML =
       '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" role="img" aria-label="Monthly income and expenses">' +
-        '<line x1="' + PAD + '" y1="' + (20 + plotH) + '" x2="' + (W - PAD) + '" y2="' + (20 + plotH) + '" stroke="#e8e8ed" stroke-width="1"/>' +
+        '<line x1="' + PAD + '" y1="' + (20 + plotH) + '" x2="' + (W - PAD) + '" y2="' + (20 + plotH) + '" style="stroke:var(--hair-soft)" stroke-width="1"/>' +
         bars +
-        '<g font-size="11"><rect x="' + PAD + '" y="2" width="10" height="10" rx="2" fill="#34c759"/><text x="' + (PAD + 14) + '" y="11" fill="#86868b">Income</text>' +
-        '<rect x="' + (PAD + 78) + '" y="2" width="10" height="10" rx="2" fill="#ff3b30" opacity="0.85"/><text x="' + (PAD + 92) + '" y="11" fill="#86868b">Expenses</text></g>' +
+        '<g font-size="11"><rect x="' + PAD + '" y="2" width="10" height="10" rx="2" style="fill:var(--ac-success)"/><text x="' + (PAD + 14) + '" y="11" style="fill:var(--muted-2)">Income</text>' +
+        '<rect x="' + (PAD + 78) + '" y="2" width="10" height="10" rx="2" style="fill:var(--ac-danger)" opacity="0.85"/><text x="' + (PAD + 92) + '" y="11" style="fill:var(--muted-2)">Expenses</text></g>' +
       '</svg>';
   }
 
@@ -196,7 +207,7 @@
   }
 
   /* ── Recent activity: newest eight, read-only. The editable ledger is
-     /admin/transactions. ───────────────────────────────────────────────── */
+     the Transactions tab. ─────────────────────────────────────────────── */
 
   async function loadRecent() {
     var listEl = document.getElementById('tx-recent');
@@ -215,7 +226,7 @@
         '<div class="dash-empty-state">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>' +
           '<p>No transactions yet — sync an account or add one on the ledger.</p>' +
-          '<a class="btn btn-sm btn-primary" href="/admin/transactions">Open the ledger</a>' +
+          '<a class="btn btn-sm btn-primary" href="#transactions">Open the ledger</a>' +
         '</div>';
       return;
     }
@@ -227,7 +238,13 @@
   function recentRow(t) {
     var row = document.createElement('a');
     row.className = 'fin-row adm-item--link';
-    row.href = '/admin/transactions?tx=' + encodeURIComponent(t.id);
+    /* Must be a real query string, not "#transactions?tx=…" — everything after
+       a "#" is the fragment, and transactions.js reads its deep link from
+       location.search (which a fragment is invisible to). The query differs
+       from the current page's, so this is a full navigation rather than an
+       in-page hash swap — same as when this pointed at the separate
+       /admin/transactions page, just landing on the shared document now. */
+    row.href = '/admin/finance?tx=' + encodeURIComponent(t.id) + '#transactions';
 
     var date = document.createElement('span'); date.className = 'fin-date';
     date.textContent = t.posted_at.slice(5) + (t.status === 'pending' ? ' ⏳' : '');
@@ -249,7 +266,7 @@
     cat.textContent = catById[t.category_id] || 'Uncategorised';
 
     var amt = document.createElement('span'); amt.className = 'fin-amt';
-    amt.style.color = t.amount >= 0 ? '#1a7f37' : '#b3261e';
+    amt.style.color = t.amount >= 0 ? 'var(--fg-success)' : 'var(--fg-danger)';
     amt.textContent = fmt(Number(t.amount), t.currency);
 
     row.appendChild(date); row.appendChild(desc); row.appendChild(cat); row.appendChild(amt);
@@ -259,7 +276,7 @@
   /* ── Invoice summary ───────────────────────────────────────────────── */
 
   /* A 'sent' invoice past its due date reads as overdue even if nobody has
-     flipped the stored status yet — same rule as /admin/invoices. */
+     flipped the stored status yet — same rule invoices.js uses on its own tab. */
   function effectiveStatus(inv, t0) {
     if (inv.status === 'sent' && inv.due_on && inv.due_on < t0) return 'overdue';
     return inv.status;
@@ -313,7 +330,7 @@
     var acts2 = document.createElement('div'); acts2.className = 'adm-item-acts';
     var amt = document.createElement('span'); amt.className = 'fin-amt';
     amt.textContent = fmt(summary.outstanding, mainCurrency());
-    if (summary.overdue) amt.style.color = '#b3261e';
+    if (summary.overdue) amt.style.color = 'var(--fg-danger)';
     acts2.appendChild(amt);
     li2.appendChild(main2); li2.appendChild(acts2);
     listEl.appendChild(li2);

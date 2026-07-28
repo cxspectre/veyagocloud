@@ -11,9 +11,15 @@
      list and light their parent instead. Without this the sidebar highlighted
      nothing on exactly the screens where you are deepest.
 
-     Checklist, Transactions and Invoices are NOT here: they are destinations in
-     their own right (Transactions and Invoices own every finance write), so
-     they earn their own entries below and highlight themselves. */
+     Checklist is NOT here: it is a destination in its own right (edits the
+     company-wide template from one small header button, so it needed a real
+     entry), and earns its own line below rather than lighting a parent.
+
+     Transactions and Invoices used to be here too, briefly — promoted to their
+     own sub-entries because Finance itself is read-only and they had no nav
+     entry at all. That reasoning stopped applying the moment /admin/finance
+     became one page with all three as tabs: they are not separate URLs any
+     more, so there is nothing left for a second nav entry to point at. */
   var PARENT = {
     article:       'journal',
     'apps-editor': 'apps',
@@ -55,12 +61,7 @@
        is exactly why it should not be findable only through one small header
        button on a page about a single person. */
     { label: 'Checklist',     href: '/admin/checklist',      sub: true, manager: true },
-    { label: 'Finance',       href: '/admin/finance',        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', manager: true },
-    /* Finance itself is read-only by design (finance.js:1-6). These two own every
-       finance write in the product and had no nav entry at all, so every mutation
-       sat two clicks deep behind a screen that cannot perform it. */
-    { label: 'Transactions',  href: '/admin/transactions',   sub: true, manager: true },
-    { label: 'Invoices',      href: '/admin/invoices',       sub: true, manager: true }
+    { label: 'Finance',       href: '/admin/finance',        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', manager: true }
   ];
 
   /* Footer links live under the user chip rather than in the main list. */
