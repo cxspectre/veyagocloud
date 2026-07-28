@@ -20,6 +20,37 @@
   window.admin = {
     configured: configured,
 
+    /* Validate a string before it is ever handed to location.href.
+
+       Anything derived from the address bar, a query string or storage is
+       attacker-influenced: "//evil.com" and "https://evil.com" are both valid
+       values for location.href and both leave the site. Only a rooted,
+       same-origin path inside /admin/ is allowed through, and the login page
+       itself is rejected because "go back to where you were" must never mean
+       "go back to the login screen". Returns the path, or null. */
+    safeAdminPath(p) {
+      if (!p || typeof p !== 'string') return null;
+      /* Rooted, and not protocol-relative ("//host") or a backslash variant
+         that some browsers normalise to one. */
+      if (p.charAt(0) !== '/') return null;
+      if (p.charAt(1) === '/' || p.charAt(1) === '\\') return null;
+      if (p.indexOf('\\') !== -1) return null;
+      if (p.indexOf('/admin/') !== 0) return null;
+      var file = p.split('?')[0].split('#')[0];
+      if (file === '/admin/' || file === '/admin/index' || file === '/admin/index.html') return null;
+      return p;
+    },
+
+    /* The one place a string becomes a navigation. Validating here rather than
+       at each call site means a new caller cannot forget to. Returns whether it
+       navigated; refuses rather than guessing when the path is not ours. */
+    navigate(path) {
+      var safe = this.safeAdminPath(path);
+      if (!safe) return false;
+      window.location.href = safe;
+      return true;
+    },
+
     async session() {
       var res = await sb.auth.getSession();
       return (res.data && res.data.session) || null;

@@ -87,11 +87,53 @@
   var needsPassword = linkType === 'invite' || linkType === 'recovery' || linkType === 'signup';
   var passwordJustSet = false;   // set once the user saves one, so we stop intercepting
 
+  /* ── Where the user was actually going ────────────────────────────────
+     Every unauthenticated page bounces to /admin/, and until now that threw
+     the destination away — a bookmarked /admin/member?id=…, a link from an
+     email, or a session that lapsed mid-task all landed on the Dashboard with
+     no explanation and no way back. Remember it and return to it after sign-in.
+
+     Only same-origin /admin/ paths are ever stored or honoured: a value taken
+     from the address bar and later handed to location.href is an open-redirect
+     if it can be absolute, protocol-relative, or point outside the admin. */
+  var DEST_KEY = 'veyago.admin.after-login';
+
+  /* Lives on window.admin so it can be unit-tested and reused by anything else
+     that turns a string into a navigation (see client.js). */
+  function safeAdminPath(p) { return window.admin.safeAdminPath(p); }
+
+  function rememberDestination() {
+    try {
+      var here = safeAdminPath(window.location.pathname + window.location.search);
+      if (here) sessionStorage.setItem(DEST_KEY, here);
+    } catch (e) { /* private mode — the redirect still works, just without memory */ }
+  }
+
+  function takeDestination() {
+    try {
+      var dest = sessionStorage.getItem(DEST_KEY);
+      sessionStorage.removeItem(DEST_KEY);
+      return safeAdminPath(dest);
+    } catch (e) { return null; }
+  }
+
   /* ── Shell toggle ─────────────────────────────────────────────────── */
   var shellShown = false;
 
   function showShell(session) {
     if (shellShown) return;
+
+    /* If the user was bounced here from somewhere else, finish the journey they
+       started rather than revealing a dashboard they did not ask for. Checked
+       before shellShown flips so a reload cannot loop: takeDestination() removes
+       the value as it reads it. */
+    var dest = takeDestination();
+    if (dest && window.location.pathname.indexOf('/admin/') === 0 &&
+        dest !== window.location.pathname + window.location.search) {
+      window.location.replace(dest);
+      return;
+    }
+
     shellShown = true;
     if (loginEl) loginEl.hidden = true;
     if (shellEl) shellEl.hidden = false;
@@ -253,7 +295,9 @@
           showTotpStep();
         } else {
           /* No login form on this page — navigating away, so settling null is
-             safe (nothing here will render). */
+             safe (nothing here will render). MFA is still outstanding; keep the
+             destination so verifying the code lands back here. */
+          rememberDestination();
           window.location.href = '/admin/';
           resolveReady(null);
         }
@@ -273,10 +317,12 @@
   window.admin.session().then(function(s) {
     if (!s && !shellShown) {
       if (loginEl) { showLogin(); resolveReady(null); }
-      else { window.location.href = '/admin/'; resolveReady(null); }
+      /* The common case: a bookmarked or emailed deep link opened without a
+         session. Remember it so signing in finishes the trip. */
+      else { rememberDestination(); window.location.href = '/admin/'; resolveReady(null); }
     }
   }).catch(function() {
-    if (!shellShown && !loginEl) window.location.href = '/admin/';
+    if (!shellShown && !loginEl) { rememberDestination(); window.location.href = '/admin/'; }
   });
 
   /* ── Login form (index.html only) ────────────────────────────────── */
