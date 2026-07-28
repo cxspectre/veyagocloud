@@ -74,7 +74,12 @@ test('screens are found by words people actually type, not just their label', ()
 
   assert.ok(find('ledger').includes('Transactions'), '"ledger" should find Transactions');
   assert.ok(find('hire').includes('Team'), '"hire" should find Team');
-  assert.ok(find('deploy').includes('Settings'), '"deploy" should find Settings');
+  /* 'deploy' moved to Publish when the panel left the manager-gated Settings
+     page — Settings no longer does it, so it must no longer claim the word. */
+  assert.ok(find('deploy').includes('Publish'), '"deploy" should find Publish');
+  assert.ok(!find('deploy').includes('Settings'), 'Settings must not still claim it');
+  assert.ok(find('stripe').includes('Settings'), 'Settings keeps what it does own');
+  assert.ok(find('approve').includes('Publish'), '"approve" should find Publish');
   assert.ok(find('blog').includes('Journal'), '"blog" should find Journal');
   assert.ok(find('mfa').includes('Account'), '"mfa" should find Account');
 });

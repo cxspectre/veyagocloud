@@ -21,7 +21,6 @@
     loadAccounts();
     loadEmail();
     loadLegacy();
-    if (window.adminPublish) window.adminPublish.mount(document.getElementById('publish-mount'));
   }
 
   /* ── Connected accounts ───────────────────────────────────────────── */

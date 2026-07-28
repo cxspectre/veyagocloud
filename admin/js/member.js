@@ -25,19 +25,12 @@
 
   var ROLE_BADGE  = { owner: 'badge-role-owner', admin: 'badge-role-admin', assistant: 'badge-role-assistant', employee: 'badge-role-employee' };
   var ROLE_COLOR  = { owner: '#0071e3', admin: '#5856d6', assistant: '#ff9500', employee: '#86868b' };
-  /* Must match the role cards in member-new.js (ROLES).
-
-     Assistant and Employee read identically because they ARE identical in the
-     product today: all four roles write content via is_staff() (migration 0007),
-     and the only publish UI is mounted behind requireManager() (settings.js), so
-     neither can reach it. functions/deploy authorises assistants to publish and
-     nothing exposes that — until the UI or the function changes, saying otherwise
-     here would promise access the person will not have. */
+  /* Must match the role cards in member-new.js (ROLES) and team.html. */
   var ROLE_ACCESS = {
     owner:     'Everything, incl. finance and publishing',
-    admin:     'Everything, incl. finance and publishing',
-    assistant: 'Create and edit site content, tasks, onboarding',
-    employee:  'Create and edit site content, tasks, onboarding'
+    admin:     'Everything, incl. finance, publishing and approvals',
+    assistant: 'Content, tasks, onboarding — publishes with an admin’s approval',
+    employee:  'Content, tasks, onboarding — cannot publish'
   };
   var STATUS_DOT  = { active: 'green', invited: 'amber', inactive: 'gray' };
   var STATUS_BADGE = { todo: 'badge-neutral', in_progress: 'badge-info', blocked: 'badge-warn', done: 'badge-success' };

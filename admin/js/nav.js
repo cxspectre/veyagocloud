@@ -43,6 +43,10 @@
     { label: 'Wallpapers',    href: '/admin/wallpapers',     icon: '<rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 13l5-4 4 4 3-2 5 3"/>' },
     { label: 'Apps',          href: '/admin/apps',           icon: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>' },
     { label: 'Announcements', href: '/admin/announcements',  icon: '<path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>' },
+    /* The terminal step of the content job, so it sits last under Content —
+       everything above it feeds it. `publisher` rather than `manager`: an
+       assistant needs to reach this screen to ask for approval. */
+    { label: 'Publish',       href: '/admin/publish',        icon: '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>', publisher: true },
     { section: 'Company' },
     { label: 'Tasks',         href: '/admin/tasks',          icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' },
     { label: 'Team',          href: '/admin/team',           icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' },
@@ -92,13 +96,15 @@
            async role check. Cosmetic only — RLS guards the data. */
         var cachedRole = (window.adminRoles && window.adminRoles.cachedRole) ? window.adminRoles.cachedRole() : null;
         var cachedManager = cachedRole === 'owner' || cachedRole === 'admin';
+        var cachedPublisher = cachedManager || cachedRole === 'assistant';
         /* Sub-items are indented under the item above and carry no icon — the
            indent is the relationship, and a second icon column would only
            compete with the parent's. */
         var classes = (item.sub ? 'adm-nav-sub' : '') + (cls ? (item.sub ? ' ' : '') + cls : '');
         var attrs = (classes ? ' class="' + classes + '"' : '') +
                     (cls ? ' aria-current="page"' : '') +
-                    (item.manager ? ' data-manager-only' + (cachedManager ? '' : ' hidden') : '');
+                    (item.manager ? ' data-manager-only' + (cachedManager ? '' : ' hidden') : '') +
+                    (item.publisher ? ' data-publisher-only' + (cachedPublisher ? '' : ' hidden') : '');
         navHtml += '<a href="' + item.href + '"' + attrs + '>' +
           (item.sub ? '' : svgIcon(item.icon)) + item.label +
         '</a>';
@@ -178,6 +184,8 @@
         if (!session) return;
         var manager = await window.adminRoles.isManager();
         sidebar.querySelectorAll('[data-manager-only]').forEach(function (a) { a.hidden = !manager; });
+        var publisher = await window.adminRoles.isPublisher();
+        sidebar.querySelectorAll('[data-publisher-only]').forEach(function (a) { a.hidden = !publisher; });
 
         /* Signed-in identity chip above the sign-out button. */
         var r = await window.adminRoles.resolve();

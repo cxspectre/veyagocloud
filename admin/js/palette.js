@@ -28,6 +28,7 @@
     { label: 'Wallpapers',    href: '/admin/wallpapers',   keywords: 'images downloads backgrounds' },
     { label: 'Apps',          href: '/admin/apps',         keywords: 'products catalogue ios' },
     { label: 'Announcements', href: '/admin/announcements',keywords: 'banner notice site bar' },
+    { label: 'Publish',       href: '/admin/publish',      keywords: 'deploy ship live release build approve request' },
     { label: 'Tasks',         href: '/admin/tasks',        keywords: 'todo board work assignments' },
     { label: 'Team',          href: '/admin/team',         keywords: 'people staff employees hire invite directory' },
     { label: 'Onboarding',    href: '/admin/onboarding',   keywords: 'new hire progress checklist' },
@@ -36,7 +37,7 @@
     { label: 'Transactions',  href: '/admin/transactions', keywords: 'ledger spend expenses payments money' },
     { label: 'Invoices',      href: '/admin/invoices',     keywords: 'billing clients owed money' },
     { label: 'Account',       href: '/admin/account',      keywords: 'password two factor mfa me profile' },
-    { label: 'Settings',      href: '/admin/settings',     keywords: 'publish deploy email integrations stripe mercury' }
+    { label: 'Settings',      href: '/admin/settings',     keywords: 'email integrations stripe mercury connected accounts' }
   ];
 
   /* Each source: the table, the columns to search, and how to render a hit.

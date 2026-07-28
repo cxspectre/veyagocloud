@@ -22,15 +22,16 @@
      the schema records when it was sent, so the handoff page is told directly. */
   var EXPIRY_HOURS = 24;
 
-  /* Role copy. Kept honest about what the product actually exposes today:
-     all four roles write content via is_staff(), and the only publish UI is
-     manager-gated, so Assistant and Employee currently grant the same access.
-     When the publish-approval workflow lands, this is where it gets said. */
+  /* Role copy. Must match team.html and member.js ROLE_ACCESS.
+     The Assistant line describes a real capability now: migration 0011 plus the
+     gate in functions/deploy let an assistant publish against an admin's
+     approval. Before that shipped, Assistant and Employee were identical and
+     the copy said so. */
   var ROLES = [
     { value: 'employee',  title: 'Employee',
       sub: 'Create and edit articles, wallpapers, apps and announcements. Sees tasks, onboarding and the team directory.' },
     { value: 'assistant', title: 'Assistant',
-      sub: 'The same access as Employee today. Reserved for staff who will also publish once approvals ship.' },
+      sub: 'Everything an Employee can do, and can publish the live site once an admin approves the request.' },
     { value: 'admin',     title: 'Admin',
       sub: 'Everything above, plus finance, settings, and publishing the live site.', elevated: true },
     { value: 'owner',     title: 'Owner',

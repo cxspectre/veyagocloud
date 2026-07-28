@@ -52,12 +52,11 @@
 
       <div class="card-pane">
         <h2>Publishing</h2>
-        <!-- Was "Anyone on the team can publish", on a page gated twice: settings.js
-             requireManager() redirects everyone else, and nav.js hides the link. The
-             deploy function does authorise assistants (PUBLISHERS), but no screen
-             exposes that to them, so the claim was false of the product. -->
-        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">The live site is rebuilt from published rows. Publishing is limited to admins and owners; every run is checked before it goes out and can be rolled back.</p>
-        <div id="publish-mount"></div>
+        <!-- The panel used to live here, which is why assistants could not reach
+             it: this page is manager-gated twice over. It has its own screen now,
+             visible to anyone who can publish or ask to. -->
+        <p style="font-size:.9rem;color:var(--muted);margin-bottom:16px">The live site is rebuilt from everything currently marked published. Admins and owners publish directly; an assistant asks an admin to approve first.</p>
+        <a class="btn" href="/admin/publish">Open Publish →</a>
       </div>
     </main>
   </div>
@@ -69,7 +68,6 @@
   <script src="/admin/js/roles.js?v=12"></script>
   <script src="/admin/js/nav.js?v=12"></script>
   <script src="/admin/js/palette.js?v=12"></script>
-  <script src="/admin/js/publish.js?v=12"></script>
   <script src="/admin/js/settings.js?v=12"></script>
 </body>
 </html>

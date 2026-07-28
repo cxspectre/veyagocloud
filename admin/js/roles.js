@@ -60,6 +60,19 @@
       return !!r.role;
     },
 
+    /* Who may publish the live site. Mirrors PUBLISHERS in
+       supabase/functions/deploy/index.ts — keep the two in step. Cosmetic, like
+       every predicate here: the function re-resolves the role server-side from
+       the database, so this cannot be spoofed into a publish.
+
+       Deliberately NOT backed by a SQL is_publisher() helper. Migration 0007
+       names exactly that as an anti-pattern: a helper implies RLS enforces
+       something that is really enforced in the Edge Function. */
+    async isPublisher() {
+      var r = await resolve();
+      return r.role === 'owner' || r.role === 'admin' || r.role === 'assistant';
+    },
+
     /* Guard a page. Redirects to the dashboard if the caller isn't allowed.
        Cosmetic only — RLS is the real boundary — but it means a wrong URL
        shows the dashboard instead of a broken empty page. */

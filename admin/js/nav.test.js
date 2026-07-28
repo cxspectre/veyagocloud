@@ -37,9 +37,11 @@ async function mountAt(pathname, { role = 'owner', cachedRole = role, session = 
      promise plus an async role check. Stubbing adminReady to null would skip
      the reveal branch entirely — the branch production always takes. */
   const manager = role === 'owner' || role === 'admin';
+  const publisher = manager || role === 'assistant';
   window.adminRoles = {
     cachedRole: () => cachedRole,
     isManager: async () => manager,
+    isPublisher: async () => publisher,
     resolve: async () => ({ role, employee: { full_name: 'Test Person' } })
   };
   window.adminReady = session === null ? Promise.resolve(null)
@@ -68,6 +70,7 @@ test('the sidebar lists every screen a user can navigate to', async () => {
   const { allHrefs } = await mountAt('/admin/');
   assert.deepEqual(allHrefs, [
     '/admin/', '/admin/journal', '/admin/wallpapers', '/admin/apps', '/admin/announcements',
+    '/admin/publish',
     '/admin/tasks', '/admin/team', '/admin/onboarding', '/admin/checklist',
     '/admin/finance', '/admin/transactions', '/admin/invoices'
   ]);
@@ -207,6 +210,33 @@ test('a stale manager cache is corrected for a real employee', async () => {
   const { window } = await mountAt('/admin/', { role: 'employee', cachedRole: 'admin' });
   const finance = window.document.querySelector('.adm-nav a[href="/admin/finance"]');
   assert.equal(finance.hidden, true, 'the async check must be able to re-hide');
+});
+
+/* Publish is the first item visible to assistants but not to employees — a
+   third tier, not a rename of `manager`. */
+test('an assistant sees Publish but not the manager-only items', async () => {
+  const { window } = await mountAt('/admin/', { role: 'assistant' });
+  const pub = window.document.querySelector('.adm-nav a[href="/admin/publish"]');
+  const fin = window.document.querySelector('.adm-nav a[href="/admin/finance"]');
+  assert.equal(pub.hidden, false, 'Publish is reachable');
+  assert.equal(fin.hidden, true, 'Finance is not');
+});
+
+test('an employee sees neither', async () => {
+  const { window } = await mountAt('/admin/', { role: 'employee' });
+  assert.equal(window.document.querySelector('.adm-nav a[href="/admin/publish"]').hidden, true);
+  assert.equal(window.document.querySelector('.adm-nav a[href="/admin/finance"]').hidden, true);
+});
+
+test('a manager sees Publish too', async () => {
+  const { window } = await mountAt('/admin/', { role: 'admin' });
+  assert.equal(window.document.querySelector('.adm-nav a[href="/admin/publish"]').hidden, false);
+});
+
+test('a stale employee cache is corrected for a real assistant', async () => {
+  const { window } = await mountAt('/admin/', { role: 'assistant', cachedRole: 'employee' });
+  assert.equal(window.document.querySelector('.adm-nav a[href="/admin/publish"]').hidden, false,
+    'the async check must be able to reveal, not just hide');
 });
 
 test('the signed-in identity chip is filled from the resolved role', async () => {
