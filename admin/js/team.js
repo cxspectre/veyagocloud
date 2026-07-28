@@ -146,6 +146,9 @@
 
       if (!name)  { setMsg('Enter their full name.', 'err'); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setMsg('Enter a valid email address.', 'err'); return; }
+      /* The select opens on a blank option, so an untouched form has no role.
+         Refusing here is what makes the choice deliberate rather than default. */
+      if (!role) { document.getElementById('e-role').focus(); setMsg('Choose a role for this person.', 'err'); return; }
 
       inviteBtn.disabled = true;
       setMsg('Sending invite…');
@@ -165,9 +168,14 @@
             ? 'Invite sent to ' + email
             : email + ' linked to existing account');
         }
+        /* Reset the whole form, not just the text fields. Leaving role and
+           start date populated meant the next invite silently inherited the
+           previous person's privilege level. */
         document.getElementById('e-name').value = '';
         document.getElementById('e-email').value = '';
         document.getElementById('e-title').value = '';
+        document.getElementById('e-role').value = '';
+        document.getElementById('e-start').value = '';
         load();
       } catch (err) {
         setMsg('Invite failed: ' + err.message, 'err');

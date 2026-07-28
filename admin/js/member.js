@@ -25,7 +25,20 @@
 
   var ROLE_BADGE  = { owner: 'badge-role-owner', admin: 'badge-role-admin', assistant: 'badge-role-assistant', employee: 'badge-role-employee' };
   var ROLE_COLOR  = { owner: '#0071e3', admin: '#5856d6', assistant: '#ff9500', employee: '#86868b' };
-  var ROLE_ACCESS = { owner: 'Everything, incl. finance', admin: 'Everything, incl. finance', assistant: 'Team, tasks, onboarding', employee: 'Team, tasks, onboarding' };
+  /* Must match the role descriptions on team.html.
+
+     Assistant and Employee read identically because they ARE identical in the
+     product today: all four roles write content via is_staff() (migration 0007),
+     and the only publish UI is mounted behind requireManager() (settings.js), so
+     neither can reach it. functions/deploy authorises assistants to publish and
+     nothing exposes that — until the UI or the function changes, saying otherwise
+     here would promise access the person will not have. */
+  var ROLE_ACCESS = {
+    owner:     'Everything, incl. finance and publishing',
+    admin:     'Everything, incl. finance and publishing',
+    assistant: 'Create and edit site content, tasks, onboarding',
+    employee:  'Create and edit site content, tasks, onboarding'
+  };
   var STATUS_DOT  = { active: 'green', invited: 'amber', inactive: 'gray' };
   var STATUS_BADGE = { todo: 'badge-neutral', in_progress: 'badge-info', blocked: 'badge-warn', done: 'badge-success' };
   var STATUS_LABEL = { todo: 'To do', in_progress: 'In progress', blocked: 'Blocked', done: 'Done' };
@@ -188,7 +201,7 @@
 
   function renderFacts() {
     document.getElementById('fact-signin').textContent = member.user_id ? 'Linked' : 'Not linked yet';
-    document.getElementById('fact-access').textContent = ROLE_ACCESS[member.role] || 'Team, tasks, onboarding';
+    document.getElementById('fact-access').textContent = ROLE_ACCESS[member.role] || ROLE_ACCESS.employee;
     document.getElementById('fact-added').textContent  = member.created_at ? member.created_at.slice(0, 10) : '—';
   }
 
@@ -463,11 +476,21 @@
     openTasks.forEach(function (t) { listEl.appendChild(renderTaskRow(t, t0)); });
   }
 
+  /* The row is an anchor for the reasons team.js:82-90 sets out: focusable,
+     works with Enter and middle-click, and survives a cold reload of
+     /admin/task?id=…. It was an inert <li>, which made this the second of three
+     task lists that could not reach the task. */
   function renderTaskRow(t, t0) {
     var li = document.createElement('li');
-    li.className = 'adm-item' +
+
+    var row = document.createElement('a');
+    row.className = 'adm-item adm-item--link' +
       (t.priority === 'urgent' ? ' pri-urgent' : '') +
       (t.priority === 'high' ? ' pri-high' : '');
+    row.href = '/admin/task?id=' + encodeURIComponent(t.id);
+    row.setAttribute('aria-label',
+      t.title + ', ' + (STATUS_LABEL[t.status] || t.status) +
+      (t.due_date ? ', due ' + t.due_date : '') + ' — open task');
 
     var icon = document.createElement('div'); icon.className = 'adm-item-icon';
     icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.8" width="18" height="18"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>';
@@ -490,7 +513,14 @@
     badge.textContent = STATUS_LABEL[t.status] || t.status;
     acts.appendChild(badge);
 
-    li.appendChild(icon); li.appendChild(main); li.appendChild(acts);
+    var chev = document.createElement('span');
+    chev.className = 'chev';
+    chev.setAttribute('aria-hidden', 'true');
+    chev.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg>';
+    acts.appendChild(chev);
+
+    row.appendChild(icon); row.appendChild(main); row.appendChild(acts);
+    li.appendChild(row);
     return li;
   }
 

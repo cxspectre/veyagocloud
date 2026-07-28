@@ -1,0 +1,185 @@
+/* Tests for admin/js/nav.js — specifically which sidebar item is marked active.
+
+   Seven admin screens are the second level of a section (an article belongs to
+   Journal, a member to Team) and appear in no NAV entry. They previously matched
+   nothing, so the sidebar highlighted no item at all on exactly the screens where
+   the user is deepest. These tests pin the parent mapping down. */
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { JSDOM, VirtualConsole } = require('jsdom');
+
+const SRC = fs.readFileSync(path.join(__dirname, 'nav.js'), 'utf8');
+
+/* Mount nav.js against a given admin path and report the sidebar it built.
+
+   The document must have finished parsing first: nav.js defers to
+   DOMContentLoaded while readyState is 'loading', which is exactly what a fresh
+   JSDOM reports. Running the source before then registers the listener and
+   mounts nothing. */
+async function mountAt(pathname, { role = 'owner', cachedRole = role, session = {} } = {}) {
+  const dom = new JSDOM(
+    '<!doctype html><html><body><div class="adm-shell"><main class="adm-main"></main></div></body></html>',
+    {
+      url: 'https://veyago.cloud' + pathname,
+      runScripts: 'outside-only',
+      virtualConsole: new VirtualConsole()
+    }
+  );
+
+  const { window } = dom;
+
+  /* Give nav.js the real shape it sees in production: a resolved adminReady
+     promise plus an async role check. Stubbing adminReady to null would skip
+     the reveal branch entirely — the branch production always takes. */
+  const manager = role === 'owner' || role === 'admin';
+  window.adminRoles = {
+    cachedRole: () => cachedRole,
+    isManager: async () => manager,
+    resolve: async () => ({ role, employee: { full_name: 'Test Person' } })
+  };
+  window.adminReady = session === null ? Promise.resolve(null)
+                                       : Promise.resolve({ user: { email: 'test@veyago.cloud' } });
+
+  if (window.document.readyState === 'loading') {
+    await new Promise((resolve) => window.addEventListener('load', resolve, { once: true }));
+  }
+  vm.runInContext(SRC, dom.getInternalVMContext());
+
+  /* Let the adminReady.then chain and its two awaits settle. */
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  const active = [...window.document.querySelectorAll('.adm-nav a.active')];
+  return {
+    window,
+    activeLabels: active.map((a) => a.textContent.trim()),
+    activeHrefs: active.map((a) => a.getAttribute('href')),
+    ariaCurrent: active.map((a) => a.getAttribute('aria-current')),
+    allHrefs: [...window.document.querySelectorAll('.adm-nav a')].map((a) => a.getAttribute('href'))
+  };
+}
+
+test('the sidebar mounts with the expected top-level items', async () => {
+  const { allHrefs } = await mountAt('/admin/');
+  assert.deepEqual(allHrefs, [
+    '/admin/', '/admin/journal', '/admin/wallpapers', '/admin/apps', '/admin/announcements',
+    '/admin/tasks', '/admin/team', '/admin/onboarding', '/admin/finance'
+  ]);
+});
+
+/* Each of these used to highlight nothing at all. */
+const PARENT_CASES = [
+  ['/admin/article',      '/admin/journal',    'Journal'],
+  ['/admin/apps-editor',  '/admin/apps',       'Apps'],
+  ['/admin/member',       '/admin/team',       'Team'],
+  ['/admin/task',         '/admin/tasks',      'Tasks'],
+  ['/admin/checklist',    '/admin/onboarding', 'Onboarding'],
+  ['/admin/transactions', '/admin/finance',    'Finance'],
+  ['/admin/invoices',     '/admin/finance',    'Finance']
+];
+
+for (const [route, expectedHref, expectedLabel] of PARENT_CASES) {
+  test(`${route} highlights its parent, ${expectedLabel}`, async () => {
+    const { activeHrefs, activeLabels } = await mountAt(route);
+    assert.deepEqual(activeHrefs, [expectedHref]);
+    assert.deepEqual(activeLabels, [expectedLabel]);
+  });
+
+  test(`${route}.html highlights the same parent as its clean URL`, async () => {
+    const { activeHrefs } = await mountAt(route + '.html');
+    assert.deepEqual(activeHrefs, [expectedHref]);
+  });
+}
+
+/* Query strings are how every detail screen is actually reached. */
+test('a detail route with ?id= still highlights its parent', async () => {
+  const { activeHrefs } = await mountAt('/admin/member?id=abc-123');
+  assert.deepEqual(activeHrefs, ['/admin/team']);
+});
+
+test('top-level screens still highlight themselves', async () => {
+  for (const [route, label] of [
+    ['/admin/journal', 'Journal'], ['/admin/team', 'Team'],
+    ['/admin/tasks', 'Tasks'], ['/admin/finance', 'Finance'],
+    ['/admin/wallpapers', 'Wallpapers'], ['/admin/apps', 'Apps'],
+    ['/admin/announcements', 'Announcements'], ['/admin/onboarding', 'Onboarding']
+  ]) {
+    const { activeLabels } = await mountAt(route);
+    assert.deepEqual(activeLabels, [label], route);
+  }
+});
+
+test('every form of the dashboard route highlights Home', async () => {
+  for (const route of ['/admin/', '/admin/index.html', '/admin/index']) {
+    const { activeLabels } = await mountAt(route);
+    assert.deepEqual(activeLabels, ['Home'], route);
+  }
+});
+
+test('exactly one item is ever active', async () => {
+  const routes = ['/admin/', '/admin/journal', '/admin/article', '/admin/member',
+                  '/admin/invoices', '/admin/task', '/admin/checklist'];
+  for (const route of routes) {
+    assert.equal((await mountAt(route)).activeHrefs.length, 1, route);
+  }
+});
+
+test('the active item is exposed to assistive tech as the current page', async () => {
+  const { ariaCurrent } = await mountAt('/admin/article');
+  assert.deepEqual(ariaCurrent, ['page']);
+});
+
+test('non-active items carry no aria-current', async () => {
+  const { window } = await mountAt('/admin/article');
+  const marked = [...window.document.querySelectorAll('.adm-nav a[aria-current]')];
+  assert.equal(marked.length, 1);
+  assert.equal(marked[0].getAttribute('href'), '/admin/journal');
+});
+
+/* Finance is manager-only. These run the real adminReady path, so they cover
+   the async reveal rather than just the cached-role first paint. */
+test('an employee on a finance sub-screen never gets Finance revealed', async () => {
+  const { window } = await mountAt('/admin/invoices', { role: 'employee' });
+  const finance = window.document.querySelector('.adm-nav a[href="/admin/finance"]');
+  assert.equal(finance.hidden, true, 'still hidden after the async isManager() check');
+});
+
+test('a manager sees Finance after the async check', async () => {
+  const { window } = await mountAt('/admin/finance', { role: 'admin' });
+  const finance = window.document.querySelector('.adm-nav a[href="/admin/finance"]');
+  assert.equal(finance.hidden, false);
+});
+
+/* The cached role drives first paint; the async check is what corrects it. A
+   manager whose cache is cold must still end up with Finance visible. */
+test('a manager with no cached role gets Finance revealed by the async check', async () => {
+  const { window } = await mountAt('/admin/', { role: 'owner', cachedRole: null });
+  const finance = window.document.querySelector('.adm-nav a[href="/admin/finance"]');
+  assert.equal(finance.hidden, false, 'the reveal must not depend on the cache');
+});
+
+test('a stale manager cache is corrected for a real employee', async () => {
+  const { window } = await mountAt('/admin/', { role: 'employee', cachedRole: 'admin' });
+  const finance = window.document.querySelector('.adm-nav a[href="/admin/finance"]');
+  assert.equal(finance.hidden, true, 'the async check must be able to re-hide');
+});
+
+test('the signed-in identity chip is filled from the resolved role', async () => {
+  const { window } = await mountAt('/admin/', { role: 'owner' });
+  const chip = window.document.getElementById('adm-user');
+  assert.equal(chip.hidden, false);
+  assert.equal(window.document.getElementById('adm-user-name').textContent, 'Test Person');
+  assert.equal(window.document.getElementById('adm-user-role').textContent, 'owner');
+  assert.equal(window.document.getElementById('adm-user-avatar').textContent, 'TP');
+});
+
+test('with no session the sidebar still mounts but stays anonymous', async () => {
+  const { window } = await mountAt('/admin/', { session: null });
+  assert.ok(window.document.getElementById('adm-sidebar'), 'sidebar is present');
+  assert.equal(window.document.getElementById('adm-user').hidden, true, 'no identity chip');
+});

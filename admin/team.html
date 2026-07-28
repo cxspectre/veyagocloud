@@ -45,12 +45,18 @@
             <div class="field"><label for="e-email">Email</label><input class="input" id="e-email" type="email" placeholder="alex@example.com" /></div>
             <div class="field"><label for="e-title">Job title</label><input class="input" id="e-title" type="text" placeholder="Personal Assistant" /></div>
             <div class="field"><label for="e-role">Role</label>
+              <!-- The empty first option is deliberate: with no `selected`, the
+                   browser used to pre-pick Assistant, so a manager who never
+                   touched this control still granted a role. Choosing is now
+                   explicit, and save() rejects the empty value. -->
               <select class="input" id="e-role">
-                <option value="assistant">Assistant — team, onboarding, tasks</option>
-                <option value="employee">Employee — team, onboarding, tasks</option>
-                <option value="admin">Admin — everything incl. finance</option>
-                <option value="owner">Owner — everything incl. finance</option>
+                <option value="">Choose a role…</option>
+                <option value="employee">Employee — create and edit site content</option>
+                <option value="assistant">Assistant — create and edit site content</option>
+                <option value="admin">Admin — everything, including finance and settings</option>
+                <option value="owner">Owner — everything, including finance and settings</option>
               </select>
+              <p class="hint">All four can create, edit and delete articles, wallpapers, apps and announcements. Publishing to the live site, finance and settings are Admin and Owner only. Assistant and Employee currently grant the same access.</p>
             </div>
             <div class="field"><label for="e-start">Start date</label><input class="input" id="e-start" type="date" /></div>
             <div class="form-actions"><button class="btn btn-primary" id="invite-btn" type="button">Send invite</button></div>

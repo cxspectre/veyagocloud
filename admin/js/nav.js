@@ -5,13 +5,29 @@
 
   var PATH = window.location.pathname;
 
+  /* Seven screens are not in the sidebar because they are the second level of a
+     section: a member belongs to Team, an article to Journal, and so on. Without
+     this map they matched no NAV href, so the sidebar highlighted nothing on
+     exactly the screens where you are deepest — both editors and every detail
+     page. Each one now lights its parent instead. */
+  var PARENT = {
+    article:      'journal',
+    'apps-editor': 'apps',
+    member:       'team',
+    task:         'tasks',
+    checklist:    'onboarding',
+    transactions: 'finance',
+    invoices:     'finance'
+  };
+
   /* Resolve the current page to a canonical key for active-link matching.
      Clean URLs and .html both normalise to the extensionless form:
      /admin/, /admin/index.html, /admin/team.html, /admin/team all match. */
   function currentKey() {
     if (PATH === '/admin/' || PATH === '/admin/index.html' || PATH === '/admin/index' || PATH === '/admin') return '/admin/';
     var file = PATH.split('/').pop().replace(/\.html$/, '');
-    return file ? '/admin/' + file : '/admin/';
+    if (!file) return '/admin/';
+    return '/admin/' + (PARENT[file] || file);
   }
   var CURRENT = currentKey();
 
@@ -65,7 +81,7 @@
            async role check. Cosmetic only — RLS guards the data. */
         var cachedRole = (window.adminRoles && window.adminRoles.cachedRole) ? window.adminRoles.cachedRole() : null;
         var cachedManager = cachedRole === 'owner' || cachedRole === 'admin';
-        var attrs = (cls ? ' class="' + cls + '"' : '') +
+        var attrs = (cls ? ' class="' + cls + '" aria-current="page"' : '') +
                     (item.manager ? ' data-manager-only' + (cachedManager ? '' : ' hidden') : '');
         navHtml += '<a href="' + item.href + '"' + attrs + '>' +
           svgIcon(item.icon) + item.label +
