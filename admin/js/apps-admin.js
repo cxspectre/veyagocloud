@@ -4,6 +4,11 @@
 (function () {
   'use strict';
 
+  /* Deleting content is managers only since 0012, and the guard trigger
+     enforces it — so the button has to reflect that, or staff get a control
+     that fails. Cosmetic; the database is the boundary. */
+  var isManager = false;
+
   var listEl = document.getElementById('apps-list');
   var msg    = document.getElementById('msg');
 
@@ -14,11 +19,15 @@
   }
 
   async function load() {
+    isManager = await window.adminRoles.isManager();
     if (!listEl) return;
     /* select('*') so a missing column never errors the query; order by the two
        columns that always exist. */
     var res = await window.sb.from('apps')
       .select('*')
+      /* Deleted rows are soft (0012) — the admin still CAN read them
+         (staff SELECT is wide so a manager can restore), so the list filters. */
+      .is('deleted_at', null)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true });
 
@@ -78,6 +87,7 @@
       tog.addEventListener('click', function () { toggle(a); });
 
       var del = document.createElement('button'); del.className = 'btn btn-sm btn-danger'; del.type = 'button'; del.textContent = 'Delete';
+      del.hidden = !isManager;
       del.addEventListener('click', function () { remove(a); });
 
       acts.appendChild(statusBadge); acts.appendChild(pubBadge); acts.appendChild(edit); acts.appendChild(tog); acts.appendChild(del);
@@ -94,8 +104,14 @@
   }
 
   async function remove(a) {
-    if (!confirm('Delete "' + (a.name || 'this app') + '"? This cannot be undone.')) return;
-    var res = await window.sb.from('apps').delete().eq('id', a.id);
+    if (!confirm('Delete "' + (a.name || 'this app') + '"?\n\nIt comes off the catalogue at the next publish. The record is kept, so this can be undone.')) return;
+/* Soft delete (migration 0012). The row is marked, not destroyed, so a
+   mis-click is a mistake rather than an incident — and the anonymous SELECT
+   policy excludes deleted rows, so the live site drops it on the next build
+   without this code having to remember. Managers only; the guard trigger
+   rejects anyone else. */
+    var res = await window.sb.from('apps')
+      .update({ deleted_at: new Date().toISOString() }).eq('id', a.id);
     if (res.error) { setMsg(res.error.message, 'err'); return; }
     load();
   }

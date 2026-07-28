@@ -3,6 +3,11 @@
 (function () {
   'use strict';
 
+  /* Deleting content is managers only since 0012, and the guard trigger
+     enforces it — so the button has to reflect that, or staff get a control
+     that fails. Cosmetic; the database is the boundary. */
+  var isManager = false;
+
   var listEl = document.getElementById('ann-list');
   var formEl = document.getElementById('ann-form');
   var msg = document.getElementById('msg');
@@ -30,7 +35,12 @@
   [msgEl, ltEl, lhEl].forEach(function (el) { if (el) el.addEventListener('input', updatePreview); });
 
   async function load() {
-    var res = await window.sb.from('site_announcements').select('*').order('created_at', { ascending: false });
+    isManager = await window.adminRoles.isManager();
+    var res = await window.sb.from('site_announcements').select('*')
+      /* Deleted rows are soft (0012) — the admin still CAN read them
+         (staff SELECT is wide so a manager can restore), so the list filters. */
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
     if (res.error) { setMsg('Could not load: ' + res.error.message, 'err'); return; }
     render(res.data || []);
   }
@@ -70,7 +80,9 @@
     lhEl.value  = a ? (a.link_href || '') : '';
     activeEl.checked = a ? !!a.active : false;
     document.getElementById('form-title').textContent = a ? 'Edit announcement' : 'New announcement';
-    document.getElementById('a-delete').hidden = !a;
+    /* Shown only when there is something to delete AND you are allowed to;
+       deleting content is managers only since 0012. */
+    document.getElementById('a-delete').hidden = !a || !isManager;
     updatePreview();
     formEl.hidden = false;
     formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -112,8 +124,14 @@
   }
 
   async function remove() {
-    if (!current.id || !confirm('Delete this announcement?')) return;
-    var res = await window.sb.from('site_announcements').delete().eq('id', current.id);
+    if (!current.id || !confirm('Delete this announcement?\n\nThe record is kept, so this can be undone.')) return;
+/* Soft delete (migration 0012). The row is marked, not destroyed, so a
+   mis-click is a mistake rather than an incident — and the anonymous SELECT
+   policy excludes deleted rows, so the live site drops it on the next build
+   without this code having to remember. Managers only; the guard trigger
+   rejects anyone else. */
+    var res = await window.sb.from('site_announcements')
+      .update({ deleted_at: new Date().toISOString() }).eq('id', current.id);
     if (res.error) { setMsg(res.error.message, 'err'); return; }
     closeForm(); load();
   }

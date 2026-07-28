@@ -11,8 +11,22 @@
   function readCachedRole()  { try { return sessionStorage.getItem(ROLE_KEY); } catch (e) { return null; } }
   function writeCachedRole(r) { try { r ? sessionStorage.setItem(ROLE_KEY, r) : sessionStorage.removeItem(ROLE_KEY); } catch (e) {} }
 
-  /* Resolve the signed-in user's role. Order: employees row (owner/admin/
-     assistant/employee), else legacy admins-allowlist row → 'admin'. */
+  /* Resolve the signed-in user's role from employees.role — the single source
+     of truth since migration 0007.
+
+     This used to fall back to the legacy public.admins allowlist and report
+     'admin' for anyone on it. That contradicted the database: 0007 states in
+     its own header that public.admins "still exist[s] but [is] referenced by
+     NO policy", and is_manager() reads employees.role alone. So such a user was
+     handed the full manager UI — Finance, Settings, Transactions, Invoices,
+     Publish, the approval queue — and every one of those screens then returned
+     nothing, because RLS had never heard of them. A UI built on a role the
+     server does not recognise is worse than no access: it looks like the
+     product is broken rather than like you are not allowed in.
+
+     The allowlist is still the break-glass, but recovering through it means
+     inserting an employees row (0007 gives the exact SQL), not signing in and
+     hoping. */
   async function resolve() {
     if (cached) return cached;
     var session = await window.admin.session();
@@ -22,17 +36,15 @@
       .select('id,full_name,role,status,title')
       .eq('user_id', session.user.id)
       .maybeSingle();
-    if (emp.data && emp.data.status !== 'inactive') {
-      cached = { role: emp.data.role, employee: emp.data };
-      writeCachedRole(cached.role);
-      return cached;
-    }
 
-    var adm = await window.sb.from('admins')
-      .select('user_id')
-      .eq('user_id', session.user.id)
-      .maybeSingle();
-    cached = { role: adm.data ? 'admin' : null, employee: emp.data || null };
+    var active = emp.data && emp.data.status !== 'inactive';
+    cached = {
+      role: active ? emp.data.role : null,
+      employee: emp.data || null,
+      /* Surfaced so a screen can say something more useful than "no access" to
+         someone who is genuinely on the allowlist but has no employees row. */
+      inactive: !!(emp.data && emp.data.status === 'inactive')
+    };
     writeCachedRole(cached.role);
     return cached;
   }

@@ -28,9 +28,9 @@
   /* Must match the role cards in member-new.js (ROLES) and team.html. */
   var ROLE_ACCESS = {
     owner:     'Everything, incl. finance and publishing',
-    admin:     'Everything, incl. finance, publishing and approvals',
-    assistant: 'Content, tasks, onboarding — publishes with an admin’s approval',
-    employee:  'Content, tasks, onboarding — cannot publish'
+    admin:     'Everything, incl. deleting, finance, publishing and approvals',
+    assistant: 'Edits content, publishes with approval — cannot delete',
+    employee:  'Edits content — cannot publish or delete'
   };
   var STATUS_DOT  = { active: 'green', invited: 'amber', inactive: 'gray' };
   var STATUS_BADGE = { todo: 'badge-neutral', in_progress: 'badge-info', blocked: 'badge-warn', done: 'badge-success' };

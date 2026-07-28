@@ -3,6 +3,11 @@
 (function () {
   'use strict';
 
+  /* Deleting content is managers only since 0012, and the guard trigger
+     enforces it — so the button has to reflect that, or staff get a control
+     that fails. Cosmetic; the database is the boundary. */
+  var isManager = false;
+
   var msg = document.getElementById('msg');
   var listEl = document.getElementById('wp-list');
   var formEl = document.getElementById('wp-form');
@@ -28,9 +33,13 @@
 
   // ---- list ----
   async function loadList() {
+    isManager = await window.adminRoles.isManager();
     setMsg('');
     var res = await window.sb.from('wallpapers')
       .select('id,slug,title,status,preview_url,variants,published_at')
+      /* Deleted rows are soft (0012) — the admin still CAN read them
+         (staff SELECT is wide so a manager can restore), so the list filters. */
+      .is('deleted_at', null)
       .order('published_at', { ascending: false, nullsFirst: false });
     if (res.error) { setMsg('Could not load wallpapers: ' + res.error.message, 'err'); return; }
     renderList(res.data || []);
@@ -62,10 +71,11 @@
         '<span class="badge badge-' + w.status + '">' + w.status + '</span>' +
         '<button class="btn btn-sm" data-edit>Edit</button>' +
         '<button class="btn btn-sm" data-toggle>' + (w.status === 'published' ? 'Unpublish' : 'Publish') + '</button>' +
-        '<button class="btn btn-sm btn-danger" data-del>Delete</button>';
+        (isManager ? '<button class="btn btn-sm btn-danger" data-del>Delete</button>' : '');
       acts.querySelector('[data-edit]').addEventListener('click', function () { edit(w); });
       acts.querySelector('[data-toggle]').addEventListener('click', function () { toggle(w); });
-      acts.querySelector('[data-del]').addEventListener('click', function () { del(w); });
+      var delBtn = acts.querySelector('[data-del]');
+      if (delBtn) delBtn.addEventListener('click', function () { del(w); });
       li.appendChild(img); li.appendChild(main); li.appendChild(acts);
       listEl.appendChild(li);
     });
@@ -173,8 +183,14 @@
   }
 
   async function del(w) {
-    if (!window.confirm('Delete "' + (w.title || 'untitled') + '"?')) return;
-    var res = await window.sb.from('wallpapers').delete().eq('id', w.id);
+    if (!window.confirm('Delete "' + (w.title || 'untitled') + '"?\n\nIt comes off the live site at the next publish. The record is kept, so this can be undone.')) return;
+/* Soft delete (migration 0012). The row is marked, not destroyed, so a
+   mis-click is a mistake rather than an incident — and the anonymous SELECT
+   policy excludes deleted rows, so the live site drops it on the next build
+   without this code having to remember. Managers only; the guard trigger
+   rejects anyone else. */
+    var res = await window.sb.from('wallpapers')
+      .update({ deleted_at: new Date().toISOString() }).eq('id', w.id);
     if (res.error) { setMsg(res.error.message, 'err'); return; }
     if (current.id === w.id) closeForm();
     loadList();

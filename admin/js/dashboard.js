@@ -29,11 +29,11 @@
   /* ── Stats ── */
   async function loadStats() {
     var results = await Promise.allSettled([
-      window.sb.from('articles').select('id,status'),
-      window.sb.from('wallpapers').select('id,status'),
-      window.sb.from('apps').select('id,published'),
-      window.sb.from('projects').select('id,published'),
-      window.sb.from('site_announcements').select('id,message,active').eq('active', true).limit(1)
+      window.sb.from('articles').select('id,status').is('deleted_at', null),
+      window.sb.from('wallpapers').select('id,status').is('deleted_at', null),
+      window.sb.from('apps').select('id,published').is('deleted_at', null),
+      window.sb.from('projects').select('id,published').is('deleted_at', null),
+      window.sb.from('site_announcements').select('id,message,active').is('deleted_at', null).eq('active', true).limit(1)
     ]);
 
     if (results[0].status === 'fulfilled' && !results[0].value.error) {
@@ -130,7 +130,7 @@
     /* Use select('*') so missing columns (e.g. updated_at if migration was partial)
        don't cause a query error. Order by created_at which always exists. */
     var res = await window.sb.from('articles')
-      .select('*')
+      .select('*').is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(8);
 

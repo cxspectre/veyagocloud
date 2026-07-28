@@ -29,16 +29,27 @@ function harness({ rows = {}, records = null } = {}) {
     safeAdminPath: (p) => (typeof p === 'string' && p.indexOf('/admin/') === 0 ? p : null),
     navigate(p) { const s = this.safeAdminPath(p); if (s) navigated.push(s); return !!s; }
   };
+  /* Chainable stub: palette.js narrows soft-deletable sources with
+     .is('deleted_at', null) before .limit(), so the fake has to accept the
+     same chain the real client does. `filtered` records which tables were
+     narrowed, so a test can assert the filter was actually applied. */
+  const filtered = [];
+  const result = (table) => ({ data: rows[table] || [], error: null });
   window.sb = {
-    from: (table) => ({
-      select: () => ({ limit: async () => ({ data: rows[table] || [], error: null }) })
-    })
+    from: (table) => {
+      const chain = {
+        select: () => chain,
+        is: (col) => { filtered.push(table + ':' + col); return chain; },
+        limit: async () => result(table)
+      };
+      return chain;
+    }
   };
   window.adminReady = Promise.resolve({ user: { email: 'x@veyago.cloud' } });
 
   vm.runInContext(SRC, dom.getInternalVMContext());
   if (records) window.adminPalette._setRecords(records);
-  return { window, dom, palette: window.adminPalette, navigated };
+  return { window, dom, palette: window.adminPalette, navigated, filtered };
 }
 
 /* The overlay is built lazily — on first open, or as soon as adminReady
@@ -283,7 +294,7 @@ test('Enter with no results does nothing rather than throwing', () => {
 });
 
 test('records load from Supabase on open and become searchable', async () => {
-  const { window, palette } = harness({
+  const { window, palette, filtered } = harness({
     rows: {
       articles: [{ id: 'a1', title: 'The edge moves in', status: 'published' }],
       employees: [{ id: 'e1', full_name: 'Dana Reed', email: 'dana@veyago.cloud', role: 'assistant', status: 'active' }]
@@ -296,6 +307,15 @@ test('records load from Supabase on open and become searchable', async () => {
   const titles = palette.search('').map((r) => r.title);
   assert.ok(titles.includes('The edge moves in'));
   assert.ok(titles.includes('Dana Reed'));
+
+  /* Content is soft-deletable (0012) and deleted rows must not surface in
+     search. employees and tasks have no deleted_at, so they must NOT be
+     narrowed — that would 400 the query. */
+  assert.ok(filtered.includes('articles:deleted_at'), 'articles filtered');
+  assert.ok(filtered.includes('apps:deleted_at'), 'apps filtered');
+  assert.ok(filtered.includes('wallpapers:deleted_at'), 'wallpapers filtered');
+  assert.ok(!filtered.some((f) => f.startsWith('employees:')), 'employees has no deleted_at');
+  assert.ok(!filtered.some((f) => f.startsWith('tasks:')), 'tasks has no deleted_at');
 });
 
 /* RLS denies whole tables to some roles; that must degrade, not break. */
@@ -306,13 +326,16 @@ test('a table the user cannot read is skipped, not fatal', async () => {
   const { window } = dom;
   window.admin = { safeAdminPath: (p) => p };
   window.sb = {
-    from: (table) => ({
-      select: () => ({
+    from: (table) => {
+      const chain = {
+        select: () => chain,
+        is: () => chain,
         limit: async () => (table === 'employees'
           ? { data: null, error: { message: 'permission denied' } }
           : { data: [{ id: 't1', title: 'Ship the thing', status: 'open' }], error: null })
-      })
-    })
+      };
+      return chain;
+    }
   };
   window.adminReady = Promise.resolve({ user: {} });
   vm.runInContext(SRC, dom.getInternalVMContext());

@@ -29,11 +29,11 @@
      the copy said so. */
   var ROLES = [
     { value: 'employee',  title: 'Employee',
-      sub: 'Create and edit articles, wallpapers, apps and announcements. Sees tasks, onboarding and the team directory.' },
+      sub: 'Create and edit articles, wallpapers, apps and announcements — but not delete or publish them. Sees tasks, onboarding and the team directory.' },
     { value: 'assistant', title: 'Assistant',
-      sub: 'Everything an Employee can do, and can publish the live site once an admin approves the request.' },
+      sub: 'Everything an Employee can do, and can publish the live site once an admin approves the request. Deleting is still Admin and above.' },
     { value: 'admin',     title: 'Admin',
-      sub: 'Everything above, plus finance, settings, and publishing the live site.', elevated: true },
+      sub: 'Everything above, plus deleting content, finance, settings, publishing directly, and approving other people’s publishes.', elevated: true },
     { value: 'owner',     title: 'Owner',
       sub: 'Everything. Use for people who run the company, not for people who help run it.', elevated: true }
   ];

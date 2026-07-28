@@ -44,10 +44,10 @@
      `href` returns null when a row has no detail screen, in which case the row
      still shows and lands on the list it lives in. */
   var SOURCES = [
-    { kind: 'Article',  table: 'articles',   cols: 'id,title,status',
+    { kind: 'Article',  table: 'articles', soft: true,   cols: 'id,title,status',
       select: function (r) { return { title: r.title || '(untitled)', sub: r.status,
         href: '/admin/article?id=' + encodeURIComponent(r.id) }; } },
-    { kind: 'App',      table: 'apps',       cols: 'id,name,status',
+    { kind: 'App',      table: 'apps', soft: true,       cols: 'id,name,status',
       select: function (r) { return { title: r.name || '(unnamed)', sub: r.status,
         href: '/admin/apps-editor?id=' + encodeURIComponent(r.id) }; } },
     { kind: 'Person',   table: 'employees',  cols: 'id,full_name,email,role,status',
@@ -56,7 +56,7 @@
     { kind: 'Task',     table: 'tasks',      cols: 'id,title,status',
       select: function (r) { return { title: r.title, sub: r.status,
         href: '/admin/task?id=' + encodeURIComponent(r.id) }; } },
-    { kind: 'Wallpaper',table: 'wallpapers', cols: 'id,title,status',
+    { kind: 'Wallpaper',table: 'wallpapers', soft: true, cols: 'id,title,status',
       select: function (r) { return { title: r.title || '(untitled)', sub: r.status,
         href: '/admin/wallpapers' }; } }
   ];
@@ -117,7 +117,11 @@
     if (!window.sb) { records = []; return; }
 
     var settled = await Promise.allSettled(SOURCES.map(function (s) {
-      return window.sb.from(s.table).select(s.cols).limit(200);
+      /* Deleted content must not surface in search either. employees and
+         tasks have no deleted_at, so it is opt-in per source. */
+      var q = window.sb.from(s.table).select(s.cols);
+      if (s.soft) q = q.is('deleted_at', null);
+      return q.limit(200);
     }));
 
     var acc = [];
