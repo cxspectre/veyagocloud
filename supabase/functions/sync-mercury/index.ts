@@ -10,6 +10,7 @@
    { "days": 365 } in the body for a deeper backfill. */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { accountLabel } from '../_shared/mercury-account-name.ts';
 
 const MERCURY_API = 'https://api.mercury.com/api/v1';
 
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
         .from('finance_accounts')
         .upsert(
           {
-            name: `Mercury ${acct.nickname || acct.name || acct.kind || 'Account'}`,
+            name: accountLabel(acct),
             kind: 'bank',
             provider: 'mercury',
             external_id: acct.id,

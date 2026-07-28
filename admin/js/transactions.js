@@ -194,16 +194,36 @@
       return;
     }
 
+    /* Naming the account on every row was pure noise once the account filter
+       (or reality) meant every visible row was from the same one — "Mercury
+       Checking · Apple", "Mercury Checking · Adobe", "Mercury Checking · ..."
+       forty-five times over, when the Account filter above the list already
+       says which one you're looking at. It only earns its place once this
+       view actually mixes more than one. */
+    var showAccount = distinctAccountCount(transactions) > 1;
+
     listEl.innerHTML = '';
     transactions.forEach(function (t) {
-      listEl.appendChild(renderRow(t));
+      listEl.appendChild(renderRow(t, showAccount));
       /* The editor is a SIBLING of the row, not a child: .fin-row is itself a
          four-column grid, so a nested panel would land in the first column. */
       if (t.id === expandedId) listEl.appendChild(renderDetail(t));
     });
   }
 
-  function renderRow(t) {
+  /* How many DIFFERENT accounts a set of transactions touches — capped at
+     stopping the moment it passes one, since every caller only asks "one, or
+     more than one?". */
+  function distinctAccountCount(rows) {
+    var seen = {}, n = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var id = rows[i].account_id;
+      if (!seen[id]) { seen[id] = true; n++; if (n > 1) return n; }
+    }
+    return n;
+  }
+
+  function renderRow(t, showAccount) {
     var isOpen = t.id === expandedId;
 
     var row = document.createElement('div');
@@ -228,9 +248,11 @@
        would honour nowrap and then spill across the category column. */
     var sub = document.createElement('div');
     sub.className = 'adm-item-sub';
-    sub.textContent = accountName(t.account_id) +
-      (t.counterparty ? ' · ' + t.counterparty : '') +
-      (t.note ? ' · 📝' : '');
+    sub.textContent = [
+      showAccount ? accountName(t.account_id) : null,
+      t.counterparty || null,
+      t.note ? '📝' : null
+    ].filter(Boolean).join(' · ');
     sub.title = sub.textContent;
     desc.appendChild(sub);
 

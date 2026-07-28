@@ -231,11 +231,31 @@
       return;
     }
 
+    /* Naming the account on every row was pure noise once there was really
+       only one with any activity — "Mercury Checking · Apple", "Mercury
+       Checking · Adobe", "Mercury Checking · ..." eight times over, when the
+       Accounts panel two cards up already says there is one account. It only
+       earns its place once these eight rows actually come from more than
+       one. */
+    var showAccount = distinctAccountCount(rows) > 1;
+
     listEl.innerHTML = '';
-    rows.forEach(function (t) { listEl.appendChild(recentRow(t)); });
+    rows.forEach(function (t) { listEl.appendChild(recentRow(t, showAccount)); });
   }
 
-  function recentRow(t) {
+  /* How many DIFFERENT accounts a set of transactions touches — capped at
+     stopping the moment it passes one, since every caller only asks "one, or
+     more than one?". */
+  function distinctAccountCount(rows) {
+    var seen = {}, n = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var id = rows[i].account_id;
+      if (!seen[id]) { seen[id] = true; n++; if (n > 1) return n; }
+    }
+    return n;
+  }
+
+  function recentRow(t, showAccount) {
     var row = document.createElement('a');
     row.className = 'fin-row adm-item--link';
     /* Must be a real query string, not "#transactions?tx=…" — everything after
@@ -253,12 +273,12 @@
     var desc = document.createElement('div'); desc.className = 'fin-desc';
     var b = document.createElement('b'); b.textContent = t.description; b.title = t.description;
     desc.appendChild(b);
-    var acctName = (accounts.find(function (a) { return a.id === t.account_id; }) || {}).name || '';
+    var acctName = showAccount ? ((accounts.find(function (a) { return a.id === t.account_id; }) || {}).name || '') : '';
     /* A div carrying .adm-item-sub, not a bare span: the class brings the
        one-line ellipsis, and only a block box can actually clip to it. */
     var sub = document.createElement('div');
     sub.className = 'adm-item-sub';
-    sub.textContent = acctName + (t.counterparty ? ' · ' + t.counterparty : '');
+    sub.textContent = [acctName, t.counterparty].filter(Boolean).join(' · ');
     sub.title = sub.textContent;
     desc.appendChild(sub);
 
