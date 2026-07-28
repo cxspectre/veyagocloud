@@ -1,7 +1,9 @@
-/* Team page: stat row, directory, sticky invite panel (managers).
-   The directory is a directory — each row links through to /admin/member?id=…
-   where the profile, onboarding and tasks for that person actually live.
-   Nothing is edited from this screen except sending a new invite. */
+/* Team page: stat row and directory. Nothing is edited or created here —
+   each row links through to /admin/member?id=… where the profile, onboarding
+   and tasks for that person live, and adding someone is its own guided flow at
+   /admin/member-new. The five-field invite panel that used to sit in the right
+   column is gone: it had no <form>, so Enter did nothing; it defaulted the role
+   silently; and its only failure message rendered off-screen. */
 (function () {
   'use strict';
 
@@ -23,9 +25,9 @@
 
   async function load() {
     isManager = await window.adminRoles.isManager();
-    var invitePane = document.getElementById('invite-pane');
+    /* Adding someone now has its own screen (/admin/member-new), so this page
+       is a directory and nothing else. Managers get the way in. */
     var inviteJump = document.getElementById('invite-jump');
-    if (invitePane) invitePane.hidden = !isManager;
     if (inviteJump) inviteJump.hidden = !isManager;
 
     var res = await window.sb.from('employees')
@@ -71,7 +73,7 @@
         '<li class="dash-empty-state">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>' +
           '<p>No team members yet.</p>' +
-          (isManager ? '<p style="font-size:.85rem;color:var(--muted)">Send your first invite from the panel on the right.</p>' : '') +
+          (isManager ? '<a class="btn btn-primary btn-sm" href="/admin/member-new">Add your first team member</a>' : '') +
         '</li>';
       return;
     }
@@ -123,77 +125,6 @@
     a.appendChild(av); a.appendChild(main); a.appendChild(acts);
     li.appendChild(a);
     return li;
-  }
-
-  /* ── Invite flow ───────────────────────────────────────────────────── */
-
-  var inviteJump = document.getElementById('invite-jump');
-  if (inviteJump) {
-    inviteJump.addEventListener('click', function () {
-      var el = document.getElementById('e-name');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function () { el.focus(); }, 300); }
-    });
-  }
-
-  var inviteBtn = document.getElementById('invite-btn');
-  if (inviteBtn) {
-    inviteBtn.addEventListener('click', async function () {
-      var name  = (document.getElementById('e-name').value || '').trim();
-      var email = (document.getElementById('e-email').value || '').trim();
-      var title = (document.getElementById('e-title').value || '').trim();
-      var role  = document.getElementById('e-role').value;
-      var start = document.getElementById('e-start').value || null;
-
-      if (!name)  { setMsg('Enter their full name.', 'err'); return; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setMsg('Enter a valid email address.', 'err'); return; }
-      /* The select opens on a blank option, so an untouched form has no role.
-         Refusing here is what makes the choice deliberate rather than default. */
-      if (!role) { document.getElementById('e-role').focus(); setMsg('Choose a role for this person.', 'err'); return; }
-
-      inviteBtn.disabled = true;
-      setMsg('Sending invite…');
-      try {
-        var out = await window.adminRoles.invokeFn('invite-employee', {
-          email: email, full_name: name, role: role, title: title || null, start_date: start
-        });
-        if (out.emailSent === false) {
-          /* The record exists but they never got the link — say so loudly,
-             otherwise this looks like success and the person never appears.
-
-             This used to say "fix email in Settings". Settings cannot fix it:
-             its Email pane is a read-only send log. Delivery depends on
-             RESEND_API_KEY, a Supabase secret set from a terminal, so name that
-             instead of routing the manager to a screen that cannot help. */
-          setMsg('Added ' + name + ' — but the invite email did not send: ' +
-                 (out.emailError || 'unknown error') +
-                 ' Delivery needs RESEND_API_KEY set as a Supabase secret from a terminal ' +
-                 '(supabase secrets set RESEND_API_KEY=…). Once it is set, use ' +
-                 '"Resend invite" on their profile.', 'err');
-          /* #msg sits above the stat row while the invite panel is sticky at the
-             top of the viewport, so at the moment of clicking this message is
-             off-screen — the one message that must not be missed. */
-          if (msg && msg.scrollIntoView) msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        } else {
-          setMsg('');
-          window.admin.toast(out.invited
-            ? 'Invite sent to ' + email
-            : email + ' linked to existing account');
-        }
-        /* Reset the whole form, not just the text fields. Leaving role and
-           start date populated meant the next invite silently inherited the
-           previous person's privilege level. */
-        document.getElementById('e-name').value = '';
-        document.getElementById('e-email').value = '';
-        document.getElementById('e-title').value = '';
-        document.getElementById('e-role').value = '';
-        document.getElementById('e-start').value = '';
-        load();
-      } catch (err) {
-        setMsg('Invite failed: ' + err.message, 'err');
-      } finally {
-        inviteBtn.disabled = false;
-      }
-    });
   }
 
   /* adminReady is a promise — immune to the event-vs-registration race. */

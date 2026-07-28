@@ -127,7 +127,11 @@
         if (target) target.focus();
       });
     });
-    window.addEventListener('hashchange', function () { showTab(currentTab()); });
+    window.addEventListener('hashchange', function () {
+      showTab(currentTab());
+      /* #welcome is outside TABS, so showTab() cannot hide it. */
+      if (member) renderWelcome();
+    });
     showTab(currentTab());
   }
 
@@ -173,12 +177,118 @@
     renderForm();
     renderFacts();
     renderDanger();
+    renderWelcome();
     await Promise.all([loadOnboarding(), loadTasks()]);
+  }
+
+  /* ── Handoff panel (#welcome) ────────────────────────────────────────
+     Shown once, straight after the invite flow. The flow leaves its outcome in
+     sessionStorage rather than the URL because it can include a single-use
+     sign-in link, which has no business in an address bar or a history entry.
+
+     Not part of TABS: showTab() only knows tab-<t>/panel-<t>, so this panel is
+     shown and hidden here, including on hashchange — otherwise it would stay
+     on screen while the user browsed Onboarding and Tasks. */
+  var OUTCOME_KEY = 'veyago.admin.invite-outcome';
+
+  function readOutcome() {
+    try {
+      var raw = sessionStorage.getItem(OUTCOME_KEY);
+      if (!raw) return null;
+      var o = JSON.parse(raw);
+      /* Belongs to this person only — a stale outcome must not decorate
+         somebody else's profile. */
+      return (o && o.employee && o.employee.id === member.id) ? o : null;
+    } catch (e) { return null; }
+  }
+
+  function dismissWelcome() {
+    try { sessionStorage.removeItem(OUTCOME_KEY); } catch (e) {}
+    document.getElementById('m-welcome').hidden = true;
+    if ((window.location.hash || '') === '#welcome') {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }
+
+  function renderWelcome() {
+    var panel = document.getElementById('m-welcome');
+    if (!panel) return;
+
+    var wanted = (window.location.hash || '') === '#welcome';
+    var outcome = wanted && isManager ? readOutcome() : null;
+    if (!outcome) { panel.hidden = true; return; }
+
+    document.getElementById('m-welcome-name').textContent = member.full_name;
+
+    var list = document.getElementById('m-welcome-outcomes');
+    list.innerHTML = '';
+    (outcome.steps || []).forEach(function (s) {
+      var li = document.createElement('li');
+      var mark = document.createElement('span');
+      /* ok:true done · ok:false failed · ok:null deliberately skipped */
+      mark.className = 'mark ' + (s.ok === true ? 'ok' : s.ok === false ? 'bad' : 'skip');
+      mark.textContent = s.ok === true ? '✓' : s.ok === false ? '✕' : '–';
+      var txt = document.createElement('span');
+      txt.textContent = s.text;
+      li.appendChild(mark); li.appendChild(txt);
+      list.appendChild(li);
+    });
+
+    /* The one thing that rescues a failed send: the link the function minted
+       and used to discard. Shown only when the email did not go out. */
+    var linkSlot = document.getElementById('m-welcome-link');
+    linkSlot.innerHTML = '';
+    if (outcome.actionLink) {
+      var box = document.createElement('div');
+      box.className = 'adm-notice adm-notice--warn';
+      var h = document.createElement('h3');
+      h.textContent = 'Send them this link yourself';
+      var p = document.createElement('p');
+      p.textContent = 'The account exists, but the invite email did not go out. This link lets ' +
+        member.full_name + ' set a password and sign in. It works once.';
+      var input = document.createElement('input');
+      input.className = 'input';
+      input.readOnly = true;
+      input.value = outcome.actionLink;
+      input.style.marginTop = '8px';
+      input.setAttribute('aria-label', 'One-time sign-in link');
+      input.addEventListener('focus', function () { input.select(); });
+      box.appendChild(h); box.appendChild(p); box.appendChild(input);
+      linkSlot.appendChild(box);
+    }
+
+    renderExpiry(outcome);
+    document.getElementById('m-welcome-onboarding').href = '/admin/onboarding?emp=' + encodeURIComponent(member.id);
+    document.getElementById('m-welcome-task').href = '/admin/tasks?assignee=' + encodeURIComponent(member.id);
+    panel.hidden = false;
+  }
+
+  /* The invite email promises 24 hours and nothing in the schema records when it
+     was sent, so the flow hands the timestamp over directly. Without it we say
+     nothing rather than guess from created_at, which does not move on a resend. */
+  function renderExpiry(outcome) {
+    var el = document.getElementById('m-welcome-expiry');
+    if (!el) return;
+    if (!outcome.sentAt || !outcome.actionLink && !outcome.steps) { el.textContent = ''; return; }
+
+    var sent = new Date(outcome.sentAt).getTime();
+    if (isNaN(sent)) { el.textContent = ''; return; }
+    var hours = outcome.expiryHours || 24;
+    var left = Math.round((sent + hours * 3600000 - Date.now()) / 3600000);
+
+    el.textContent = left > 0
+      ? 'Invited just now — the sign-in link expires in about ' + left + ' hour' + (left === 1 ? '' : 's') + '.'
+      : 'That invite link has expired. Use Resend invite to send a fresh one.';
   }
 
   /* ── Identity block ────────────────────────────────────────────────── */
 
   function renderHead() {
+    /* Resend is an identity action now, shown while the invite is still
+       outstanding. Managers only — it calls a managers-only function. */
+    var resend = document.getElementById('m-resend');
+    if (resend) resend.hidden = !(isManager && member.status === 'invited');
+
     var av = document.getElementById('m-avatar');
     av.textContent = initials(member.full_name);
     av.style.background = member.status === 'inactive' ? '#c7c7cc' : (ROLE_COLOR[member.role] || '#86868b');
@@ -270,6 +380,9 @@
   /* ── Danger zone (managers only) ───────────────────────────────────── */
 
   function renderDanger() {
+    /* Resend moved out of this zone and is toggled in renderHead(): it is only
+       shown while the invite is outstanding, which is a fact about the person,
+       not about danger. */
     var zone = document.getElementById('m-danger');
     zone.hidden = !isManager;
     if (!isManager) return;
@@ -277,7 +390,6 @@
     var inactive = member.status === 'inactive';
 
     document.getElementById('m-deactivate').hidden = isSelf || inactive;
-    document.getElementById('m-resend').hidden     = member.status !== 'invited';
 
     document.getElementById('m-danger-note').textContent = isSelf
       ? 'This is your own account. Deactivating yourself would lock you out, so it has to be done from another owner or admin login.'
@@ -305,7 +417,7 @@
   async function resendInvite() {
     var btn = document.getElementById('m-resend');
     btn.disabled = true;
-    slotMsg('m-danger-msg', 'Sending invite…');
+    slotMsg('m-resend-msg', 'Sending invite…');
     try {
       var out = await window.adminRoles.invokeFn('invite-employee', {
         email: member.email,
@@ -317,14 +429,17 @@
       if (out.emailSent === false) {
         /* The employees row exists either way — the link is what failed to
            arrive, and without it they still cannot get in. Say so plainly. */
-        slotMsg('m-danger-msg', 'The record is fine, but the invite email did NOT send: ' +
-          (out.emailError || 'unknown error') + ' — fix email in Settings, then try again.', 'err');
+        /* Settings cannot fix this — its Email pane is a read-only log.
+           Delivery depends on RESEND_API_KEY, a Supabase secret. */
+        slotMsg('m-resend-msg', 'The record is fine, but the invite email did NOT send: ' +
+          (out.emailError || 'unknown error') +
+          ' Delivery needs RESEND_API_KEY set as a Supabase secret from a terminal.', 'err');
       } else {
-        slotMsg('m-danger-msg', '');
+        slotMsg('m-resend-msg', '');
         window.admin.toast('Invite resent to ' + member.email);
       }
     } catch (err) {
-      slotMsg('m-danger-msg', 'Resend failed: ' + err.message, 'err');
+      slotMsg('m-resend-msg', 'Resend failed: ' + err.message, 'err');
     } finally {
       btn.disabled = false;
     }
@@ -533,6 +648,9 @@
 
   var deactivateBtn = document.getElementById('m-deactivate');
   if (deactivateBtn) deactivateBtn.addEventListener('click', deactivate);
+
+  var dismissBtn = document.getElementById('m-welcome-dismiss');
+  if (dismissBtn) dismissBtn.addEventListener('click', dismissWelcome);
 
   var resendBtn = document.getElementById('m-resend');
   if (resendBtn) resendBtn.addEventListener('click', resendInvite);

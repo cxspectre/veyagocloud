@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add someone · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <a class="adm-back" href="/admin/team">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Team
+      </a>
+
+      <div class="adm-page-head">
+        <div>
+          <h1 id="flow-title">Add someone to the team</h1>
+          <p id="flow-lede">Three steps. Nothing is created until the last one.</p>
+        </div>
+      </div>
+
+      <!-- Step rail, rendered by member-new.js from one array -->
+      <div class="flow-rail" id="flow-rail" role="list" aria-label="Progress"></div>
+
+      <div style="max-width:620px">
+
+        <!-- ── Step 1: Person ───────────────────────────────────────── -->
+        <section class="card-pane" id="step-person" hidden aria-labelledby="h-person">
+          <h2 id="h-person">Who are you adding?</h2>
+
+          <div class="field">
+            <label for="p-name">Full name</label>
+            <input class="input" id="p-name" type="text" placeholder="Alex Doe" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="p-email">Email</label>
+            <input class="input" id="p-email" type="email" placeholder="alex@example.com" autocomplete="off" />
+            <p class="hint" id="p-email-hint">Where the invite goes. They sign in with this.</p>
+          </div>
+
+          <!-- Duplicate branch — filled by the live check against the directory -->
+          <div id="dupe-slot"></div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="p-title">Job title <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label>
+              <input class="input" id="p-title" type="text" placeholder="Personal Assistant" />
+            </div>
+            <div class="field">
+              <label for="p-start">Start date <span style="font-weight:400;color:var(--muted-2)">(optional)</span></label>
+              <input class="input" id="p-start" type="date" />
+            </div>
+          </div>
+
+          <p class="msg err" id="person-err" role="alert" hidden></p>
+
+          <div class="flow-actions">
+            <a class="btn" href="/admin/team">Cancel</a>
+            <span class="spacer"></span>
+            <button class="btn btn-primary" id="to-access" type="button">Continue</button>
+          </div>
+        </section>
+
+        <!-- ── Step 2: Access ───────────────────────────────────────── -->
+        <section class="card-pane" id="step-access" hidden aria-labelledby="h-access">
+          <h2 id="h-access">What should <span id="access-name">they</span> be able to do?</h2>
+          <p style="font-size:.85rem;color:var(--muted);margin:-6px 0 16px">Nothing is preselected on purpose — this one is worth a moment.</p>
+
+          <div id="role-cards" role="radiogroup" aria-labelledby="h-access"></div>
+
+          <!-- Typed confirmation, revealed only for admin/owner -->
+          <div id="elevated-slot" hidden>
+            <div class="adm-notice adm-notice--warn">
+              <h3>This is a manager role</h3>
+              <p id="elevated-what"></p>
+              <p style="margin-top:8px">Type <strong id="elevated-word">ADMIN</strong> to confirm.</p>
+              <input class="input" id="elevated-confirm" type="text" autocomplete="off"
+                     style="margin-top:8px;max-width:220px" aria-label="Type the role name to confirm" />
+            </div>
+          </div>
+
+          <p class="msg err" id="access-err" role="alert" hidden></p>
+
+          <div class="flow-actions">
+            <button class="btn" id="back-person" type="button">← Back</button>
+            <span class="spacer"></span>
+            <button class="btn btn-primary" id="to-review" type="button">Continue</button>
+          </div>
+        </section>
+
+        <!-- ── Step 3: Review & send ────────────────────────────────── -->
+        <section class="card-pane" id="step-review" hidden aria-labelledby="h-review">
+          <h2 id="h-review">Ready to invite <span id="review-name">them</span>?</h2>
+
+          <dl class="adm-facts" id="review-facts"></dl>
+
+          <!-- Delivery preflight — hard-blocks Send when email cannot go out -->
+          <div id="preflight-slot" style="margin-top:18px">
+            <p class="msg" id="preflight-msg">Checking that email can be delivered…</p>
+          </div>
+
+          <details id="preview-wrap" style="margin-top:14px" hidden>
+            <summary style="cursor:pointer;font-size:.86rem;color:var(--blue-2)">Preview the invite email</summary>
+            <iframe id="preview-frame" title="Invite email preview" sandbox
+                    style="width:100%;height:360px;border:1px solid var(--hair);border-radius:11px;margin-top:10px;background:#fff"></iframe>
+          </details>
+
+          <div style="margin-top:20px">
+            <p class="adm-subhead">Then</p>
+            <label class="check-row">
+              <input type="checkbox" id="opt-tick" checked />
+              <div>
+                <div class="check-row-title">Tick “Dashboard access granted” on their checklist</div>
+                <div class="check-row-sub" id="opt-tick-sub">It is the work this flow just did.</div>
+              </div>
+            </label>
+            <label class="check-row">
+              <input type="checkbox" id="opt-task" />
+              <div>
+                <div class="check-row-title">Assign them a first task</div>
+                <div class="check-row-sub">Something small and real for day one.</div>
+              </div>
+            </label>
+            <!-- The check-row above is the visible label; the input carries an
+                 accessible name of its own rather than a hidden <label>. -->
+            <div class="field" id="task-slot" hidden style="margin:6px 0 0 26px">
+              <input class="input" id="opt-task-title" type="text"
+                     aria-label="First task" placeholder="Read the handbook and say hello" />
+            </div>
+          </div>
+
+          <p class="msg err" id="review-err" role="alert" hidden></p>
+
+          <div class="flow-actions">
+            <button class="btn" id="back-access" type="button">← Back</button>
+            <span class="spacer"></span>
+            <button class="btn btn-primary" id="send-btn" type="button">Send the invite</button>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=12"></script>
+  <script src="/admin/supabase-config.js?v=12"></script>
+  <script src="/admin/js/client.js?v=12"></script>
+  <script src="/admin/js/auth.js?v=12"></script>
+  <script src="/admin/js/roles.js?v=12"></script>
+  <script src="/admin/js/nav.js?v=12"></script>
+  <script src="/admin/js/palette.js?v=12"></script>
+  <script src="/admin/js/member-new.js?v=12"></script>
+</body>
+</html>

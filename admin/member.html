@@ -19,6 +19,25 @@
 
       <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
 
+      <!-- Handoff panel, shown only when arriving from the invite flow at
+           #welcome. It replaces a toast that self-destructed after 3.2s on a
+           pointer-events:none wrapper, so it could not carry a next action.
+           Outside TABS, so member.js shows and hides it itself. -->
+      <section class="card-pane" id="m-welcome" hidden aria-labelledby="m-welcome-h" style="border-color:#bbf7d0">
+        <h2 id="m-welcome-h">Added <span id="m-welcome-name">them</span></h2>
+        <ul class="flow-outcomes" id="m-welcome-outcomes"></ul>
+        <div id="m-welcome-link"></div>
+        <p class="msg" id="m-welcome-expiry" style="margin:0 0 14px"></p>
+        <p class="adm-subhead">What next</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="btn btn-sm" id="m-welcome-onboarding" href="#onboarding">Work their checklist</a>
+          <a class="btn btn-sm" id="m-welcome-task" href="#tasks">Assign a task</a>
+          <a class="btn btn-sm" href="/admin/member-new">Add someone else</a>
+          <span style="flex:1"></span>
+          <button class="btn btn-sm" id="m-welcome-dismiss" type="button">Dismiss</button>
+        </div>
+      </section>
+
       <!-- Shimmer until the record lands; a deep link opens cold. -->
       <div id="m-loading">
         <ul class="adm-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
@@ -41,6 +60,16 @@
             <div class="adm-detail-meta" id="m-meta"></div>
           </div>
           <div class="adm-actions">
+            <!-- Resend lives here, not in the danger zone: chasing an invite
+                 that never arrived is routine, and filing it next to
+                 "Deactivate member" made a safe action look like a risky one.
+                 Its message slot moved with it — slotMsg is null-safe, so a
+                 button left behind would have written into nothing. -->
+            <button class="btn" id="m-resend" type="button" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Resend invite
+            </button>
+            <span class="msg" id="m-resend-msg"></span>
             <a class="btn" id="m-email-btn" href="/admin/team">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
               Email
@@ -134,7 +163,6 @@
             <p id="m-danger-note"></p>
             <div class="form-actions">
               <button class="btn btn-danger" id="m-deactivate" type="button" hidden>Deactivate member</button>
-              <button class="btn" id="m-resend" type="button" hidden>Resend invite</button>
               <span class="msg" id="m-danger-msg"></span>
             </div>
           </div>

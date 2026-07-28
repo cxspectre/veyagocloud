@@ -99,8 +99,16 @@ const PARENT_CASES = [
   ['/admin/article',      '/admin/journal',    'Journal'],
   ['/admin/apps-editor',  '/admin/apps',       'Apps'],
   ['/admin/member',       '/admin/team',       'Team'],
+  ['/admin/member-new',   '/admin/team',       'Team'],
   ['/admin/task',         '/admin/tasks',      'Tasks']
 ];
+
+/* member-new must not fall through to the `member` prefix by accident — it is
+   its own file and needs its own entry. */
+test('member-new maps to Team in its own right, not via member', async () => {
+  const { activeHrefs } = await mountAt('/admin/member-new?step=review');
+  assert.deepEqual(activeHrefs, ['/admin/team']);
+});
 
 /* These are first-class now, so they highlight themselves rather than a parent. */
 test('checklist, transactions and invoices highlight themselves', async () => {

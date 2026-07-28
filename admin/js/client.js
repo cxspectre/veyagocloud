@@ -36,6 +36,8 @@
       if (p.charAt(1) === '/' || p.charAt(1) === '\\') return null;
       if (p.indexOf('\\') !== -1) return null;
       if (p.indexOf('/admin/') !== 0) return null;
+      /* A hash is part of the destination (…#welcome), never part of the origin,
+         so it rides along untouched — only the path decides safety. */
       var file = p.split('?')[0].split('#')[0];
       if (file === '/admin/' || file === '/admin/index' || file === '/admin/index.html') return null;
       return p;

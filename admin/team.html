@@ -18,17 +18,17 @@
           <p>Everyone at Veyago — roles, status, and invites.</p>
         </div>
         <div class="adm-actions">
-          <button class="btn btn-primary" id="invite-jump" type="button" hidden>
+          <a class="btn btn-primary" id="invite-jump" href="/admin/member-new" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-            Invite member
-          </button>
+            Add someone
+          </a>
         </div>
       </div>
       <p class="msg" id="msg" role="status" aria-live="polite" style="margin-bottom:12px"></p>
 
       <div class="dash-stats dash-stats--4" id="team-stats"></div>
 
-      <div class="adm-split">
+      <div>
         <div class="card-pane" style="margin-bottom:0">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
             <h2 style="margin:0">Directory</h2>
@@ -37,31 +37,6 @@
           <ul class="adm-list" id="team-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
         </div>
 
-        <div class="adm-side-sticky" id="invite-pane" hidden>
-          <div class="card-pane" style="margin-bottom:0">
-            <h2>Invite a team member</h2>
-            <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">Sends an invite email and creates their record. Their role decides what they see — RLS enforces it.</p>
-            <div class="field"><label for="e-name">Full name</label><input class="input" id="e-name" type="text" placeholder="Alex Doe" /></div>
-            <div class="field"><label for="e-email">Email</label><input class="input" id="e-email" type="email" placeholder="alex@example.com" /></div>
-            <div class="field"><label for="e-title">Job title</label><input class="input" id="e-title" type="text" placeholder="Personal Assistant" /></div>
-            <div class="field"><label for="e-role">Role</label>
-              <!-- The empty first option is deliberate: with no `selected`, the
-                   browser used to pre-pick Assistant, so a manager who never
-                   touched this control still granted a role. Choosing is now
-                   explicit, and save() rejects the empty value. -->
-              <select class="input" id="e-role">
-                <option value="">Choose a role…</option>
-                <option value="employee">Employee — create and edit site content</option>
-                <option value="assistant">Assistant — create and edit site content</option>
-                <option value="admin">Admin — everything, including finance and settings</option>
-                <option value="owner">Owner — everything, including finance and settings</option>
-              </select>
-              <p class="hint">All four can create, edit and delete articles, wallpapers, apps and announcements. Publishing to the live site, finance and settings are Admin and Owner only. Assistant and Employee currently grant the same access.</p>
-            </div>
-            <div class="field"><label for="e-start">Start date</label><input class="input" id="e-start" type="date" /></div>
-            <div class="form-actions"><button class="btn btn-primary" id="invite-btn" type="button">Send invite</button></div>
-          </div>
-        </div>
       </div>
     </main>
   </div>

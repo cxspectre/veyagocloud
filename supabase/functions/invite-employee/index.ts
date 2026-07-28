@@ -76,6 +76,48 @@ Deno.serve(async (req) => {
        and add <SITE_URL>/admin/ to Auth → URL Configuration → Redirect URLs. */
     const siteUrl = (Deno.env.get('SITE_URL') ?? 'https://www.veyago.cloud').replace(/\/+$/, '');
 
+    /* ── Preflight ──────────────────────────────────────────────────────
+       Everything above this line is reads and env lookups. Everything below
+       writes: createUser, generateLink (which mints a token), the employees
+       upsert, the send, the log. So a dry run must return HERE — the whole
+       point is to tell the caller that delivery is impossible BEFORE an
+       account exists that nobody can sign into.
+
+       Reports `reason`, never `error`: the browser helper (roles.js invokeFn)
+       throws on any 200 body carrying a truthy `error`, which would turn a
+       successful preflight answer into an exception. */
+    if (body.dryRun === true) {
+      const hasKey = !!Deno.env.get('RESEND_API_KEY');
+      /* EMAIL_FROM is a weaker, separate signal. Unset, email.ts falls back to
+         Resend's shared onboarding@resend.dev, which on an unverified account
+         silently delivers only to the account owner — so the send "succeeds"
+         and the invitee still gets nothing. Worth warning about; not worth
+         blocking on, because a verified account may legitimately leave it. */
+      const hasFrom = !!Deno.env.get('EMAIL_FROM');
+
+      /* Rendered with a placeholder link: the real one comes from
+         generateLink, which is itself a write. */
+      const preview = inviteEmail({
+        name: fullName || 'Alex Doe',
+        inviterName,
+        role,
+        actionLink: siteUrl + '/admin/',
+      });
+
+      return json({
+        ok: true,
+        dryRun: true,
+        emailReady: hasKey,
+        fromConfigured: hasFrom,
+        reason: hasKey
+          ? (hasFrom ? null
+            : 'EMAIL_FROM is not set, so invites are sent from Resend’s shared address. Until your own domain is verified, only your own inbox will receive them.')
+          : 'RESEND_API_KEY is not set, so no invite email can be delivered.',
+        remedy: hasKey ? null : 'supabase secrets set RESEND_API_KEY=re_…',
+        preview: { subject: preview.subject, html: preview.html },
+      });
+    }
+
     /* createUser + generateLink instead of inviteUserByEmail: inviteUserByEmail
        sends Supabase's own unbranded mail, and an invite is the first thing a
        new hire ever sees from the company. Creating the user separately lets us
@@ -146,7 +188,14 @@ Deno.serve(async (req) => {
     });
 
     /* The record exists either way. The email is what may have failed, and the
-       caller needs to know — without it they cannot get in at all. */
+       caller needs to know — without it they cannot get in at all.
+
+       On failure we also hand back the sign-in link. It was already minted at
+       generateLink above and was previously thrown away, which left the admin
+       with an account nobody could reach and no way to fix it by hand. It is
+       returned ONLY when the send failed: this is a single-use credential, so
+       it should not be sitting in a response body that nothing needs it in.
+       The caller is already a verified manager (checked at the top). */
     return json({
       ok: true,
       employee,
@@ -155,6 +204,8 @@ Deno.serve(async (req) => {
       emailError: sent.ok ? null : (sent.skipped
         ? 'Email is not configured yet (RESEND_API_KEY is not set), so no invite was delivered.'
         : sent.error),
+      actionLink: sent.ok ? null : link.data.properties.action_link,
+      sentAt: new Date().toISOString(),
     });
   } catch (err) {
     console.error('invite-employee error:', err);

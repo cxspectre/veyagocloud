@@ -18,6 +18,7 @@
     article:       'journal',
     'apps-editor': 'apps',
     member:        'team',
+    'member-new':  'team',
     task:          'tasks'
   };
 

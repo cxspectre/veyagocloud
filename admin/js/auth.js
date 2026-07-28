@@ -104,8 +104,12 @@
 
   function rememberDestination() {
     try {
+      /* The hash is part of the destination: /admin/member?id=…#welcome and
+         #onboarding are different screens, and dropping it silently lands the
+         user on the default tab. Validation runs on the path only — a hash
+         cannot change the origin. */
       var here = safeAdminPath(window.location.pathname + window.location.search);
-      if (here) sessionStorage.setItem(DEST_KEY, here);
+      if (here) sessionStorage.setItem(DEST_KEY, here + (window.location.hash || ''));
     } catch (e) { /* private mode — the redirect still works, just without memory */ }
   }
 
