@@ -1,0 +1,81 @@
+# Drift check — does the repo match what is actually deployed?
+#
+# WHY THIS EXISTS. Applying the 0011/0012 migrations turned up three separate
+# drift problems in one afternoon, none of which was visible from the code:
+#
+#   1. The migration history recorded 0001-0006 while 0007-0012 had been applied
+#      by hand, so `db push` tried to replay 0007 and collided with itself.
+#   2. 0007 had only PARTIALLY applied — its policies were live, its role
+#      helpers were not, so is_manager() still trusted a retired allowlist while
+#      every comment in the repo said it did not.
+#   3. Two edge functions in the repo had never been deployed at all.
+#      request-password-reset meant forgot-password was broken in production;
+#      notify-task is called fire-and-forget with .catch(), so every task
+#      notification had been failing in complete silence.
+#
+# Each was only findable by asking the live system. The code was self-consistent
+# and wrong. This job asks the live system on a schedule instead of waiting for
+# someone to hit it.
+#
+# It is deliberately NOT a gate on publishing. A drift check that can block a
+# deploy becomes a thing you route around at the worst moment; this one reports.
+
+name: Drift check
+
+on:
+  schedule:
+    # Monday morning, before anyone needs the admin to work.
+    - cron: '0 7 * * 1'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+      - 'supabase/functions/**'
+  workflow_dispatch:
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Skip rather than fail when the credentials are absent. A new job that
+      # hard-fails on a secret nobody has created yet teaches people to ignore
+      # it, which is the opposite of the point.
+      - name: Check for credentials
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
+            echo "have=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Drift check skipped"
+              echo ""
+              echo "Needs two repository secrets that are not set yet:"
+              echo ""
+              echo '- `SUPABASE_ACCESS_TOKEN` — from https://supabase.com/dashboard/account/tokens'
+              echo '- `SUPABASE_PROJECT_REF` — the project ref in your dashboard URL'
+              echo ""
+              echo "Until then nothing checks that the repo matches production."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: supabase/setup-cli@v1
+        if: steps.creds.outputs.have == 'true'
+        with:
+          version: latest
+
+      - name: Compare migrations and functions against production
+        if: steps.creds.outputs.have == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: node tools/check-drift.js
