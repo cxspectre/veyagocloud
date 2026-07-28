@@ -58,7 +58,7 @@ function renderArticlePage(a) {
         ${cover}<div class="paper-body">
         ${rendered.html}
         </div>
-        ${newsletterSection({ id: 'article', heading: 'Get the next field note in your inbox' })}
+        ${newsletterSection({ id: 'article', heading: 'Want the next field note?' })}
         <footer class="paper-foot">
           <div class="pf-nav">
             <a class="pf-back" href="/journal/">&larr; All articles</a>

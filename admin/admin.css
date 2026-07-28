@@ -1285,3 +1285,45 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* =============================================================================
+   PRINT
+   There was no @media print anywhere in either stylesheet, so printing or
+   saving-as-PDF rendered the 220px sidebar, the filter toolbar and the sticky
+   New-invoice panel alongside the record. On Invoices that is a real job, not a
+   nicety: an invoice you cannot hand to a client or an accountant is half an
+   invoice, and the product has no send path either.
+   ============================================================================= */
+@media print {
+  /* Chrome the page does not have on paper. */
+  .adm-sidebar, .adm-toggle, .adm-overlay, .adm-skip,
+  .cp-overlay, .toast-wrap, .adm-session-lapsed,
+  .adm-tabs, .adm-back, .adm-side-sticky, .adm-toolbar,
+  .adm-actions, .adm-danger-zone, .flow-actions, .card-head .btn,
+  .adm-item-acts, .dash-quick, .ae-topbar, .ae-sidebar { display: none !important; }
+
+  /* The shell is a two-column grid on screen; on paper there is one column. */
+  .adm-body { background: #fff; }
+  .adm-shell { display: block; min-height: 0; }
+  .adm-main { padding: 0; }
+
+  /* Cards become plain sections — a printed page does not need elevation, and
+     a shadow costs toner for nothing. */
+  .card-pane, .adm-item, .dash-stat, .adm-notice {
+    box-shadow: none !important;
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+  .adm-list { break-inside: auto; }
+
+  /* Keep a record together where it will fit. */
+  .fin-row, .flow-outcomes li { break-inside: avoid; }
+
+  /* Links are useless as underlined blue on paper, but their destinations are
+     worth keeping for anything that leaves the building. */
+  a { text-decoration: none; color: #000; }
+  .adm-main a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 0.8em; color: #555; }
+
+  /* Nothing scrolls on paper — an overflow container would clip the content. */
+  .adm-shell--editor, .ae-root, .ae-body, .ae-canvas-wrap { height: auto; overflow: visible; }
+}

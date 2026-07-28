@@ -10,8 +10,13 @@ var { esc, attr } = require('./escape');
 function newsletterSection(opts) {
   opts = opts || {};
   var id = opts.id || 'nl';
-  var heading = opts.heading || 'Get the next one in your inbox';
-  var dek = opts.dek || 'Occasional field notes from the studio. No spam, unsubscribe anytime.';
+  /* The copy is written for the state the product is actually in. Until a
+     provider is configured in assets/js/newsletter.js, submitting does not
+     subscribe anyone — it shows an address to write to, and somebody adds you
+     by hand. Promising "the next one in your inbox" was a commitment nothing
+     could keep. Restore the stronger wording when ENDPOINT is set. */
+  var heading = opts.heading || 'Want the next one?';
+  var dek = opts.dek || 'Occasional field notes from the studio. Leave your address and we will add you by hand — no list software, no spam, and a reply to unsubscribe.';
   var note = opts.note || 'We hand your email to our newsletter tool only when you subscribe — never stored here, never sold.';
   var inputId = 'nl-email-' + id;
   return `<section class="newsletter" data-newsletter aria-labelledby="nl-h-${attr(id)}">
@@ -23,7 +28,7 @@ function newsletterSection(opts) {
               <label class="nl-label" for="${attr(inputId)}">Email address</label>
               <div class="nl-row">
                 <input class="nl-input" id="${attr(inputId)}" type="email" name="email" autocomplete="email" placeholder="you@example.com" required />
-                <button class="nl-btn" type="submit">Subscribe</button>
+                <button class="nl-btn" type="submit">Send it to me</button>
               </div>
               <div class="nl-hp" aria-hidden="true">
                 <label>Leave this field empty<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>

@@ -49,7 +49,7 @@ function renderWallpapersIndex(wallpapers) {
           <h1>Wallpapers</h1>
           <p class="lede">${INDEX_LEDE}</p>
         </header>
-        ${newsletterSection({ id: 'wallpapers', heading: 'Subscribers get the new drop each month', dek: 'A fresh wallpaper set lands monthly. Subscribe and never miss one.' })}
+        ${newsletterSection({ id: 'wallpapers', heading: 'Want to hear about new sets?', dek: 'New wallpapers land every so often. Leave your address and we will let you know — added by hand, no list software.' })}
         ${grid}
       </div>
     </section>

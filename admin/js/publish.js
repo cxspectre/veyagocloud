@@ -82,6 +82,7 @@
     root.innerHTML =
       '<div class="pub-state" style="margin-bottom:14px"></div>' +
       '<div class="pub-action"></div>' +
+      '<div class="pub-lang"></div>' +
       '<div class="pub-queue"></div>' +
       '<p class="adm-subhead" style="margin-top:24px">Recent publishes</p>' +
       '<ul class="adm-list pub-runs"><li class="skel skel-sm"></li><li class="skel skel-sm"></li></ul>';
@@ -160,6 +161,7 @@
 
       renderState(lastGood, inFlight, pending);
       renderAction(inFlight, data.requestsError);
+      renderLanguages();
       renderQueue();
       renderRuns(runs);
 
@@ -319,6 +321,32 @@
 
       wrap.appendChild(field); wrap.appendChild(btn); wrap.appendChild(msg);
       return wrap;
+    }
+
+    /* ── What actually ships, in how many languages ─────────────────
+       veyago.cloud serves five locales: app.js translates the chrome from
+       hand-maintained dictionaries in i18n/, and nothing translates the
+       content. So a German visitor gets German navigation around an English
+       article, and no screen in the admin ever said so. This does not fix it —
+       there is no translation machinery and building one is not this change —
+       it stops the product implying a thing it does not do, at the moment that
+       implication costs something. */
+    var LOCALES = ['English', 'Nederlands', 'Français', 'Deutsch', 'Español'];
+
+    function renderLanguages() {
+      var el = q('pub-lang');
+      if (!el) return;
+      el.innerHTML = '';
+      var box = document.createElement('div');
+      box.className = 'adm-notice adm-notice--info';
+      box.style.marginTop = '16px';
+      var h = document.createElement('h3');
+      h.textContent = 'Published in English, to all ' + LOCALES.length + ' language versions';
+      var p1 = document.createElement('p');
+      p1.textContent = LOCALES.join(' · ') + '. The site chrome is translated; articles, ' +
+        'wallpaper titles and announcements are not — they go out as written.';
+      box.appendChild(h); box.appendChild(p1);
+      el.appendChild(box);
     }
 
     /* ── The approval queue (managers) ────────────────────────────── */
