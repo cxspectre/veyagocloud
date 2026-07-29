@@ -78,13 +78,44 @@
      password instead of dropping them straight into the shell. Without this
      an invited user never sets a password and is locked out the moment their
      session expires. */
-  var linkType = (function () {
+  /* Read once, synchronously, before supabase-js consumes and strips the
+     fragment — client.js runs first and its detectSessionInUrl handling clears
+     the URL as soon as it resolves. */
+  var linkParams = (function () {
     var hash = (window.location.hash || '').replace(/^#/, '');
     var qs   = (window.location.search || '').replace(/^\?/, '');
-    var m = (hash + '&' + qs).match(/(?:^|&)type=([a-z_]+)/);
-    return m ? m[1] : null;
+    return new URLSearchParams(hash + '&' + qs);
   })();
+
+  var linkType = linkParams.get('type');
   var needsPassword = linkType === 'invite' || linkType === 'recovery' || linkType === 'signup';
+
+  /* An invite or reset link that cannot be honoured comes back as an ERROR in
+     the same fragment — GoTrue redirects to <redirect_to>#error=access_denied
+     &error_code=otp_expired&error_description=... — and nothing here used to
+     read it. The page then simply found no session and showed a bare sign-in
+     form, so "my invite link just takes me to the login screen" was the whole
+     experience: no reason, no next step, and no way to tell a spent link from
+     a wrong password.
+
+     The single most common cause is a link that was already opened once. The
+     /auth/v1/verify endpoint CONSUMES the token and then redirects, so the
+     first click spends it even if that redirect went somewhere useless. */
+  var linkError = linkParams.get('error_code') || linkParams.get('error');
+  var linkErrorText = linkParams.get('error_description');
+
+  function linkErrorMessage() {
+    var raw = (linkErrorText || '').replace(/\+/g, ' ');
+    if (/expired|otp_expired|invalid/i.test(linkError + ' ' + raw)) {
+      return 'That link has already been used or has expired. Invite links work once, ' +
+             'and only for a limited time — ask for a new one and it will work.';
+    }
+    if (/access_denied/i.test(linkError)) {
+      return 'That link could not be used' + (raw ? ' — ' + raw : '') +
+             '. Ask for a new invite, or sign in below if you already set a password.';
+    }
+    return 'That link could not be used' + (raw ? ' — ' + raw : '') + '.';
+  }
   var passwordJustSet = false;   // set once the user saves one, so we stop intercepting
 
   /* ── Where the user was actually going ────────────────────────────────
@@ -389,7 +420,12 @@
      won't fire). Redirect immediately. */
   window.admin.session().then(function(s) {
     if (!s && !shellShown) {
-      if (loginEl) { showLogin(); resolveReady(null); }
+      if (loginEl) {
+        showLogin();
+        /* Say why they are looking at a sign-in form they did not ask for. */
+        if (linkError) { showStep(step1); setMsg(loginMsg, linkErrorMessage(), 'err'); }
+        resolveReady(null);
+      }
       /* The common case: a bookmarked or emailed deep link opened without a
          session. Remember it so signing in finishes the trip. */
       else { rememberDestination(); window.location.href = '/admin/'; resolveReady(null); }

@@ -39,7 +39,7 @@ function bodyOf(html) {
      aalThrows          the AAL check errors (network blip, 500) */
 function harness(opts = {}) {
   const dom = new JSDOM('<!doctype html><body>' + bodyOf(HTML) + '</body>', {
-    url: 'https://veyago.cloud/admin/',
+    url: 'https://veyago.cloud/admin/' + (opts.url || ''),
     runScripts: 'outside-only',
     virtualConsole: new VirtualConsole(),
   });
@@ -97,6 +97,11 @@ function harness(opts = {}) {
   };
 
   vm.runInContext(SRC, dom.getInternalVMContext());
+
+  /* A real invite link arrives already signed in — supabase-js consumes the
+     fragment and fires SIGNED_IN. auth.js's needsPassword branch keys off that
+     event, not off the URL alone. */
+  if (opts.inviteSession && listener) listener('SIGNED_IN', session);
 
   const $ = (id) => window.document.getElementById(id);
   return {
@@ -251,4 +256,42 @@ test('backing out of the code step returns to the password form', async () => {
   h.$('totp-back').dispatchEvent(new h.window.MouseEvent('click', { bubbles: true }));
   await h.settle();
   assert.equal(h.view(), 'password');
+});
+
+/* ── Invite / reset links that cannot be honoured ─────────────────────────
+   GoTrue redirects a spent or expired link back as an error in the fragment.
+   Before this, auth.js read only `type=` from that fragment, found no session,
+   and showed a bare sign-in form — which is exactly what "my set-password link
+   just goes to the sign in screen" looks like from the outside. */
+
+test('a used-up invite link explains itself instead of silently showing sign-in', async () => {
+  const h = harness({
+    url: '#error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired',
+  });
+  await h.settle();
+  assert.equal(h.view(), 'password', 'lands on the password step, not a blank card');
+  const msg = h.$('login-msg').textContent;
+  assert.match(msg, /already been used or has expired/i);
+  assert.match(msg, /ask for a new one/i, 'and says what to do about it');
+});
+
+test('a non-expiry link error still says something rather than nothing', async () => {
+  const h = harness({ url: '#error=access_denied&error_description=User+not+found' });
+  await h.settle();
+  assert.match(h.$('login-msg').textContent, /could not be used/i);
+  assert.match(h.$('login-msg').textContent, /User not found/i, 'passes the server reason through');
+});
+
+test('a normal visit to the sign-in page shows no error', async () => {
+  const h = harness();
+  await h.settle();
+  assert.equal(h.$('login-msg').textContent, '', 'nothing to explain');
+});
+
+/* The happy path must not regress: a WORKING invite still has type=invite in
+   the same fragment and must reach "choose a password", not the error branch. */
+test('a working invite link still lands on choose-a-password', async () => {
+  const h = harness({ url: '#access_token=t&type=invite', inviteSession: true });
+  await h.settle();
+  assert.equal(h.view(), 'set-password');
 });
