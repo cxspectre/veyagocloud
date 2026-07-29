@@ -222,6 +222,29 @@ export function taskAssignedEmail(opts: {
   };
 }
 
+export function invoiceEmail(opts: {
+  clientName: string; number: string; amountFormatted: string; dueOn?: string | null;
+}) {
+  const due = opts.dueOn
+    ? `<p style="margin:0;font-size:14px;color:${MUTED};">Due ${escapeHtml(opts.dueOn)}.</p>`
+    : '';
+  return {
+    subject: `Invoice ${opts.number} from Veyago — ${opts.amountFormatted}`,
+    html: layout({
+      title: `Invoice ${opts.number}`,
+      preheader: `Invoice ${opts.number} for ${opts.amountFormatted}, attached as a PDF.`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 24px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">Invoice ${escapeHtml(opts.number)}</h1>
+        <p style="margin:0 0 14px;">Hi ${escapeHtml(opts.clientName)}, please find invoice <strong>${escapeHtml(opts.number)}</strong> for <strong>${escapeHtml(opts.amountFormatted)}</strong> attached to this email as a PDF.</p>
+        ${due}`,
+    }),
+    text:
+      `Invoice ${opts.number}\n\n` +
+      `Hi ${opts.clientName}, please find invoice ${opts.number} for ${opts.amountFormatted} attached to this email as a PDF.\n` +
+      (opts.dueOn ? `Due ${opts.dueOn}.\n` : ''),
+  };
+}
+
 /* ── Sending ───────────────────────────────────────────────────────────── */
 
 /* Sends via Resend. Returns {skipped:true} rather than throwing when no API key
@@ -231,6 +254,10 @@ export function taskAssignedEmail(opts: {
    should check .ok and surface it. */
 export async function sendEmail(opts: {
   to: string; subject: string; html: string; text: string; replyTo?: string;
+  /* content is base64 — Resend's own field, not a data: URI. Encoded with a
+     plain byte-to-char loop rather than Node's Buffer, which this file (like
+     the rest of the Deno-only shared code) never assumes is available. */
+  attachments?: { filename: string; content: string }[];
 }): Promise<SendResult> {
   const key = Deno.env.get('RESEND_API_KEY');
   if (!key) {
@@ -250,6 +277,7 @@ export async function sendEmail(opts: {
         html: opts.html,
         text: opts.text,
         ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+        ...(opts.attachments && opts.attachments.length ? { attachments: opts.attachments } : {}),
       }),
     });
     const body = await res.json().catch(() => ({}));

@@ -138,35 +138,16 @@
             <option value="paid">Paid</option>
           </select>
           <span class="adm-toolbar-count" id="inv-count"></span>
-          <button class="btn btn-primary btn-sm" id="inv-jump" type="button">
+          <!-- Goes to the guided flow rather than scrolling to a side panel:
+               an invoice leaves the building, so it gets a look at the real
+               document before it is sent. See admin/js/invoice-new.js. -->
+          <a class="btn btn-primary btn-sm" href="/admin/invoice-new">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New invoice
-          </button>
+          </a>
         </div>
 
-        <div class="adm-split">
-          <div class="u-min0">
-            <ul class="adm-list" id="inv-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
-          </div>
-
-          <div class="adm-side-sticky">
-            <div class="card-pane">
-              <h2>New invoice</h2>
-              <div class="row-2">
-                <div class="field"><label for="i-client">Client</label><input class="input" id="i-client" type="text" placeholder="Acme GmbH" /></div>
-                <div class="field"><label for="i-number">Invoice #</label><input class="input" id="i-number" type="text" placeholder="2026-014" /></div>
-              </div>
-              <div class="field"><label for="i-amount">Amount <span id="i-currency" style="font-weight:400;color:var(--muted-2)"></span></label><input class="input" id="i-amount" type="number" step="0.01" min="0" placeholder="2500.00" /></div>
-              <div class="field"><label for="i-issued">Issue date</label><input class="input" id="i-issued" type="date" /></div>
-              <div class="field"><label for="i-due">Due date</label><input class="input" id="i-due" type="date" /></div>
-              <div class="field"><label for="i-notes">Notes <span class="qualifier">(optional)</span></label><textarea class="input" id="i-notes" rows="3" placeholder="PO number, what it covers, payment terms"></textarea></div>
-              <div class="form-actions">
-                <button class="btn btn-primary" id="i-add-btn" type="button">Create invoice</button>
-                <span class="msg" id="i-msg"></span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ul class="adm-list" id="inv-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
       </section>
 
     </main>

@@ -84,14 +84,13 @@
     if (!(await window.adminRoles.requireManager())) return;
 
     /* Invoices are billed in the currency of the first active account, the
-       same rule the rest of Finance uses. */
+       same rule the rest of Finance uses. Still needed after the create panel
+       moved to the guided flow — every amount this list renders is formatted
+       with it. */
     var acc = await window.sb.from('finance_accounts')
       .select('currency').eq('active', true).order('name').limit(1);
     if (!acc.error && acc.data && acc.data.length) currency = acc.data[0].currency;
-    var curEl = document.getElementById('i-currency');
-    if (curEl) curEl.textContent = '(' + currency + ')';
 
-    document.getElementById('i-issued').value = today();
     await loadInvoices();
   }
 
@@ -420,59 +419,10 @@
     window.admin.toast('Invoice deleted');
   }
 
-  /* ── Create ────────────────────────────────────────────────────────── */
-
-  function addMsg(t, k) {
-    var el = document.getElementById('i-msg');
-    if (el) { el.textContent = t || ''; el.className = 'msg' + (k ? ' ' + k : ''); }
-  }
-
-  var jump = document.getElementById('inv-jump');
-  if (jump) {
-    jump.addEventListener('click', function () {
-      var el = document.getElementById('i-client');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function () { el.focus(); }, 300); }
-    });
-  }
-
-  var addBtn = document.getElementById('i-add-btn');
-  addBtn.addEventListener('click', async function () {
-    var client = (document.getElementById('i-client').value || '').trim();
-    var number = (document.getElementById('i-number').value || '').trim();
-    var amount = parseFloat(document.getElementById('i-amount').value);
-    var issued = document.getElementById('i-issued').value || null;
-    var due    = document.getElementById('i-due').value || null;
-    var notes  = (document.getElementById('i-notes').value || '').trim() || null;
-
-    if (!client) { addMsg('Enter the client name.', 'err'); return; }
-    if (!number) { addMsg('Enter the invoice number.', 'err'); return; }
-    if (!isFinite(amount) || amount <= 0) { addMsg('Enter a positive invoice amount.', 'err'); return; }
-    if (issued && due && due < issued) { addMsg('The due date cannot be before the issue date.', 'err'); return; }
-
-    addBtn.disabled = true;
-    var res = await window.sb.from('finance_invoices').insert({
-      client: client,
-      number: number,
-      amount: amount,
-      currency: currency,
-      issued_on: issued,
-      due_on: due,
-      notes: notes,
-      status: 'draft'
-    });
-    addBtn.disabled = false;
-    if (res.error) { addMsg('Create failed: ' + res.error.message, 'err'); return; }
-
-    document.getElementById('i-client').value = '';
-    document.getElementById('i-number').value = '';
-    document.getElementById('i-amount').value = '';
-    document.getElementById('i-due').value = '';
-    document.getElementById('i-notes').value = '';
-    document.getElementById('i-issued').value = today();
-    addMsg('');
-    window.admin.toast('Invoice #' + number + ' created');
-    loadInvoices();
-  });
+  /* Creating an invoice lives in the guided flow at /admin/invoice-new, not
+     here — it renders the real PDF, shows it, and sends it to the client. The
+     sticky create panel that used to sit beside this list could do none of
+     that, and two ways to create the same object is one too many. */
 
   filtEl.addEventListener('change', function () {
     expandedId = null;

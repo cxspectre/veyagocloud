@@ -39,6 +39,7 @@
     { label: 'Finance',       href: '/admin/finance',                keywords: 'money revenue overview accounts' },
     { label: 'Transactions',  href: '/admin/finance#transactions',   keywords: 'ledger spend expenses payments money' },
     { label: 'Invoices',      href: '/admin/finance#invoices',       keywords: 'billing clients owed money' },
+    { label: 'New invoice',   href: '/admin/invoice-new',            keywords: 'bill client create send pdf charge' },
     { label: 'Account',       href: '/admin/account',      keywords: 'password two factor mfa me profile' },
     { label: 'Settings',      href: '/admin/settings',     keywords: 'email integrations stripe mercury connected accounts' }
   ];

@@ -23,6 +23,7 @@
   var PARENT = {
     article:       'journal',
     'apps-editor': 'apps',
+    'invoice-new': 'finance',
     member:        'team',
     'member-new':  'team',
     task:          'tasks'
