@@ -108,6 +108,26 @@
       return list.length ? list[0] : null;
     },
 
+    /* The first VERIFIED TOTP factor, or null — i.e. "is a second factor
+       genuinely switched on for this account?"
+
+       Separate from mfaFactor() on purpose. mfaFactor() answers "is there a
+       factor row", which enrolment needs (a half-finished enrolment has an
+       unverified factor that still has to be findable to be completed or
+       removed). The sign-in gate needs the stricter question, and must not
+       treat an abandoned enrolment as a second factor the user can satisfy —
+       they would be stuck on a code prompt no authenticator can answer. */
+    async mfaVerifiedFactor() {
+      var res = await sb.auth.mfa.listFactors();
+      if (res.error) throw new Error('Could not check two-factor status: ' + res.error.message);
+      var d = res.data || {};
+      var list = Array.isArray(d.totp) ? d.totp
+               : Array.isArray(d.all)  ? d.all.filter(function (f) { return f.factor_type === 'totp' || f.factorType === 'totp'; })
+               : [];
+      var verified = list.filter(function (f) { return f.status === 'verified'; });
+      return verified.length ? verified[0] : null;
+    },
+
     /* Start TOTP enrolment — returns { id, totp: { qr_code, secret } }. */
     async mfaEnroll() {
       return sb.auth.mfa.enroll({ factorType: 'totp' });

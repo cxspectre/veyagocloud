@@ -126,6 +126,10 @@
 
   function showShell(session) {
     if (shellShown) return;
+    /* A second factor is still owed. Nothing may reveal the admin until
+       verifyTotp() clears this — the gate is a state, not a branch that has to
+       win a race. verifyTotp is the one caller allowed to clear it. */
+    if (mfaPending) return;
 
     /* If the user was bounced here from somewhere else, finish the journey they
        started rather than revealing a dashboard they did not ask for. Checked
@@ -176,6 +180,9 @@
     if (loginEl) {
       shellShown = false;
       pendingFactorId = null;
+      /* Cleared alongside the others: the next sign-in re-runs the gate from
+         scratch, and leaving this set would block showShell() forever. */
+      mfaPending = false;
       showStep(step1);
       showLogin();
       return;
@@ -209,11 +216,52 @@
 
   /* ── TOTP step ────────────────────────────────────────────────────── */
   var pendingFactorId = null;
+  /* True from the moment we know a second factor is owed until it is verified.
+     showShell() refuses while this is set — the gate is not just a branch that
+     happens to run first, it is a state the rest of the file has to respect. */
+  var mfaPending = false;
 
   function showTotpStep() {
+    /* Reveals the card as well as choosing the step. showStep alone only picks
+       which panel inside the card is visible; if anything had already hidden
+       the card, the code prompt was being "shown" inside a hidden container. */
+    showLogin();
     showStep(step2);
     var inp = document.getElementById('totp-code');
     if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
+  }
+
+  /* Does this person still owe a second factor? Returns the factor, or null.
+     THE ONE PLACE THIS QUESTION IS ANSWERED.
+
+     It used to be asked twice — once here via onAuthStateChange and again in
+     the login form's submit handler — and the two raced. That is the whole
+     bug: signInWithPassword resolves and fires SIGNED_IN at almost the same
+     moment, both gates run, and they can disagree.
+
+     They disagree because getAuthenticatorAssuranceLevel() derives nextLevel
+     from `session.user.factors`:
+
+         (t.user.factors?.filter(e => e.status === 'verified') ?? [])
+             .length > 0 && (a = 'aal2')
+
+     — an array that is present on a session recovered from storage but not
+     reliably on the one signInWithPassword just returned. So on sign-in the
+     check could answer aal1 (no second factor owed) and fall through to
+     showShell(), while the very same check answered aal2 after a reload. That
+     is exactly the reported symptom, and its real shape is a 2FA BYPASS: the
+     admin opened on a password alone, and the reload was not "finally showing"
+     the prompt, it was belatedly enforcing it.
+
+     So currentLevel is trusted (it comes from the JWT's own aal claim, which
+     is true whenever it is readable) but nextLevel is not. Whether a factor
+     exists is asked of the SERVER via listFactors, which answers the same
+     before and after a reload. */
+  async function mfaOutstanding() {
+    var level = await window.admin.mfaLevel();
+    /* Already satisfied — the JWT itself says so. */
+    if (level && level.currentLevel === 'aal2') return null;
+    return await window.admin.mfaVerifiedFactor();
   }
 
   async function verifyTotp(code) {
@@ -228,6 +276,9 @@
       if (verify.error) { rlFail(); setMsg(totpMsg, 'Wrong code — ' + verify.error.message, 'err'); return; }
       rlClear();
       setMsg(totpMsg, '');
+      /* The one place this is cleared: the code was actually verified. */
+      mfaPending = false;
+      pendingFactorId = null;
       showShell(verify.data && verify.data.session);
     } catch(err) {
       setMsg(totpMsg, 'Error: ' + (err && err.message || String(err)), 'err');
@@ -283,35 +334,53 @@
     clearSessionLapsed();
     if (shellShown) return; // already showing — no re-dispatch needed
 
-    // MFA check
+    /* THE MFA GATE. One place, and it fails CLOSED.
+
+       The old version caught a failed check and fell through to showShell()
+       with the comment "don't block the session". For a security gate that is
+       backwards: an unanswered "does this person owe a second factor?" is not
+       a no. A check that cannot run now leaves the door shut and says so. */
+    var outstanding;
     try {
-      var level = await window.admin.mfaLevel();
-      if (level && level.nextLevel === 'aal2' && level.currentLevel !== 'aal2') {
-        if (loginEl) {
-          /* Awaiting the TOTP code. Leave adminReady PENDING — a promise only
-             resolves once, so settling it to null here would permanently
-             poison it and every page's data load (which gates on it) would
-             silently no-op after the code is verified. verifyTotp → showShell
-             resolves it with the real session instead. */
-          showLogin();
-          var factor = await window.admin.mfaFactor();
-          pendingFactorId = factor ? factor.id : null;
-          showTotpStep();
-        } else {
-          /* No login form on this page — navigating away, so settling null is
-             safe (nothing here will render). MFA is still outstanding; keep the
-             destination so verifying the code lands back here. */
-          rememberDestination();
-          window.location.href = '/admin/';
-          resolveReady(null);
-        }
-        return;
+      outstanding = await mfaOutstanding();
+    } catch (e) {
+      console.warn('[auth] two-factor check failed:', e.message || e);
+      if (loginEl) {
+        mfaPending = true;   // nothing may reveal the shell on a failed check
+        showLogin();
+        showStep(step1);
+        setMsg(loginMsg, 'Could not check two-factor status, so sign-in was not completed. ' +
+                         'Check your connection and try again.', 'err');
+      } else {
+        rememberDestination();
+        window.location.href = '/admin/';
+        resolveReady(null);
       }
-    } catch(e) {
-      // MFA check failed — don't block the session
-      console.warn('[auth] mfaLevel check failed:', e.message || e);
+      return;
     }
 
+    if (outstanding) {
+      mfaPending = true;
+      pendingFactorId = outstanding.id;
+      if (loginEl) {
+        /* Awaiting the TOTP code. Leave adminReady PENDING — a promise only
+           resolves once, so settling it to null here would permanently poison
+           it and every page's data load (which gates on it) would silently
+           no-op after the code is verified. verifyTotp → showShell resolves it
+           with the real session instead. */
+        showTotpStep();
+      } else {
+        /* No login form on this page — navigating away, so settling null is
+           safe (nothing here will render). MFA is still outstanding; keep the
+           destination so verifying the code lands back here. */
+        rememberDestination();
+        window.location.href = '/admin/';
+        resolveReady(null);
+      }
+      return;
+    }
+
+    mfaPending = false;
     showShell(session);
   });
 
@@ -351,18 +420,16 @@
       try {
         var res = await window.admin.signIn(email, pw);
         if (res.error) { rlFail(); setMsg(loginMsg, res.error.message, 'err'); return; }
-        // onAuthStateChange fires automatically after signIn — it will call showShell()
-        // We just need to handle the MFA case here
-        try {
-          var level = await window.admin.mfaLevel();
-          if (level && level.nextLevel === 'aal2' && level.currentLevel !== 'aal2') {
-            var factor = await window.admin.mfaFactor();
-            pendingFactorId = factor ? factor.id : null;
-            showTotpStep();
-            return;
-          }
-        } catch(e) { /* proceed */ }
-        // Non-MFA: showShell will be called by onAuthStateChange
+
+        /* Deliberately does NOT check MFA here. It used to, and that second
+           copy of the gate is what made 2FA racy: signInWithPassword fires
+           SIGNED_IN at essentially the same moment it resolves, both checks
+           ran, and they could disagree — see mfaOutstanding(). The handler on
+           onAuthStateChange owns the decision now and has already run by the
+           time this line is reached; whatever it decided is on screen.
+
+           rlClear() only records that the PASSWORD was right, which it was —
+           the second factor is rate-limited separately inside verifyTotp. */
         rlClear();
       } catch(err) {
         setMsg(loginMsg, 'Unexpected error: ' + (err && err.message || err), 'err');
@@ -482,6 +549,10 @@
   var totpBack = document.getElementById('totp-back');
   if (totpBack) totpBack.addEventListener('click', function() {
     pendingFactorId = null;
+    /* mfaPending stays SET on purpose. Backing out does not settle the second
+       factor — it just returns to the password form. Clearing it here would
+       let the next SIGNED_IN (or a TOKEN_REFRESHED arriving on its own) walk
+       straight into the shell without a code. */
     showStep(step1);
     setMsg(totpMsg, '');
   });
