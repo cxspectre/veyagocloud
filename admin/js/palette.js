@@ -30,6 +30,7 @@
     { label: 'Announcements', href: '/admin/announcements',keywords: 'banner notice site bar' },
     { label: 'Publish',       href: '/admin/publish',      keywords: 'deploy ship live release build approve request' },
     { label: 'Tasks',         href: '/admin/tasks',        keywords: 'todo board work assignments' },
+    { label: 'New task',      href: '/admin/task-new',     keywords: 'todo create assign delegate work' },
     { label: 'Team',          href: '/admin/team',         keywords: 'people staff employees hire invite directory' },
     { label: 'Onboarding',    href: '/admin/onboarding',   keywords: 'new hire progress checklist' },
     { label: 'Checklist',     href: '/admin/checklist',    keywords: 'onboarding template items company' },

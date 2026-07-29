@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New task · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <a class="adm-back" href="/admin/tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Tasks
+      </a>
+
+      <div class="adm-page-head">
+        <div>
+          <h1>New task</h1>
+          <p>For work you are handing to someone. A task just for you is one line on the board.</p>
+        </div>
+      </div>
+
+      <!-- One panel, NOT a stepped flow. See task-new.js for why: a task is
+           frequent, cheap and reversible, which is this codebase's own test
+           for staying single-panel. The one thing that genuinely leaves the
+           building is the email to the assignee, and that is disclosed inline
+           rather than behind a review step. -->
+      <div style="max-width:620px">
+        <form class="card-pane" id="task-form">
+          <div class="field">
+            <label for="n-title">Title</label>
+            <input class="input" id="n-title" type="text" autocomplete="off"
+                   placeholder="Book flights for the Berlin trip" />
+          </div>
+
+          <div class="field">
+            <label for="n-details">Details <span class="qualifier">(optional)</span></label>
+            <textarea class="input" id="n-details" rows="4"
+                      placeholder="Links, context, what done looks like"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="n-assignee">Assign to</label>
+            <select class="input select" id="n-assignee"></select>
+            <p class="hint" id="n-assignee-hint"></p>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="n-priority">Priority</label>
+              <select class="input select" id="n-priority">
+                <option value="low">Low</option>
+                <option value="normal" selected>Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="n-due">Due date <span class="qualifier">(optional)</span></label>
+              <input class="input" id="n-due" type="date" />
+            </div>
+          </div>
+
+          <p class="msg err" id="form-err" role="alert" hidden></p>
+
+          <div class="flow-actions">
+            <a class="btn" href="/admin/tasks">Cancel</a>
+            <span class="spacer"></span>
+            <button class="btn btn-primary" id="create-btn" type="submit">Create task</button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=12"></script>
+  <script src="/admin/supabase-config.js?v=12"></script>
+  <script src="/admin/js/client.js?v=12"></script>
+  <script src="/admin/js/auth.js?v=12"></script>
+  <script src="/admin/js/roles.js?v=12"></script>
+  <script src="/admin/js/nav.js?v=12"></script>
+  <script src="/admin/js/palette.js?v=12"></script>
+  <script src="/admin/js/task-status.js?v=12"></script>
+  <script src="/admin/js/task-notify.js?v=12"></script>
+  <script src="/admin/js/task-new.js?v=12"></script>
+</body>
+</html>

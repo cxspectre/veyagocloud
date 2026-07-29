@@ -118,6 +118,7 @@ const PARENT_CASES = [
   ['/admin/member',       '/admin/team',       'Team'],
   ['/admin/member-new',   '/admin/team',       'Team'],
   ['/admin/task',         '/admin/tasks',      'Tasks'],
+  ['/admin/task-new',     '/admin/tasks',      'Tasks'],
   ['/admin/invoice-new',  '/admin/finance',    'Finance']
 ];
 

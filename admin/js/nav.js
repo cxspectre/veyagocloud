@@ -24,6 +24,7 @@
     article:       'journal',
     'apps-editor': 'apps',
     'invoice-new': 'finance',
+    'task-new':    'tasks',
     member:        'team',
     'member-new':  'team',
     task:          'tasks'

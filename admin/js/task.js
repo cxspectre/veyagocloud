@@ -22,16 +22,18 @@
   var isManager = false;
   var selfEmployee = null;
 
-  var STATUS_LABEL = { todo: 'To do', in_progress: 'In progress', blocked: 'Blocked', done: 'Done' };
-  var STATUS_BADGE = { todo: 'badge-neutral', in_progress: 'badge-info', blocked: 'badge-warn', done: 'badge-success' };
-  var PRIORITY_BADGE = { urgent: 'badge-danger', high: 'badge-warn' };
-  var NEXT_STATUS = { todo: 'in_progress', in_progress: 'done', blocked: 'in_progress', done: 'todo' };
-  var NEXT_LABEL  = { todo: 'Start', in_progress: 'Complete', blocked: 'Unblock', done: 'Reopen' };
-  var MOVED_TOAST = { todo: 'Task reopened', in_progress: 'Task started', blocked: 'Task blocked', done: 'Task completed' };
+  /* One shared status machine — see task-status.js. These four maps used to be
+     declared here AND in tasks.js, and had already drifted apart. */
+  var TS = window.adminTaskStatus;
+  var STATUS_LABEL = TS.LABEL;
+  var STATUS_BADGE = TS.BADGE;
+  var PRIORITY_BADGE = TS.PRIORITY_BADGE;
+  var NEXT_STATUS = TS.NEXT;
+  var NEXT_LABEL  = TS.NEXT_LABEL;
 
   var ICON = {
-    done:    '<svg viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2" stroke-linecap="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg>',
-    blocked: '<svg viewBox="0 0 24 24" fill="none" stroke="#ff9500" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></svg>',
+    done:    '<svg viewBox="0 0 24 24" fill="none" stroke="var(--fg-success)" stroke-width="2" stroke-linecap="round" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg>',
+    blocked: '<svg viewBox="0 0 24 24" fill="none" stroke="var(--ac-warn)" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></svg>',
     open:    '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.8" stroke-linecap="round" width="20" height="20"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'
   };
 
@@ -119,7 +121,11 @@
     /* Everyone active, plus the current assignee even if they have since been
        deactivated — otherwise the select would quietly show someone else and
        the next save would reassign the task behind the manager's back. */
-    var emps = await window.sb.from('employees').select('id,full_name,status').order('full_name');
+    /* email comes back too: whether a reassignment can actually be delivered
+       depends on it, and a promise of "they were emailed" that the server
+       silently skips is worse than no promise. RLS already permits it —
+       team.js and member.js both read employees.email. */
+    var emps = await window.sb.from('employees').select('id,full_name,status,email').order('full_name');
     employees = (emps.data || []).filter(function (e) {
       return e.status !== 'inactive' || e.id === task.assignee_id;
     });
@@ -309,7 +315,7 @@
 
     task = res.data;
     renderChrome();
-    window.admin.toast(MOVED_TOAST[status] || 'Task updated');
+    window.admin.toast(TS.movedToast(status));
   }
 
   async function save() {
@@ -325,6 +331,10 @@
       due_date: el('f-due').value || null
     };
 
+    /* Captured BEFORE the write: the only way to tell a reassignment from any
+       other edit is to compare against who held it a moment ago. */
+    var wasAssignee = task.assignee_id;
+
     var btn = el('save-btn');
     btn.disabled = true;
     setMsg('form-msg', '');
@@ -338,6 +348,18 @@
     document.title = task.title + ' · Veyago Admin';
     renderChrome();
     window.admin.toast('Saved');
+
+    /* notify-task's own header says it is called "after a task is created or
+       reassigned". Only creation ever called it, so handing work to someone
+       from this page — the one screen built for exactly that — told them
+       nothing. Compared against the row the SERVER returned, not the patch we
+       sent: for an assignee, tasks_guard_assignee_columns() rewrites the
+       update, and the returned row is the only truthful version of what
+       actually landed. */
+    if (task.assignee_id && task.assignee_id !== wasAssignee) {
+      var who = byId[task.assignee_id] ? byId[task.assignee_id].full_name : 'The new assignee';
+      window.adminTaskNotify.notify(task.id, who);
+    }
   }
 
   async function remove() {

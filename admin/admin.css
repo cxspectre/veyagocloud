@@ -1047,6 +1047,23 @@
 .adm-item-detail { flex-basis: 100%; border-top: 1px solid var(--hair-soft); margin-top: 12px; padding-top: 16px; cursor: default; }
 
 /* Task priority accents + overdue treatment. */
+/* Tasks quick-add: one line above the board. Sits at .adm-toolbar's rhythm so
+   the two stacked bars read as one control strip rather than two components. */
+.task-quick { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid rgba(0,0,0,0.06); border-radius: 14px; padding: 10px 14px; margin-bottom: 16px; }
+.task-quick-icon { width: 16px; height: 16px; flex: none; color: var(--muted-2); }
+/* The input carries the whole bar's affordance, so it drops its own box and
+   lets the bar be the box. Focus still lands somewhere visible — the bar
+   takes the ring instead. */
+.task-quick .input { flex: 1 1 auto; border-color: transparent; padding-left: 0; padding-right: 0; }
+.task-quick .input:focus { box-shadow: none; border-color: transparent; }
+.task-quick:focus-within { border-color: var(--blue-2); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+
+/* A just-added task lands in "No due date", well down the list. This fades out
+   rather than persisting: it answers "where did it go" and then stops
+   shouting. */
+@keyframes task-new-fade { from { background: var(--bg-info); } to { background: #fff; } }
+.adm-item.is-new { animation: task-new-fade 2.4s var(--ease) forwards; }
+
 .adm-item.pri-urgent { box-shadow: inset 3px 0 0 var(--ac-danger); }
 .adm-item.pri-high   { box-shadow: inset 3px 0 0 var(--ac-warn); }
 .adm-item:hover.pri-urgent { box-shadow: inset 3px 0 0 var(--ac-danger), 0 2px 10px rgba(0,0,0,0.06); }

@@ -18,10 +18,14 @@
           <p>Assign work, track status, hit deadlines.</p>
         </div>
         <div class="adm-actions">
-          <button class="btn btn-primary" id="task-jump" type="button">
+          <!-- A real destination, not a smooth-scroll. This used to be a
+               primary button that only scrolled a side panel into view —
+               which on a narrow screen meant scrolling past the entire board
+               to the bottom of the page. -->
+          <a class="btn btn-primary" href="/admin/task-new">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             New task
-          </button>
+          </a>
         </div>
       </div>
       <p class="msg" id="msg" role="status" aria-live="polite"></p>
@@ -45,32 +49,18 @@
         <span class="adm-toolbar-count" id="task-count"></span>
       </div>
 
-      <div class="adm-split">
-        <div class="u-min0">
-          <ul class="adm-list" id="task-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
-        </div>
+      <!-- Quick add. One line, because the everyday case is a personal to-do
+           and it should cost one line. It always assigns to you, so it can
+           never email anyone — delegating is a different act and lives on
+           /admin/task-new, where the email is named before you commit. -->
+      <form class="task-quick" id="quick-add">
+        <svg class="task-quick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <input class="input" id="q-title" type="text" autocomplete="off"
+               placeholder="Add a task for yourself…" aria-label="Add a task for yourself" />
+        <button class="btn btn-primary btn-sm" id="q-add-btn" type="submit">Add</button>
+      </form>
 
-        <div class="adm-side-sticky">
-          <div class="card-pane" style="margin-bottom:0" id="new-task-pane">
-            <h2>New task</h2>
-            <div class="field"><label for="t-title">Title</label><input class="input" id="t-title" type="text" placeholder="Book flights for the Berlin trip" /></div>
-            <div class="field"><label for="t-assignee">Assign to</label><select class="input" id="t-assignee"></select></div>
-            <div class="row-2">
-              <div class="field"><label for="t-priority">Priority</label>
-                <select class="input" id="t-priority">
-                  <option value="low">Low</option>
-                  <option value="normal" selected>Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-              <div class="field"><label for="t-due">Due date</label><input class="input" id="t-due" type="date" /></div>
-            </div>
-            <div class="field"><label for="t-details">Details <span class="qualifier">(optional)</span></label><textarea class="input" id="t-details" rows="3" placeholder="Links, context, what done looks like"></textarea></div>
-            <div class="form-actions"><button class="btn btn-primary" id="t-add-btn" type="button">Create task</button></div>
-          </div>
-        </div>
-      </div>
+      <ul class="adm-list" id="task-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
     </main>
   </div>
 
@@ -81,6 +71,8 @@
   <script src="/admin/js/roles.js?v=12"></script>
   <script src="/admin/js/nav.js?v=12"></script>
   <script src="/admin/js/palette.js?v=12"></script>
+  <script src="/admin/js/task-status.js?v=12"></script>
+  <script src="/admin/js/task-notify.js?v=12"></script>
   <script src="/admin/js/tasks.js?v=12"></script>
 </body>
 </html>

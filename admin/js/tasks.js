@@ -12,10 +12,15 @@
   var employees = [];   // active employees for assignment + filter
   var byId = {};        // employee id → row
 
-  var STATUS_LABEL = { todo: 'To do', in_progress: 'In progress', blocked: 'Blocked', done: 'Done' };
-  var STATUS_BADGE = { todo: 'badge-neutral', in_progress: 'badge-info', blocked: 'badge-warn', done: 'badge-success' };
-  var NEXT_STATUS = { todo: 'in_progress', in_progress: 'done', blocked: 'in_progress' };
-  var NEXT_LABEL  = { todo: 'Start', in_progress: 'Complete', blocked: 'Unblock' };
+  /* One shared status machine — see task-status.js. These used to be declared
+     here AND in task.js and had drifted: the board's NEXT_STATUS had no `done`
+     entry, so a task could be completed from the board but only reopened from
+     its own page. */
+  var TS = window.adminTaskStatus;
+  var STATUS_LABEL = TS.LABEL;
+  var STATUS_BADGE = TS.BADGE;
+  var NEXT_STATUS = TS.NEXT;
+  var NEXT_LABEL  = TS.NEXT_LABEL;
 
   function setMsg(t, k) { if (!msg) return; msg.textContent = t || ''; msg.className = 'msg' + (k ? ' ' + k : ''); }
 
@@ -30,6 +35,20 @@
   }
 
   function today() { return window.admin.localDate(); }
+
+  /* 'YYYY-MM-DD' → 'Jul 30'. Built from the parts, never new Date(str): a bare
+     date string parses as UTC midnight, which renders as the previous day for
+     anyone west of UTC. The year is dropped because the board is a
+     this-and-next-few-weeks surface; the full date rides along in the row's
+     title attribute for anything genuinely far out. */
+  function shortDate(d) {
+    var p = String(d || '').split('-');
+    if (p.length !== 3) return String(d || '');
+    var dt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return isNaN(dt.getTime())
+      ? String(d)
+      : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
 
   async function load() {
     isManager    = await window.adminRoles.isManager();
@@ -61,10 +80,12 @@
         var o = document.createElement('option'); o.value = e.id; o.textContent = e.full_name;
         filterSel.appendChild(o);
       });
-      /* Deep link from the Team page: /admin/tasks?assignee=<id> */
-      var wanted = new URLSearchParams(window.location.search).get('assignee');
-      if (wanted && filterSel.querySelector('option[value="' + wanted + '"]')) filterSel.value = wanted;
     }
+    /* Seeded from the URL — both the ?assignee= deep link the Team page has
+       always produced (member.js), and now ?status= too. Outside the
+       options.length guard: the guard exists so the option list is built once,
+       but the selection has to be re-applied whenever the URL says so. */
+    readFilters();
   }
 
   /* ── Stat strip (always unfiltered) ────────────────────────────────── */
@@ -83,24 +104,38 @@
     var blocked = rows.filter(function (r) { return r.status === 'blocked'; }).length;
     var doneWk  = rows.filter(function (r) { return r.status === 'done' && r.completed_at && r.completed_at >= weekAgo; }).length;
 
+    /* Tokens, not hex. Every value here duplicated one admin.css already
+       defines — and '#86868b' was the grey the token block explicitly
+       RETIRED for failing AA on this background ("3.33:1 ... below AA",
+       admin.css:69-72), reintroduced by hand.
+
+       Open and Blocked link to the filter that shows exactly them, so a number
+       you are looking at is a way in rather than a dead end. The other two
+       stay unlinked ON PURPOSE, because no filter expresses them: `overdue`
+       is derived from due_date and is not a status, and the Done filter is not
+       time-bounded so it would answer "everything ever finished" rather than
+       "this week". A link that lands somewhere adjacent is worse than none —
+       and overdue tasks are already the first group on the board below. */
     window.admin.statCards(wrap, [
-      { n: open, label: 'Open', color: '#0071e3', n2: 'still to do',
+      { n: open, label: 'Open', color: 'var(--blue-2)', n2: 'still to do',
+        href: '/admin/tasks?status=open',
         icon: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>' },
-      { n: overdue, label: 'Overdue', color: overdue ? '#ff3b30' : '#86868b',
+      { n: overdue, label: 'Overdue', color: overdue ? 'var(--ac-danger)' : 'var(--muted-2)',
         n2: overdue ? 'past their due date' : 'nothing late',
-        n2Color: overdue ? '#b3261e' : null,
+        n2Color: overdue ? 'var(--fg-danger)' : null,
         icon: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>' },
-      { n: blocked, label: 'Blocked', color: blocked ? '#ff9500' : '#86868b',
+      { n: blocked, label: 'Blocked', color: blocked ? 'var(--ac-warn)' : 'var(--muted-2)',
         n2: blocked ? 'needs unblocking' : 'nothing stuck',
+        href: '/admin/tasks?status=blocked',
         icon: '<circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/>' },
-      { n: doneWk, label: 'Done this week', color: '#34c759', n2: 'completed in 7 days',
+      { n: doneWk, label: 'Done this week', color: 'var(--ac-success)', n2: 'completed in 7 days',
         icon: '<polyline points="20 6 9 17 4 12"/>' }
     ]);
   }
 
   /* ── Board ─────────────────────────────────────────────────────────── */
 
-  async function loadTasks() {
+  async function loadTasks(highlightId) {
     var status   = document.getElementById('f-status').value;
     var assignee = document.getElementById('f-assignee').value;
 
@@ -118,7 +153,59 @@
 
     var countEl = document.getElementById('task-count');
     if (countEl) countEl.textContent = rows.length + (rows.length === 1 ? ' task' : ' tasks');
-    render(rows);
+    render(rows, highlightId);
+  }
+
+  /* ── Filters live in the URL ─────────────────────────────────────────
+     They used to live only in the two <select> elements, which meant opening
+     a task and coming back reset your triage, and no filtered view could be
+     shared, bookmarked or reloaded. */
+
+  /* Only the values the markup actually offers. An unvalidated ?status=xyz
+     sets select.value to '' and loadTasks then issues .eq('status','') —
+     which Postgres rejects as an invalid enum, so a bad link produced
+     "Could not load tasks: invalid input value for enum" rather than a
+     board. */
+  function validStatus(v) {
+    var sel = document.getElementById('f-status');
+    if (!v || !sel) return false;
+    /* Compared against the option VALUES directly rather than built into a
+       selector string — that is what the assignee lookup used to do, and a
+       crafted `?assignee=a"]` threw a SyntaxError out of querySelector and
+       left the board stuck on skeletons. No selector, nothing to escape,
+       nothing to throw. */
+    for (var i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === v) return true;
+    }
+    return false;
+  }
+
+  function writeFilters() {
+    var status = document.getElementById('f-status').value;
+    var assignee = document.getElementById('f-assignee').value;
+    var q = new URLSearchParams();
+    /* Defaults are omitted so the everyday URL stays a clean /admin/tasks. */
+    if (status && status !== 'open') q.set('status', status);
+    if (assignee && assignee !== 'all') q.set('assignee', assignee);
+    var qs = q.toString();
+    /* location.pathname, not a literal — the page still works when reached
+       as /admin/tasks.html. replaceState, not push: changing a filter is not
+       a place you should have to press Back through. */
+    window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  function readFilters() {
+    var params = new URLSearchParams(window.location.search);
+    var statusSel = document.getElementById('f-status');
+    var wantStatus = params.get('status');
+    if (validStatus(wantStatus)) statusSel.value = wantStatus;
+
+    var filterSel = document.getElementById('f-assignee');
+    var wanted = params.get('assignee');
+    /* A direct lookup against the loaded employees, NOT a built selector
+       string: `?assignee=a"]` used to throw a SyntaxError out of
+       querySelector and strand the board on skeletons forever. */
+    if (wanted && byId[wanted]) filterSel.value = wanted;
   }
 
   /* Bucket open tasks by urgency; done tasks get their own group. */
@@ -141,13 +228,20 @@
     { key: 'done',    label: 'Done' }
   ];
 
-  function render(rows) {
+  function render(rows, highlightId) {
     if (!listEl) return;
     if (!rows.length) {
+      var filtered = document.getElementById('f-status').value !== 'open' ||
+                     document.getElementById('f-assignee').value !== 'all';
       listEl.innerHTML =
         '<li class="dash-empty-state">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>' +
-          '<p>Nothing here — enjoy the quiet, or create a task on the right.</p>' +
+          (filtered
+            /* "create a task on the right" was wrong twice over: it pointed at
+               a panel that has moved, and it was already wrong below 880px
+               where the split collapses and nothing is on the right. */
+            ? '<p>No tasks match these filters.</p>'
+            : '<p>Nothing here — enjoy the quiet, or add one above.</p>') +
         '</li>';
       return;
     }
@@ -162,23 +256,42 @@
     GROUPS.forEach(function (g) {
       var inGroup = buckets[g.key];
       if (!inGroup || !inGroup.length) return;
+      /* Within a due-date bucket, urgent before low. The query orders by due
+         date, which is the right primary key for a board about deadlines —
+         this is only the tiebreak, so an urgent task no longer sits below a
+         low one that happened to be created earlier. slice() first: never
+         sort the caller's array in place. */
+      inGroup = inGroup.slice().sort(function (a, b) {
+        return TS.priorityRank(a.priority) - TS.priorityRank(b.priority);
+      });
       var head = document.createElement('li');
       head.className = 'adm-subhead' + (g.danger ? ' danger' : '');
       head.innerHTML = g.label + ' <span class="n">' + inGroup.length + '</span>';
       listEl.appendChild(head);
       inGroup.forEach(function (task) { listEl.appendChild(renderRow(task, t0)); });
     });
+
+    /* A quick-added task lands in "No due date", well down the page. Take the
+       reader to it rather than leaving them to wonder whether it saved. */
+    if (highlightId) {
+      var row = listEl.querySelector('[data-task="' + highlightId + '"]');
+      if (row) {
+        row.classList.add('is-new');
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
   }
 
   function renderRow(t, t0) {
     var li = document.createElement('li');
+    li.setAttribute('data-task', t.id);
     li.className = 'adm-item' +
       (t.status !== 'done' && t.priority === 'urgent' ? ' pri-urgent' : '') +
       (t.status !== 'done' && t.priority === 'high' ? ' pri-high' : '');
 
     var icon = document.createElement('div'); icon.className = 'adm-item-icon';
     icon.innerHTML = t.status === 'done'
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="var(--fg-success)" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>';
 
     var main = document.createElement('div'); main.className = 'adm-item-main';
@@ -194,12 +307,29 @@
     var sub = document.createElement('div'); sub.className = 'adm-item-sub';
     var who = t.assignee_id && byId[t.assignee_id] ? byId[t.assignee_id].full_name : 'Unassigned';
     var overdue = t.status !== 'done' && t.due_date && t.due_date < t0;
+    /* "Jul 30", not "2026-07-30". The sub-line is one nowrap ellipsis line
+       shared by three facts, so the raw ISO date was spending ten characters
+       — and the year, which is nearly always this year — on the least
+       surprising part, and `details` was the segment that always got clipped
+       as a result. */
     sub.innerHTML = esc(who) +
-      (t.due_date ? ' · <span' + (overdue ? ' class="due-over"' : '') + '>due ' + t.due_date + '</span>' : '') +
+      (t.due_date ? ' · <span' + (overdue ? ' class="due-over"' : '') + '>due ' + esc(shortDate(t.due_date)) + '</span>' : '') +
       (t.details ? ' · ' + esc(t.details) : '');
+    sub.title = [who, t.due_date ? 'due ' + t.due_date : null, t.details].filter(Boolean).join(' · ');
     main.appendChild(titleLink); main.appendChild(sub);
 
     var acts = document.createElement('div'); acts.className = 'adm-item-acts';
+    /* Priority used to be conveyed ONLY by a 3px edge tint, and only for
+       urgent and high — so low and normal were indistinguishable from each
+       other and from a task with no priority at all. The badge names it. Only
+       the two that mean "look at me" get one: a badge on every row would be
+       four badges of noise and would say nothing. */
+    if (t.status !== 'done' && TS.PRIORITY_BADGE[t.priority]) {
+      var pb = document.createElement('span');
+      pb.className = 'badge ' + TS.PRIORITY_BADGE[t.priority];
+      pb.textContent = TS.PRIORITY_LABEL[t.priority] || t.priority;
+      acts.appendChild(pb);
+    }
     var sb2 = document.createElement('span');
     sb2.className = 'badge ' + STATUS_BADGE[t.status]; sb2.textContent = STATUS_LABEL[t.status];
     acts.appendChild(sb2);
@@ -233,9 +363,19 @@
 
   async function setStatus(t, status) {
     var patch = { status: status, completed_at: status === 'done' ? new Date().toISOString() : null };
-    var res = await window.sb.from('tasks').update(patch).eq('id', t.id);
+    /* Read the row back. Without .select(), RLS refusing the update is
+       indistinguishable from success — PostgREST returns no error for an
+       UPDATE that matched no rows, so the board silently reloaded unchanged
+       and the button appeared to do nothing at all. */
+    var res = await window.sb.from('tasks').update(patch).eq('id', t.id)
+      .select('id,status').maybeSingle();
     if (res.error) { setMsg('Update failed: ' + res.error.message, 'err'); return; }
+    if (!res.data) {
+      setMsg('That task was not changed — you may not have permission to move it.', 'err');
+      return;
+    }
     setMsg('');
+    window.admin.toast(TS.movedToast(status));
     loadStats();
     loadTasks();
   }
@@ -248,53 +388,72 @@
     loadTasks();
   }
 
-  /* ── New task ──────────────────────────────────────────────────────── */
+  /* ── Quick add ──────────────────────────────────────────────────────
+     One line at the top of the board: a title, and that is the whole
+     interaction. It replaced a permanently-mounted 340px side panel that was
+     empty almost all of the time, and a "+ New task" button that navigated
+     nowhere — it smooth-scrolled the panel into view, which on a narrow
+     screen meant scrolling past the entire board to reach the bottom of the
+     page.
 
-  var taskJump = document.getElementById('task-jump');
-  if (taskJump) {
-    taskJump.addEventListener('click', function () {
-      var el = document.getElementById('t-title');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(function () { el.focus(); }, 300); }
-    });
-  }
+     THIS PATH CAN NEVER EMAIL ANYONE, and that is the point. The task is
+     assigned to you (or to nobody, for a legacy admin with no employees row),
+     and notify-task skips both cases on its own — 'self-assigned' and
+     'unassigned'. So there is nothing to disclose and nothing to confirm,
+     which is what makes it safe to fire fifteen times a day. Handing work to
+     somebody else is a different act with a different cost, and it lives on
+     /admin/task-new where the email is named before you commit to it. */
 
-  var addBtn = document.getElementById('t-add-btn');
-  if (addBtn) {
-    addBtn.addEventListener('click', async function () {
-      var title = (document.getElementById('t-title').value || '').trim();
-      if (!title) { setMsg('Enter a task title.', 'err'); return; }
+  var quickForm = document.getElementById('quick-add');
+  if (quickForm) {
+    quickForm.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var input = document.getElementById('q-title');
+      var title = (input.value || '').trim();
+      if (!title) { input.focus(); return; }
+
+      var btn = document.getElementById('q-add-btn');
+      btn.disabled = true;
       var session = await window.admin.session();
-      var row = {
+      var res = await window.sb.from('tasks').insert({
         title: title,
-        details: (document.getElementById('t-details').value || '').trim() || null,
-        assignee_id: document.getElementById('t-assignee').value || null,
-        priority: document.getElementById('t-priority').value,
-        due_date: document.getElementById('t-due').value || null,
+        /* Yours by default. selfEmployee is null only for a legacy admin with
+           no employees row; unassigned is the honest result there, and still
+           mails nobody. */
+        assignee_id: selfEmployee ? selfEmployee.id : null,
         created_by: session ? session.user.id : null
-      };
-      addBtn.disabled = true;
-      var res = await window.sb.from('tasks').insert(row).select('id').single();
-      addBtn.disabled = false;
-      if (res.error) { setMsg('Create failed: ' + res.error.message, 'err'); return; }
+      }).select('id').single();
+      btn.disabled = false;
 
-      /* Tell the assignee it exists. Deliberately not awaited into the success
-         path: the task is already saved, and a mail problem must not read as a
-         failed save. The function skips self-assignment on its own. */
-      if (row.assignee_id && res.data && res.data.id) {
-        window.adminRoles.invokeFn('notify-task', { task_id: res.data.id })
-          .catch(function (err) { console.warn('[tasks] notify failed:', err.message); });
-      }
-      document.getElementById('t-title').value = '';
-      document.getElementById('t-details').value = '';
-      document.getElementById('t-due').value = '';
-      setMsg(''); window.admin.toast('Task created');
+      if (res.error) { setMsg('Could not add that task: ' + res.error.message, 'err'); return; }
+
+      input.value = '';
+      input.focus();
+      setMsg('');
+      window.admin.toast('Task added');
       loadStats();
-      loadTasks();
+      /* A quick-added task has no due date, so it lands in 'No due date' —
+         fifth of six groups, well down the page. Highlight it rather than
+         inventing a due date it does not have. */
+      loadTasks(res.data && res.data.id);
     });
   }
 
-  document.getElementById('f-status').addEventListener('change', loadTasks);
-  document.getElementById('f-assignee').addEventListener('change', loadTasks);
+  function onFilterChange() { writeFilters(); loadTasks(); }
+  document.getElementById('f-status').addEventListener('change', onFilterChange);
+  document.getElementById('f-assignee').addEventListener('change', onFilterChange);
+
+  /* Coming back via the browser's Back button restores this page from the
+     bfcache with its DOM intact — including a task list that may now be
+     wrong, because it was edited on the page you just came back from.
+
+     loadStats + loadTasks, deliberately NOT load(): load() re-runs
+     fillSelects, which would rebuild the assignee filter and re-apply
+     readFilters over whatever the user had just chosen. The data is what went
+     stale, not the chrome. */
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) { loadStats(); loadTasks(); }
+  });
 
   /* adminReady is a promise — immune to the event-vs-registration race. */
   window.adminReady.then(function (s) { if (s) load(); });
