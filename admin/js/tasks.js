@@ -418,6 +418,11 @@
     }
     setMsg('');
     window.admin.toast(TS.movedToast(status));
+    /* Notify the task creator when something they care about changes.
+       Best-effort — not awaited, and a mail problem must not shadow the update. */
+    if (status === 'done' || status === 'blocked') {
+      window.adminTaskNotify.notify(t.id, null, status);
+    }
     loadStats();
     loadTasks();
   }

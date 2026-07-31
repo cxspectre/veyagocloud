@@ -222,6 +222,92 @@ export function taskAssignedEmail(opts: {
   };
 }
 
+/* Sent to the task creator/manager when a task they own is marked done or
+   blocked. The creator is the most relevant person to tell: they handed the
+   work out, and they are the one who needs to follow up or unblock. */
+export function taskStatusEmail(opts: {
+  recipientName: string;
+  title: string;
+  event: 'done' | 'blocked';
+  changedByName?: string | null;
+  dueDate?: string | null;
+  priority?: string | null;
+  taskUrl: string;
+}) {
+  const first = String(opts.recipientName || '').trim().split(/\s+/)[0] || 'there';
+  const meta: string[] = [];
+  if (opts.dueDate) meta.push(`Due ${escapeHtml(opts.dueDate)}`);
+  if (opts.priority && opts.priority !== 'normal') meta.push(escapeHtml(opts.priority));
+  const isDone = opts.event === 'done';
+  const subject = isDone ? `Task done: ${opts.title}` : `Task blocked: ${opts.title}`;
+  const headline = isDone ? 'A task was completed' : 'A task is blocked';
+  const subline = isDone
+    ? (opts.changedByName ? `Completed by ${escapeHtml(opts.changedByName)}.` : 'Task completed.')
+    : (opts.changedByName
+        ? `${escapeHtml(opts.changedByName)} marked it blocked — it may need your attention.`
+        : 'Marked blocked — it may need your attention.');
+  return {
+    subject,
+    html: layout({
+      title: headline,
+      preheader: opts.title,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 22px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">Hi ${escapeHtml(first)}, ${headline.toLowerCase()}</h1>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;border:1px solid ${HAIR};border-radius:12px;">
+          <tr><td style="padding:16px 18px;">
+            <div style="font:600 16px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};">${escapeHtml(opts.title)}</div>
+            ${meta.length ? `<div style="margin-top:6px;font-size:13px;color:${MUTED};">${meta.join(' · ')}</div>` : ''}
+          </td></tr>
+        </table>
+        <p style="margin:0 0 4px;font-size:14px;color:${MUTED};">${subline}</p>
+        ${button(opts.taskUrl, 'Open the task')}`,
+    }),
+    text:
+      `Hi ${first}, ${headline.toLowerCase()}\n\n${opts.title}\n` +
+      (meta.length ? meta.join(' · ') + '\n' : '') +
+      `\n${subline}\n\nOpen it: ${opts.taskUrl}`,
+  };
+}
+
+/* Sent to the assignee when a manager changes the task's priority or due date.
+   Does not try to say *what* changed — the edge function reads only the current
+   state, not the before-state — so it simply points them at the task. */
+export function taskUpdatedEmail(opts: {
+  assigneeName: string;
+  title: string;
+  dueDate?: string | null;
+  priority?: string | null;
+  updatedBy?: string | null;
+  taskUrl: string;
+}) {
+  const first = String(opts.assigneeName || '').trim().split(/\s+/)[0] || 'there';
+  const meta: string[] = [];
+  if (opts.dueDate) meta.push(`Due ${escapeHtml(opts.dueDate)}`);
+  if (opts.priority && opts.priority !== 'normal') meta.push(escapeHtml(opts.priority));
+  return {
+    subject: `Task updated: ${opts.title}`,
+    html: layout({
+      title: 'A task you own was updated',
+      preheader: opts.title,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 22px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">Hi ${escapeHtml(first)}, your task was updated</h1>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;border:1px solid ${HAIR};border-radius:12px;">
+          <tr><td style="padding:16px 18px;">
+            <div style="font:600 16px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};">${escapeHtml(opts.title)}</div>
+            ${meta.length ? `<div style="margin-top:6px;font-size:13px;color:${MUTED};">${meta.join(' · ')}</div>` : ''}
+          </td></tr>
+        </table>
+        ${opts.updatedBy ? `<p style="margin:0;font-size:14px;color:${MUTED};">Updated by ${escapeHtml(opts.updatedBy)}.</p>` : ''}
+        ${button(opts.taskUrl, 'Open the task')}`,
+    }),
+    text:
+      `Hi ${first}, your task was updated\n\n${opts.title}\n` +
+      (meta.length ? meta.join(' · ') + '\n' : '') +
+      (opts.updatedBy ? `\nUpdated by ${opts.updatedBy}.\n` : '') +
+      `\nOpen it: ${opts.taskUrl}`,
+  };
+}
+
 export function invoiceEmail(opts: {
   clientName: string; number: string; amountFormatted: string; dueOn?: string | null;
 }) {

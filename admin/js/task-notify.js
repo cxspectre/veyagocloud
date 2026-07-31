@@ -1,30 +1,33 @@
-/* Telling someone a task landed on their plate — the browser half of it.
-
-   notify-task's own header says it is "called by the browser after a task is
-   created or reassigned". Only the first half was true: tasks.js fired it on
-   create, and task.js — the page where a manager deliberately hands work to a
-   named person — never called it at all. Reassigning a task notified nobody,
-   silently, and had done since the function was written.
-
-   Shared here rather than fixed twice, because the interesting part is not the
-   call, it is reading the ANSWER correctly. The function returns 200 with
-   {ok:true, skipped:'<reason>'} for the five cases where no mail should go
-   (unassigned, already done, no email on file, inactive, self-assigned) and
-   {ok:false} with no `skipped` when Resend actually refused. Treating "the
-   promise resolved" as "they were emailed" would report a delivery that never
-   happened — the exact failure member.js:463 already avoids for invites. */
+/* Browser half of task notifications — wraps the notify-task edge function.
+ *
+ * Events (mirrors notify-task/index.ts):
+ *   'assigned'  (default) → assignee: "New task"
+ *   'updated'             → assignee: "Task updated" (priority / due date changed)
+ *   'done'                → creator:  "Task done"
+ *   'blocked'             → creator:  "Task blocked"
+ *
+ * The function returns {ok, skipped?}. SILENT reasons are expected correct
+ * outcomes — no UI feedback needed. Everything else surfaces a toast so the
+ * caller knows the email did not go out. */
 (function () {
   'use strict';
 
   /* Reasons that are the expected, correct outcome — nothing to tell anyone. */
-  var SILENT = { 'unassigned': 1, 'self-assigned': 1, 'already done': 1 };
+  var SILENT = {
+    'unassigned':    1,
+    'self-assigned': 1,
+    'already done':  1,
+    'self-completed':1,  // you completed your own task — no point emailing yourself
+    'self-blocked':  1,  // same
+    'no creator':    1,  // legacy task with no created_by — nobody to tell
+  };
 
   /* Fire and report. Never awaited into a save's success path: the task is
      already written by the time this runs, so a mail problem must not read as
      a failed save. Returns a promise for tests; callers may ignore it. */
-  function notify(taskId, who) {
-    var name = who || 'the assignee';
-    return window.adminRoles.invokeFn('notify-task', { task_id: taskId })
+  function notify(taskId, who, event) {
+    var name = who || (event === 'done' || event === 'blocked' ? 'The task creator' : 'the assignee');
+    return window.adminRoles.invokeFn('notify-task', { task_id: taskId, event: event || 'assigned' })
       .then(function (out) {
         if (out && out.ok && !out.skipped) return { emailed: true };
         var why = out && out.skipped;

@@ -316,6 +316,10 @@
     task = res.data;
     renderChrome();
     window.admin.toast(TS.movedToast(status));
+    /* Notify the creator when done or blocked — best-effort, not awaited. */
+    if (status === 'done' || status === 'blocked') {
+      window.adminTaskNotify.notify(task.id, null, status);
+    }
   }
 
   async function save() {
@@ -331,9 +335,12 @@
       due_date: el('f-due').value || null
     };
 
-    /* Captured BEFORE the write: the only way to tell a reassignment from any
-       other edit is to compare against who held it a moment ago. */
-    var wasAssignee = task.assignee_id;
+    /* Captured BEFORE the write so we can compare what actually changed after
+       the server round-trip. tasks_guard_assignee_columns() may revert some
+       fields — the returned row is the only truthful version of what landed. */
+    var wasAssignee  = task.assignee_id;
+    var wasPriority  = task.priority;
+    var wasDue       = task.due_date;
 
     var btn = el('save-btn');
     btn.disabled = true;
@@ -349,16 +356,21 @@
     renderChrome();
     window.admin.toast('Saved');
 
-    /* notify-task's own header says it is called "after a task is created or
-       reassigned". Only creation ever called it, so handing work to someone
-       from this page — the one screen built for exactly that — told them
-       nothing. Compared against the row the SERVER returned, not the patch we
-       sent: for an assignee, tasks_guard_assignee_columns() rewrites the
-       update, and the returned row is the only truthful version of what
-       actually landed. */
+    /* Notifications — best-effort, never awaited into the save success path. */
     if (task.assignee_id && task.assignee_id !== wasAssignee) {
+      /* Reassigned → notify the new assignee with the standard "assigned" email. */
       var who = byId[task.assignee_id] ? byId[task.assignee_id].full_name : 'The new assignee';
       window.adminTaskNotify.notify(task.id, who);
+    } else if (
+      task.assignee_id &&
+      task.status !== 'done' &&
+      (task.priority !== wasPriority || task.due_date !== wasDue)
+    ) {
+      /* Priority or due date changed but the assignee did not — notify them
+         that something about their task has changed. Skip if it is already
+         done: a manager tidying up a closed task need not interrupt anyone. */
+      var assigneeName = byId[task.assignee_id] ? byId[task.assignee_id].full_name : null;
+      window.adminTaskNotify.notify(task.id, assigneeName, 'updated');
     }
   }
 

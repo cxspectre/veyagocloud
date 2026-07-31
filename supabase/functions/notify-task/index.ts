@@ -1,25 +1,31 @@
-/* notify-task — emails someone when a task lands on their plate.
+/* notify-task — emails the right person when something meaningful happens to a task.
  *
  * Deploy:  supabase functions deploy notify-task
  * Secrets: RESEND_API_KEY, EMAIL_FROM, SITE_URL
  *
- * Why this exists: without a push, an internal tool is a filing cabinet nobody
- * visits, and the work quietly migrates back to WhatsApp. Assigning a task
- * should reach the person the same day, not whenever they next happen to open
- * the dashboard.
+ * Events
+ * ──────
+ *   assigned  (default) → assignee: "New task: {title}"
+ *   updated             → assignee: "Task updated: {title}"  (priority / due date changed)
+ *   done                → creator:  "Task done: {title}"
+ *   blocked             → creator:  "Task blocked: {title}"
  *
- * Called by the browser after a task is created or reassigned. Deliberately
- * best-effort: the task already exists by the time this runs, so a mail failure
- * must never look like the task failed. Callers should not await it blocking a
- * success toast.
+ * Why best-effort: the task already exists by the time this runs, so a mail
+ * failure must never look like the task failed. Callers do not await this into
+ * their success toast.
  *
- * The caller is verified as staff, and the task is re-read SERVER-SIDE from its
- * id — the client sends only the id, never the title or the recipient, so this
- * cannot be used to mail arbitrary text to an arbitrary address.
+ * Security: the caller sends only { task_id, event }. Everything else — title,
+ * recipient, email address — is re-read server-side, so this cannot be used to
+ * mail arbitrary text to an arbitrary address.
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { sendEmail, taskAssignedEmail } from '../_shared/email.ts';
+import {
+  sendEmail,
+  taskAssignedEmail,
+  taskStatusEmail,
+  taskUpdatedEmail,
+} from '../_shared/email.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -28,6 +34,7 @@ const CORS = {
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const VALID_EVENTS = new Set(['assigned', 'updated', 'done', 'blocked']);
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -54,31 +61,92 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const taskId = String(body.task_id ?? '');
-    if (!UUID_RE.test(taskId)) return json({ error: 'Invalid task id' }, 400);
+    const event  = String(body.event ?? 'assigned');
+
+    if (!UUID_RE.test(taskId))     return json({ error: 'Invalid task id' }, 400);
+    if (!VALID_EVENTS.has(event))  return json({ error: 'Invalid event' }, 400);
 
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    /* Read the task and the recipient server-side. The client supplies only an
-       id, so it cannot choose who gets mailed or what the mail says. */
+    /* Re-read the task server-side — the client supplies only an id. */
     const { data: task, error: taskErr } = await admin
       .from('tasks')
-      .select('id,title,due_date,priority,status,assignee_id')
+      .select('id,title,due_date,priority,status,assignee_id,created_by')
       .eq('id', taskId)
       .maybeSingle();
     if (taskErr) return json({ error: 'Could not read the task: ' + taskErr.message }, 400);
-    if (!task) return json({ error: 'No such task' }, 404);
+    if (!task)   return json({ error: 'No such task' }, 404);
+
+    const site = (Deno.env.get('SITE_URL') ?? 'https://www.veyago.cloud').replace(/\/+$/, '');
+    const taskUrl = `${site}/admin/task?id=${task.id}`;
+
+    /* ── done / blocked → notify the task creator ─────────────────────── */
+
+    if (event === 'done' || event === 'blocked') {
+      if (!task.created_by) return json({ ok: true, skipped: 'no creator' });
+
+      /* Don't email the person who just made the change. */
+      if (task.created_by === userData.user.id) {
+        return json({ ok: true, skipped: event === 'done' ? 'self-completed' : 'self-blocked' });
+      }
+
+      const { data: creator } = await admin
+        .from('employees')
+        .select('full_name,email,status')
+        .eq('user_id', task.created_by)
+        .maybeSingle();
+      if (!creator?.email)              return json({ ok: true, skipped: 'no email on file' });
+      if (creator.status === 'inactive') return json({ ok: true, skipped: 'inactive' });
+
+      /* Who made the change — shown in the email body. */
+      const { data: changer } = await admin
+        .from('employees')
+        .select('full_name')
+        .eq('user_id', userData.user.id)
+        .maybeSingle();
+
+      const tpl = taskStatusEmail({
+        recipientName:  creator.full_name,
+        title:          task.title,
+        event:          event as 'done' | 'blocked',
+        changedByName:  changer?.full_name ?? null,
+        dueDate:        task.due_date,
+        priority:       task.priority,
+        taskUrl,
+      });
+
+      const sent = await sendEmail({ to: creator.email, ...tpl });
+      await admin.from('email_log').insert({
+        to_email:     creator.email,
+        kind:         event === 'done' ? 'task_done' : 'task_blocked',
+        subject:      tpl.subject,
+        ok:           sent.ok,
+        error:        sent.ok ? null : (sent.error ?? null),
+        requested_by: userData.user.id,
+      });
+
+      return json({ ok: sent.ok, skipped: sent.skipped ? 'email not configured' : undefined });
+    }
+
+    /* ── assigned / updated → notify the assignee ─────────────────────── */
+
     if (!task.assignee_id) return json({ ok: true, skipped: 'unassigned' });
-    if (task.status === 'done') return json({ ok: true, skipped: 'already done' });
+    /* Skip "already done" only for new assignments — an update to a done task's
+       priority or due date is unusual but not an error, and the assignee still
+       deserves to know if a manager touched it. */
+    if (event === 'assigned' && task.status === 'done') {
+      return json({ ok: true, skipped: 'already done' });
+    }
 
     const { data: assignee } = await admin
       .from('employees')
       .select('full_name,email,status,user_id')
       .eq('id', task.assignee_id)
       .maybeSingle();
-    if (!assignee?.email) return json({ ok: true, skipped: 'no email on file' });
+    if (!assignee?.email)              return json({ ok: true, skipped: 'no email on file' });
     if (assignee.status === 'inactive') return json({ ok: true, skipped: 'inactive' });
 
-    /* Don't email someone about a task they just gave themselves. */
+    /* Don't email someone about their own task or their own edits. */
     if (assignee.user_id && assignee.user_id === userData.user.id) {
       return json({ ok: true, skipped: 'self-assigned' });
     }
@@ -89,28 +157,36 @@ Deno.serve(async (req) => {
       .eq('user_id', userData.user.id)
       .maybeSingle();
 
-    const site = (Deno.env.get('SITE_URL') ?? 'https://www.veyago.cloud').replace(/\/+$/, '');
-    const tpl = taskAssignedEmail({
-      assigneeName: assignee.full_name,
-      title: task.title,
-      dueDate: task.due_date,
-      priority: task.priority,
-      assignedBy: assigner?.full_name ?? null,
-      taskUrl: `${site}/admin/task?id=${task.id}`,
-    });
+    const tpl = event === 'updated'
+      ? taskUpdatedEmail({
+          assigneeName: assignee.full_name,
+          title:        task.title,
+          dueDate:      task.due_date,
+          priority:     task.priority,
+          updatedBy:    assigner?.full_name ?? null,
+          taskUrl,
+        })
+      : taskAssignedEmail({
+          assigneeName: assignee.full_name,
+          title:        task.title,
+          dueDate:      task.due_date,
+          priority:     task.priority,
+          assignedBy:   assigner?.full_name ?? null,
+          taskUrl,
+        });
 
     const sent = await sendEmail({ to: assignee.email, ...tpl });
-
     await admin.from('email_log').insert({
-      to_email: assignee.email,
-      kind: 'task_assigned',
-      subject: tpl.subject,
-      ok: sent.ok,
-      error: sent.ok ? null : (sent.error ?? null),
+      to_email:     assignee.email,
+      kind:         event === 'updated' ? 'task_updated' : 'task_assigned',
+      subject:      tpl.subject,
+      ok:           sent.ok,
+      error:        sent.ok ? null : (sent.error ?? null),
       requested_by: userData.user.id,
     });
 
     return json({ ok: sent.ok, skipped: sent.skipped ? 'email not configured' : undefined });
+
   } catch (err) {
     console.error('notify-task error:', err);
     return json({ error: 'Unexpected error — check function logs' }, 500);
