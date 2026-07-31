@@ -11,6 +11,7 @@
   var selfEmployee = null;
   var employees = [];   // active employees for assignment + filter
   var byId = {};        // employee id → row
+  var allRows = [];     // last DB result — search re-filters this client-side
 
   /* One shared status machine — see task-status.js. These used to be declared
      here AND in task.js and had drifted: the board's NEXT_STATUS had no `done`
@@ -50,6 +51,37 @@
       : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   }
 
+  /* Near-term dates as scannable relative labels; further dates fall back to
+     the short "Jul 30" format so the calendar stays legible. */
+  function relativeDate(d, t0) {
+    if (!d) return '';
+    var p  = String(d).split('-');
+    var p0 = String(t0).split('-');
+    if (p.length !== 3 || p0.length !== 3) return shortDate(d);
+    var dt = new Date(Number(p[0]),  Number(p[1])  - 1, Number(p[2]));
+    var td = new Date(Number(p0[0]), Number(p0[1]) - 1, Number(p0[2]));
+    if (isNaN(dt.getTime()) || isNaN(td.getTime())) return shortDate(d);
+    var diff = Math.round((dt - td) / 86400000);
+    if (diff === 0)  return 'today';
+    if (diff === 1)  return 'tomorrow';
+    if (diff === -1) return 'yesterday';
+    if (diff >= 2  && diff <= 13)  return 'in ' + diff + ' days';
+    if (diff <= -2 && diff >= -13) return Math.abs(diff) + ' days ago';
+    return shortDate(d);
+  }
+
+  /* Applied on top of the DB-filtered result set so text search is instant
+     without an extra round-trip. Searches title and details. */
+  function filterRows(rows) {
+    var el = document.getElementById('f-search');
+    var q = el ? (el.value || '').trim().toLowerCase() : '';
+    if (!q) return rows;
+    return rows.filter(function (t) {
+      return (t.title   || '').toLowerCase().indexOf(q) !== -1 ||
+             (t.details || '').toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
   async function load() {
     isManager    = await window.adminRoles.isManager();
     selfEmployee = await window.adminRoles.employee();
@@ -60,6 +92,10 @@
     employees = emps.data || [];
     byId = {};
     employees.forEach(function (e) { byId[e.id] = e; });
+    /* Mine button is only useful when there is an employee row to filter to. */
+    var mineBtn = document.getElementById('f-mine');
+    if (mineBtn && selfEmployee) mineBtn.hidden = false;
+
     fillSelects();
     await Promise.all([loadStats(), loadTasks()]);
   }
@@ -149,11 +185,8 @@
 
     var res = await q;
     if (res.error) { setMsg('Could not load tasks: ' + res.error.message, 'err'); return; }
-    var rows = res.data || [];
-
-    var countEl = document.getElementById('task-count');
-    if (countEl) countEl.textContent = rows.length + (rows.length === 1 ? ' task' : ' tasks');
-    render(rows, highlightId);
+    allRows = res.data || [];
+    render(filterRows(allRows), highlightId);
   }
 
   /* ── Filters live in the URL ─────────────────────────────────────────
@@ -183,10 +216,13 @@
   function writeFilters() {
     var status = document.getElementById('f-status').value;
     var assignee = document.getElementById('f-assignee').value;
+    var searchEl = document.getElementById('f-search');
+    var search = searchEl ? (searchEl.value || '').trim() : '';
     var q = new URLSearchParams();
     /* Defaults are omitted so the everyday URL stays a clean /admin/tasks. */
     if (status && status !== 'open') q.set('status', status);
     if (assignee && assignee !== 'all') q.set('assignee', assignee);
+    if (search) q.set('q', search);
     var qs = q.toString();
     /* location.pathname, not a literal — the page still works when reached
        as /admin/tasks.html. replaceState, not push: changing a filter is not
@@ -206,6 +242,10 @@
        string: `?assignee=a"]` used to throw a SyntaxError out of
        querySelector and strand the board on skeletons forever. */
     if (wanted && byId[wanted]) filterSel.value = wanted;
+
+    var searchEl = document.getElementById('f-search');
+    var wantQ = params.get('q');
+    if (wantQ && searchEl) searchEl.value = wantQ;
   }
 
   /* Bucket open tasks by urgency; done tasks get their own group. */
@@ -230,6 +270,8 @@
 
   function render(rows, highlightId) {
     if (!listEl) return;
+    var countEl = document.getElementById('task-count');
+    if (countEl) countEl.textContent = rows.length + (rows.length === 1 ? ' task' : ' tasks');
     if (!rows.length) {
       var filtered = document.getElementById('f-status').value !== 'open' ||
                      document.getElementById('f-assignee').value !== 'all';
@@ -313,7 +355,7 @@
        surprising part, and `details` was the segment that always got clipped
        as a result. */
     sub.innerHTML = esc(who) +
-      (t.due_date ? ' · <span' + (overdue ? ' class="due-over"' : '') + '>due ' + esc(shortDate(t.due_date)) + '</span>' : '') +
+      (t.due_date ? ' · <span' + (overdue ? ' class="due-over"' : '') + '>due ' + esc(relativeDate(t.due_date, t0)) + '</span>' : '') +
       (t.details ? ' · ' + esc(t.details) : '');
     sub.title = [who, t.due_date ? 'due ' + t.due_date : null, t.details].filter(Boolean).join(' · ');
     main.appendChild(titleLink); main.appendChild(sub);
@@ -412,22 +454,27 @@
       var title = (input.value || '').trim();
       if (!title) { input.focus(); return; }
 
+      var dueEl = document.getElementById('q-due');
+      var dueDate = dueEl ? (dueEl.value || '') : '';
       var btn = document.getElementById('q-add-btn');
       btn.disabled = true;
       var session = await window.admin.session();
-      var res = await window.sb.from('tasks').insert({
+      /* Only include due_date when one was chosen — omitting the key lets the
+         DB default apply and keeps the existing test for the no-date case
+         stable. A non-empty value passes through unchanged. */
+      var insertData = {
         title: title,
-        /* Yours by default. selfEmployee is null only for a legacy admin with
-           no employees row; unassigned is the honest result there, and still
-           mails nobody. */
         assignee_id: selfEmployee ? selfEmployee.id : null,
-        created_by: session ? session.user.id : null
-      }).select('id').single();
+        created_by: session ? session.user.id : null,
+      };
+      if (dueDate) insertData.due_date = dueDate;
+      var res = await window.sb.from('tasks').insert(insertData).select('id').single();
       btn.disabled = false;
 
       if (res.error) { setMsg('Could not add that task: ' + res.error.message, 'err'); return; }
 
       input.value = '';
+      if (dueEl) dueEl.value = '';
       input.focus();
       setMsg('');
       window.admin.toast('Task added');
@@ -442,6 +489,30 @@
   function onFilterChange() { writeFilters(); loadTasks(); }
   document.getElementById('f-status').addEventListener('change', onFilterChange);
   document.getElementById('f-assignee').addEventListener('change', onFilterChange);
+
+  /* Mine: toggles the assignee filter between self and everyone. Active state
+     mirrors the dropdown — btn-primary when the filter is set to you. The
+     button itself is hidden until load() resolves selfEmployee. */
+  var mineBtn = document.getElementById('f-mine');
+  if (mineBtn) {
+    mineBtn.addEventListener('click', function () {
+      if (!selfEmployee) return;
+      var sel = document.getElementById('f-assignee');
+      sel.value = sel.value === selfEmployee.id ? 'all' : selfEmployee.id;
+      /* Visual feedback: primary when active, default when toggled off. */
+      mineBtn.classList.toggle('btn-primary', sel.value === selfEmployee.id);
+      onFilterChange();
+    });
+  }
+
+  /* Search filters the already-loaded rows client-side — no new DB query. */
+  var searchEl = document.getElementById('f-search');
+  if (searchEl) {
+    searchEl.addEventListener('input', function () {
+      writeFilters();
+      render(filterRows(allRows));
+    });
+  }
 
   /* Coming back via the browser's Back button restores this page from the
      bfcache with its DOM intact — including a task list that may now be

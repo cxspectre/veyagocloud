@@ -1057,6 +1057,10 @@
 .task-quick .input { flex: 1 1 auto; border-color: transparent; padding-left: 0; padding-right: 0; }
 .task-quick .input:focus { box-shadow: none; border-color: transparent; }
 .task-quick:focus-within { border-color: var(--blue-2); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+/* Date input in quick-add must not flex-grow — it's a fixed-size chrome control.
+   Shrinks away on very narrow screens where the bar has no room. */
+.task-quick-date { flex: 0 0 auto !important; width: auto !important; color: var(--muted); }
+@media (max-width: 520px) { .task-quick-date { display: none; } }
 
 /* A just-added task lands in "No due date", well down the list. This fades out
    rather than persisting: it answers "where did it go" and then stops

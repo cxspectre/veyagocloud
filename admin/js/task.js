@@ -383,6 +383,17 @@
   var delBtn = el('del-btn');
   if (delBtn) delBtn.addEventListener('click', remove);
 
+  var copyBtn = el('copy-link-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function () {
+      navigator.clipboard.writeText(window.location.href).then(function () {
+        window.admin.toast('Link copied');
+      }).catch(function () {
+        setMsg('form-msg', 'Could not copy — try selecting the URL bar.', 'err');
+      });
+    });
+  }
+
   /* adminReady is a promise — immune to the event-vs-registration race. */
   window.adminReady.then(function (s) { if (s) load(); });
 })();

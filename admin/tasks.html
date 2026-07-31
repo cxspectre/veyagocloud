@@ -46,6 +46,13 @@
         <select class="input input-sm" id="f-assignee">
           <option value="all">Everyone</option>
         </select>
+        <!-- Toggles the assignee filter to the signed-in user's employee row.
+             Hidden by JS until selfEmployee is resolved, so it never shows for
+             a legacy admin who has no employees row. -->
+        <button class="btn btn-sm" id="f-mine" type="button" hidden>Mine</button>
+        <input class="input input-sm" id="f-search" type="search"
+               placeholder="Search tasks…" autocomplete="off"
+               aria-label="Search tasks" style="flex:1;min-width:100px;max-width:220px" />
         <span class="adm-toolbar-count" id="task-count"></span>
       </div>
 
@@ -57,6 +64,11 @@
         <svg class="task-quick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         <input class="input" id="q-title" type="text" autocomplete="off"
                placeholder="Add a task for yourself…" aria-label="Add a task for yourself" />
+        <!-- Optional due date on quick-add. Hidden on very narrow screens where
+             the bar already has no room. Cleared along with the title after a
+             successful add. -->
+        <input class="input input-sm task-quick-date" id="q-due" type="date"
+               title="Due date (optional)" aria-label="Due date" />
         <button class="btn btn-primary btn-sm" id="q-add-btn" type="submit">Add</button>
       </form>
 
