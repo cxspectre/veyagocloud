@@ -2,8 +2,7 @@
 (function () {
   'use strict';
 
-  var listEl      = document.getElementById('article-list');
-  var statusPanel = document.getElementById('status-panel');
+  var listEl = document.getElementById('article-list');
 
   function fmt(iso) {
     if (!iso) return '';
@@ -26,102 +25,301 @@
       '</li>';
   }
 
-  /* ── Stats ── */
-  async function loadStats() {
-    var results = await Promise.allSettled([
-      window.sb.from('articles').select('id,status').is('deleted_at', null),
-      window.sb.from('wallpapers').select('id,status').is('deleted_at', null),
-      window.sb.from('apps').select('id,published').is('deleted_at', null),
-      window.sb.from('projects').select('id,published').is('deleted_at', null),
-      window.sb.from('site_announcements').select('id,message,active').is('deleted_at', null).eq('active', true).limit(1)
+  /* ── Manager command centre ──────────────────────────────────────── */
+
+  async function loadManagerHome(employee) {
+    var greetEl = document.getElementById('mgr-greeting');
+    var dateEl  = document.getElementById('mgr-date');
+    if (greetEl) {
+      var first = String((employee && employee.full_name) || '').trim().split(/\s+/)[0] || '';
+      greetEl.textContent = greeting() + (first ? ', ' + first : '');
+    }
+    if (dateEl) {
+      dateEl.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+
+    var t0 = window.admin.localDate();
+    var monthStart = t0.slice(0, 8) + '01';
+
+    await Promise.allSettled([
+      loadManagerStats(employee, t0, monthStart),
+      loadManagerTasks(employee, t0),
+      loadTeamPulse(t0),
+      loadStatusPanel(),
+      loadArticles(),
     ]);
-
-    if (results[0].status === 'fulfilled' && !results[0].value.error) {
-      var arts = results[0].value.data || [];
-      setStat('stat-articles', arts.length);
-      setStat('stat-articles-pub', arts.length ? arts.filter(function(a){ return a.status==='published'; }).length + ' published' : 'none yet');
-    }
-    if (results[1].status === 'fulfilled' && !results[1].value.error) {
-      var wps = results[1].value.data || [];
-      setStat('stat-wallpapers', wps.length);
-      setStat('stat-wallpapers-pub', wps.length ? wps.filter(function(w){ return w.status==='published'; }).length + ' published' : 'none yet');
-    }
-    if (results[2].status === 'fulfilled' && !results[2].value.error) {
-      var apps = results[2].value.data || [];
-      setStat('stat-apps', apps.length);
-      setStat('stat-apps-pub', apps.length ? apps.filter(function(a){ return a.published; }).length + ' on catalogue' : 'none yet');
-    }
-    if (results[3].status === 'fulfilled' && !results[3].value.error) {
-      var projs = results[3].value.data || [];
-      setStat('stat-projects', projs.length);
-      setStat('stat-projects-pub', projs.length ? projs.filter(function(p){ return p.published; }).length + ' published' : 'none yet');
-    }
-
-    var activeAnn = (results[4].status === 'fulfilled' && !results[4].value.error && results[4].value.data && results[4].value.data[0]) || null;
-    buildStatusPanel(activeAnn);
-    var annEl = document.getElementById('stat-ann-status');
-    if (annEl) { annEl.textContent = activeAnn ? 'Active' : 'None'; annEl.style.color = activeAnn ? '#1a7f37' : 'var(--muted)'; }
   }
 
-  function buildStatusPanel(activeAnn) {
-    if (!statusPanel) return;
-    var rows = activeAnn
+  async function loadManagerStats(employee, t0, monthStart) {
+    var statsEl = document.getElementById('mgr-stats');
+    if (!statsEl) return;
+
+    var rs = await Promise.allSettled([
+      window.sb.from('tasks').select('id,status,due_date,assignee_id').neq('status', 'done').limit(2000),
+      window.sb.from('finance_transactions').select('amount').gte('posted_at', monthStart).limit(5000),
+      window.sb.from('publish_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    ]);
+
+    function ok(i) { return rs[i].status === 'fulfilled' && !rs[i].value.error ? (rs[i].value.data || []) : null; }
+
+    var allTasks = ok(0);
+    var myId     = employee ? employee.id : null;
+    var mine     = myId && allTasks ? allTasks.filter(function (t) { return t.assignee_id === myId; }) : [];
+    var myOverdue = mine.filter(function (t) { return t.due_date && t.due_date < t0; });
+    var myToday   = mine.filter(function (t) { return t.due_date === t0; });
+
+    var teamBlocked = allTasks ? allTasks.filter(function (t) { return t.status === 'blocked'; }).length : 0;
+    var teamOverdue = allTasks ? allTasks.filter(function (t) { return t.due_date && t.due_date < t0; }).length : 0;
+
+    var tx   = ok(1);
+    var pend = rs[2].status === 'fulfilled' && !rs[2].value.error ? (rs[2].value.count || 0) : 0;
+
+    var cards = [];
+
+    /* Card 1: my tasks due today / overdue */
+    var myDue = myOverdue.length + myToday.length;
+    cards.push({
+      href: '/admin/tasks?mine=1',
+      color: myOverdue.length ? '#ff3b30' : (myDue ? '#0071e3' : '#86868b'),
+      n: myDue,
+      n2: myOverdue.length ? myOverdue.length + ' overdue' : (myDue ? 'due today' : 'nothing due today'),
+      n2Color: myOverdue.length ? '#b3261e' : null,
+      label: 'My tasks today',
+      icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+    });
+
+    /* Card 2: team open tasks */
+    if (allTasks) {
+      cards.push({
+        href: '/admin/tasks',
+        color: teamBlocked ? '#ff9500' : (teamOverdue ? '#ff3b30' : '#34c759'),
+        n: allTasks.length,
+        n2: teamBlocked ? teamBlocked + ' blocked' : (teamOverdue ? teamOverdue + ' overdue' : 'no blockers'),
+        n2Color: (teamBlocked || teamOverdue) ? '#b3261e' : null,
+        label: 'Open tasks',
+        icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>',
+      });
+    }
+
+    /* Card 3: net this month */
+    if (tx) {
+      var net    = tx.reduce(function (s, r) { return s + Number(r.amount); }, 0);
+      var fmtNet = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(net);
+      cards.push({
+        href: '/admin/finance',
+        color: net >= 0 ? '#34c759' : '#ff3b30',
+        n: fmtNet,
+        n2: tx.length + ' transaction' + (tx.length === 1 ? '' : 's'),
+        label: 'Net this month',
+        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
+      });
+    }
+
+    /* Card 4: pending publish requests (or a publish shortcut if none) */
+    if (pend > 0) {
+      cards.push({
+        href: '/admin/publish',
+        color: '#ff9500',
+        n: pend,
+        n2: 'waiting for approval',
+        n2Color: '#b3261e',
+        label: pend === 1 ? 'Publish request' : 'Publish requests',
+        icon: '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>',
+      });
+    } else {
+      cards.push({
+        href: '/admin/publish',
+        color: '#5856d6',
+        n: '↑',
+        n2: 'nothing pending',
+        label: 'Publish',
+        icon: '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>',
+      });
+    }
+
+    window.admin.statCards(statsEl, cards);
+  }
+
+  async function loadManagerTasks(employee, t0) {
+    var listEl = document.getElementById('mgr-tasks');
+    if (!listEl) return;
+
+    if (!employee) {
+      listEl.innerHTML =
+        '<li class="dash-empty-state">' +
+          '<p>No employee record is linked to your account — tasks cannot be filtered to you.</p>' +
+          '<a class="btn btn-sm btn-primary" href="/admin/tasks">View all tasks</a>' +
+        '</li>';
+      return;
+    }
+
+    var weekOut = window.admin.localDate(7);
+    var res = await window.sb.from('tasks')
+      .select('id,title,status,priority,due_date')
+      .eq('assignee_id', employee.id)
+      .neq('status', 'done')
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .limit(30);
+
+    var rows = res.error ? [] : (res.data || []);
+    var overdue = rows.filter(function (t) { return t.due_date && t.due_date < t0; });
+    var today   = rows.filter(function (t) { return t.due_date === t0; });
+    var soon    = rows.filter(function (t) { return t.due_date && t.due_date > t0 && t.due_date <= weekOut; });
+    var other   = rows.filter(function (t) { return !t.due_date || t.due_date > weekOut; });
+    var display = overdue.concat(today, soon, other).slice(0, 8);
+
+    if (!display.length) {
+      listEl.innerHTML =
+        '<li class="dash-empty-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>' +
+          '<p>Nothing on your plate. Enjoy the quiet.</p>' +
+        '</li>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    display.forEach(function (t) {
+      var late = t.due_date && t.due_date < t0;
+      var li = document.createElement('li');
+      li.className = 'adm-item' +
+        (t.priority === 'urgent' ? ' pri-urgent' : t.priority === 'high' ? ' pri-high' : '');
+
+      var icon = document.createElement('div'); icon.className = 'adm-item-icon';
+      var statusColor = t.status === 'blocked' ? 'var(--ac-warn)' : late ? 'var(--ac-danger)' : 'var(--muted-2)';
+      icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="' + statusColor + '" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>';
+
+      var main = document.createElement('div'); main.className = 'adm-item-main';
+      var title = document.createElement('div'); title.className = 'adm-item-title'; title.textContent = t.title;
+      var sub = document.createElement('div'); sub.className = 'adm-item-sub';
+      sub.innerHTML = t.due_date
+        ? '<span' + (late ? ' class="due-over"' : '') + '>' + (late ? 'overdue ' : 'due ') + escHtml(t.due_date) + '</span>'
+          + (t.status === 'blocked' ? ' · <span style="color:var(--ac-warn)">blocked</span>' : '')
+        : (t.status === 'blocked' ? '<span style="color:var(--ac-warn)">blocked</span>' : 'no due date');
+      main.appendChild(title); main.appendChild(sub);
+
+      var acts = document.createElement('div'); acts.className = 'adm-item-acts';
+      var open = document.createElement('a');
+      open.className = 'btn btn-sm';
+      open.href = '/admin/task?id=' + encodeURIComponent(t.id);
+      open.textContent = 'Open';
+      acts.appendChild(open);
+      li.appendChild(icon); li.appendChild(main); li.appendChild(acts);
+      listEl.appendChild(li);
+    });
+  }
+
+  async function loadTeamPulse(t0) {
+    var panel = document.getElementById('mgr-pulse');
+    if (!panel) return;
+
+    var rs = await Promise.allSettled([
+      window.sb.from('employees').select('id,full_name,status').neq('status', 'inactive').order('full_name'),
+      window.sb.from('tasks').select('assignee_id,status,due_date').neq('status', 'done').not('assignee_id', 'is', null).limit(2000),
+    ]);
+
+    var emps  = rs[0].status === 'fulfilled' && !rs[0].value.error ? (rs[0].value.data || []) : [];
+    var tasks = rs[1].status === 'fulfilled' && !rs[1].value.error ? (rs[1].value.data || []) : [];
+
+    /* Group tasks by assignee */
+    var byId = {};
+    tasks.forEach(function (t) {
+      var g = byId[t.assignee_id] || (byId[t.assignee_id] = { open: 0, blocked: 0, overdue: 0 });
+      g.open++;
+      if (t.status === 'blocked') g.blocked++;
+      if (t.due_date && t.due_date < t0) g.overdue++;
+    });
+
+    /* Only show people with open tasks, sorted urgent-first */
+    var active = emps.filter(function (e) { return byId[e.id]; }).sort(function (a, b) {
+      var ga = byId[a.id], gb = byId[b.id];
+      if (gb.blocked !== ga.blocked) return gb.blocked - ga.blocked;
+      if (gb.overdue !== ga.overdue) return gb.overdue - ga.overdue;
+      return gb.open - ga.open;
+    });
+
+    var header = '<div style="padding:12px 14px 8px;font-size:var(--t-eyebrow);font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-2)">Team pulse</div>';
+
+    if (!active.length) {
+      panel.innerHTML = header +
+        '<div class="dash-status-row"><span class="dash-status-dot green"></span>' +
+        '<div><div class="dash-status-label">All clear</div>' +
+        '<div class="dash-status-sub">No open tasks on anyone\'s plate</div></div></div>';
+      return;
+    }
+
+    var rows = active.slice(0, 7).map(function (e) {
+      var g = byId[e.id];
+      var dotClass = g.blocked ? 'amber' : (g.overdue ? 'red' : 'green');
+      var sub = g.open + ' open';
+      if (g.blocked) sub += ' · ' + g.blocked + ' blocked';
+      else if (g.overdue) sub += ' · ' + g.overdue + ' overdue';
+      var href = '/admin/tasks?assignee=' + encodeURIComponent(e.id);
+      return '<div class="dash-status-row">' +
+        '<span class="dash-status-dot ' + dotClass + '"></span>' +
+        '<div style="min-width:0;flex:1">' +
+          '<div class="dash-status-label" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+            '<a href="' + escHtml(href) + '" style="color:inherit;text-decoration:none">' + escHtml(e.full_name) + '</a>' +
+          '</div>' +
+          '<div class="dash-status-sub">' + escHtml(sub) + '</div>' +
+        '</div></div>';
+    }).join('');
+
+    if (active.length > 7) {
+      rows += '<div style="padding:6px 14px 10px;font-size:var(--t-eyebrow);color:var(--muted)">' +
+        (active.length - 7) + ' more · <a href="/admin/tasks">View all tasks</a></div>';
+    }
+
+    panel.innerHTML = header + rows;
+  }
+
+  async function loadStatusPanel() {
+    var panel = document.getElementById('status-panel');
+    if (!panel) return;
+
+    var rs = await Promise.allSettled([
+      window.sb.from('site_announcements').select('id,message,active').is('deleted_at', null).eq('active', true).limit(1),
+      window.sb.from('build_runs').select('status,finished_at').order('started_at', { ascending: false }).limit(5),
+    ]);
+
+    var ann     = rs[0].status === 'fulfilled' && !rs[0].value.error ? (rs[0].value.data || []) : [];
+    var runs    = rs[1].status === 'fulfilled' && !rs[1].value.error ? (rs[1].value.data || []) : [];
+    var activeAnn = ann[0] || null;
+
+    var annRow = activeAnn
       ? '<div class="dash-status-row"><span class="dash-status-dot green"></span><div>' +
           '<div class="dash-status-label">Announcement active</div>' +
-          '<div class="dash-status-sub">' + escHtml((activeAnn.message||'').slice(0,60)) + (activeAnn.message&&activeAnn.message.length>60?'…':'') +
+          '<div class="dash-status-sub">' + escHtml((activeAnn.message || '').slice(0, 55)) + (activeAnn.message && activeAnn.message.length > 55 ? '…' : '') +
           ' <a href="/admin/announcements">Edit →</a></div></div></div>'
       : '<div class="dash-status-row"><span class="dash-status-dot gray"></span><div>' +
           '<div class="dash-status-label">No active announcement</div>' +
           '<div class="dash-status-sub"><a href="/admin/announcements">Create one →</a></div></div></div>';
-    /* The publish row starts neutral and is filled by loadSiteStatus(). It used
-       to be a hardcoded green "Site live" dot behind no query at all, so the
-       home screen read healthy even when published rows had never been shipped. */
-    rows += '<div class="dash-status-row" id="site-status-row">' +
-      '<span class="dash-status-dot gray" id="site-status-dot"></span><div>' +
-      '<div class="dash-status-label" id="site-status-label">Checking publish status…</div>' +
-      '<div class="dash-status-sub"><a href="https://www.veyago.cloud" target="_blank" rel="noopener">veyago.cloud ↗</a></div></div></div>';
-    statusPanel.innerHTML = rows;
-    loadSiteStatus();
-  }
 
-  /* Reads the same build_runs history the Publish screen renders, and
-     says only what that history supports. Deliberately does NOT recompute the
-     "N changes waiting" count — publish.js pendingCount() owns that query, and
-     a second copy here would be one more thing to keep in step. */
-  async function loadSiteStatus() {
-    var dot   = document.getElementById('site-status-dot');
-    var label = document.getElementById('site-status-label');
-    if (!dot || !label) return;
-
-    var res = await window.sb.from('build_runs')
-      .select('status,finished_at')
-      .order('started_at', { ascending: false }).limit(5);
-
-    if (res.error) {
-      label.textContent = 'Publish status unavailable';
-      return;
-    }
-
-    var runs     = res.data || [];
     var inFlight = runs.filter(function (r) { return r.status === 'queued' || r.status === 'running'; })[0];
     var lastGood = runs.filter(function (r) { return r.status === 'success'; })[0];
     var lastRun  = runs[0];
-
+    var siteDot, siteLabel;
     if (inFlight) {
-      dot.className = 'dash-status-dot amber';
-      label.textContent = 'Publishing now…';
+      siteDot = 'amber'; siteLabel = 'Publishing now…';
     } else if (lastRun && lastRun.status === 'failed') {
-      dot.className = 'dash-status-dot red';
-      label.textContent = 'Last publish failed';
+      siteDot = 'red'; siteLabel = 'Last publish failed';
     } else if (lastGood) {
-      dot.className = 'dash-status-dot green';
+      siteDot = 'green';
       var on = fmt(lastGood.finished_at);
-      label.textContent = 'Published' + (on ? ' ' + on : '');
+      siteLabel = 'Published' + (on ? ' ' + on : '');
     } else {
-      dot.className = 'dash-status-dot gray';
-      label.textContent = 'Never published from here';
+      siteDot = 'gray'; siteLabel = 'Never published from here';
     }
+
+    var siteRow = '<div class="dash-status-row"><span class="dash-status-dot ' + siteDot + '"></span><div>' +
+      '<div class="dash-status-label">' + escHtml(siteLabel) + '</div>' +
+      '<div class="dash-status-sub"><a href="https://www.veyago.cloud" target="_blank" rel="noopener">veyago.cloud ↗</a></div></div></div>';
+
+    panel.innerHTML = annRow + siteRow;
   }
+
+  /* loadSiteStatus kept for backwards compatibility — no longer called for the
+     manager home but may be referenced externally. */
+  async function loadSiteStatus() { await loadStatusPanel(); }
 
   /* ── Articles ── */
   async function loadArticles() {
@@ -192,87 +390,7 @@
     });
   }
 
-  /* ── Company row — team, tasks, onboarding, finance-at-a-glance ────── */
-  async function loadCompany() {
-    var wrap = document.getElementById('dash-company');
-    if (!wrap || !window.adminRoles) return;
-
-    var role = await window.adminRoles.role();
-    if (!role) return;   // no employee/admin record — keep the row hidden
-    var manager = role === 'owner' || role === 'admin';
-
-    var t0 = window.admin.localDate();
-    var monthStart = t0.slice(0, 8) + '01';
-
-    var queries = [
-      window.sb.from('tasks').select('status,due_date').neq('status', 'done').limit(1000),
-      window.sb.from('employees').select('id,status'),
-      window.sb.from('onboarding_items').select('id').eq('active', true),
-      window.sb.from('onboarding_progress').select('employee_id,item_id,done').eq('done', true)
-    ];
-    if (manager) {
-      queries.push(window.sb.from('finance_transactions').select('amount').gte('posted_at', monthStart).limit(5000));
-    }
-    var rs = await Promise.allSettled(queries);
-    function ok(i) { return rs[i] && rs[i].status === 'fulfilled' && !rs[i].value.error ? (rs[i].value.data || []) : null; }
-
-    var cards = [];
-
-    var tasks = ok(0);
-    if (tasks) {
-      var overdue = tasks.filter(function (r) { return r.due_date && r.due_date < t0; }).length;
-      cards.push({ href: '/admin/tasks', color: '#0071e3', n: tasks.length, label: 'Open tasks',
-        n2: overdue ? overdue + ' overdue' : 'none overdue', n2Color: overdue ? '#b3261e' : null,
-        icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' });
-    }
-
-    var emps = ok(1);
-    if (emps) {
-      var invited = emps.filter(function (e) { return e.status === 'invited'; }).length;
-      cards.push({ href: '/admin/team', color: '#34c759', n: emps.length, label: 'Team',
-        n2: invited ? invited + ' invite' + (invited === 1 ? '' : 's') + ' pending' : 'all aboard',
-        icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>' });
-    }
-
-    var items = ok(2), prog = ok(3);
-    if (emps && items && prog && items.length) {
-      var activeIds = emps.filter(function (e) { return e.status !== 'inactive'; }).map(function (e) { return e.id; });
-      var doneBy = {};
-      prog.forEach(function (p) { doneBy[p.employee_id] = (doneBy[p.employee_id] || 0) + 1; });
-      var inProgress = activeIds.filter(function (id) { return (doneBy[id] || 0) < items.length; }).length;
-      cards.push({ href: '/admin/onboarding', color: '#5856d6', n: inProgress, label: 'Onboarding',
-        n2: inProgress ? 'still working through' : 'everyone complete',
-        icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>' });
-    }
-
-    if (manager) {
-      var tx = ok(4);
-      if (tx) {
-        var net = tx.reduce(function (s, r) { return s + Number(r.amount); }, 0);
-        var fmtNet = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(net);
-        cards.push({ href: '/admin/finance', color: net >= 0 ? '#34c759' : '#ff3b30', n: fmtNet, label: 'Net this month',
-          n2: tx.length + ' transactions',
-          icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' });
-      }
-    }
-
-    /* Only when there is something to act on. A permanent "0 waiting" card
-       would be one more number to skip past on a screen already full of them. */
-    if (manager) {
-      var pend = await window.sb.from('publish_requests')
-        .select('id', { count: 'exact', head: true }).eq('status', 'pending');
-      if (!pend.error && pend.count) {
-        cards.push({ href: '/admin/publish', color: '#ff9500', n: pend.count,
-          label: pend.count === 1 ? 'Publish request' : 'Publish requests',
-          n2: 'waiting for you', n2Color: '#b3261e',
-          icon: '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>' });
-      }
-    }
-
-    if (!cards.length) return;
-    window.admin.statCards(wrap, cards);
-    wrap.hidden = false;
-  }
+  /* loadCompany removed — superseded by loadManagerHome / loadManagerStats. */
 
   /* ── Staff home ───────────────────────────────────────────────────────
      An assistant landing on "Dashboard — everything published on veyago.cloud"
@@ -394,7 +512,7 @@
 
     var mgrView = document.getElementById('view-manager');
     if (mgrView) mgrView.hidden = false;
-    loadStats(); loadArticles(); loadCompany();
+    loadManagerHome(r.employee);
   }
 
   /* Re-fetch when the user switches back to this tab after editing an article. */

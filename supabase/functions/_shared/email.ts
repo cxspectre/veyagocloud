@@ -308,6 +308,37 @@ export function taskUpdatedEmail(opts: {
   };
 }
 
+export function taskCommentEmail(opts: {
+  recipientName: string | null;
+  commenterName: string | null;
+  title: string;
+  body: string;
+  taskUrl: string;
+}) {
+  const who = opts.commenterName ? escapeHtml(opts.commenterName) : 'Someone';
+  const greeting = opts.recipientName ? `Hi ${escapeHtml(opts.recipientName)},` : 'Hi,';
+  const snippet = opts.body.length > 200 ? opts.body.slice(0, 200) + '…' : opts.body;
+  return {
+    subject: `New comment on "${opts.title}"`,
+    html: layout({
+      title: 'New comment on task',
+      preheader: `${opts.commenterName ?? 'Someone'} commented on "${opts.title}"`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 22px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">New comment</h1>
+        <p style="margin:0 0 16px;">${greeting} ${who} left a comment on <strong>${escapeHtml(opts.title)}</strong>.</p>
+        <div style="background:${CANVAS};border-left:3px solid ${BLUE};border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 20px;">
+          <p style="margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(snippet)}</p>
+        </div>
+        <p style="margin:0;"><a href="${escapeHtml(opts.taskUrl)}" style="display:inline-block;padding:10px 20px;background:${BLUE};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">Open task →</a></p>`,
+    }),
+    text:
+      `New comment on "${opts.title}"\n\n` +
+      `${greeting} ${opts.commenterName ?? 'Someone'} commented:\n\n` +
+      `${snippet}\n\n` +
+      `Open it: ${opts.taskUrl}`,
+  };
+}
+
 export function invoiceEmail(opts: {
   clientName: string; number: string; amountFormatted: string; dueOn?: string | null;
 }) {

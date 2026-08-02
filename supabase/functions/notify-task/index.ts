@@ -23,6 +23,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   sendEmail,
   taskAssignedEmail,
+  taskCommentEmail,
   taskStatusEmail,
   taskUpdatedEmail,
 } from '../_shared/email.ts';
@@ -34,7 +35,7 @@ const CORS = {
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const VALID_EVENTS = new Set(['assigned', 'updated', 'done', 'blocked']);
+const VALID_EVENTS = new Set(['assigned', 'updated', 'done', 'blocked', 'commented']);
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -59,9 +60,10 @@ Deno.serve(async (req) => {
     const { data: isStaff, error: roleErr } = await asCaller.rpc('is_staff');
     if (roleErr || !isStaff) return json({ error: 'Staff only' }, 403);
 
-    const body = await req.json().catch(() => ({}));
-    const taskId = String(body.task_id ?? '');
-    const event  = String(body.event ?? 'assigned');
+    const body        = await req.json().catch(() => ({}));
+    const taskId      = String(body.task_id ?? '');
+    const event       = String(body.event ?? 'assigned');
+    const commentBody = body.comment_body ? String(body.comment_body).trim() : null;
 
     if (!UUID_RE.test(taskId))     return json({ error: 'Invalid task id' }, 400);
     if (!VALID_EVENTS.has(event))  return json({ error: 'Invalid event' }, 400);
@@ -126,6 +128,55 @@ Deno.serve(async (req) => {
       });
 
       return json({ ok: sent.ok, skipped: sent.skipped ? 'email not configured' : undefined });
+    }
+
+    /* ── commented → notify assignee and creator (not the commenter) ──── */
+
+    if (event === 'commented') {
+      if (!commentBody) return json({ ok: true, skipped: 'no body' });
+
+      const { data: commenter } = await admin
+        .from('employees').select('full_name').eq('user_id', userData.user.id).maybeSingle();
+
+      /* Collect unique recipients: assignee + creator, minus the commenter. */
+      const recipientUserIds = new Set<string>();
+      if (task.assignee_id) {
+        const { data: a } = await admin
+          .from('employees').select('user_id').eq('id', task.assignee_id).maybeSingle();
+        if (a?.user_id && a.user_id !== userData.user.id) recipientUserIds.add(a.user_id);
+      }
+      if (task.created_by && task.created_by !== userData.user.id) {
+        recipientUserIds.add(task.created_by);
+      }
+
+      if (!recipientUserIds.size) return json({ ok: true, skipped: 'no recipients' });
+
+      const { data: recipEmps } = await admin
+        .from('employees')
+        .select('full_name,email,status,user_id')
+        .in('user_id', Array.from(recipientUserIds));
+
+      const active = (recipEmps ?? []).filter((e) => e.email && e.status !== 'inactive');
+      if (!active.length) return json({ ok: true, skipped: 'no email on file' });
+
+      let anyOk = false;
+      for (const recip of active) {
+        const tpl = taskCommentEmail({
+          recipientName: recip.full_name,
+          commenterName: commenter?.full_name ?? null,
+          title: task.title,
+          body: commentBody,
+          taskUrl,
+        });
+        const sent = await sendEmail({ to: recip.email, ...tpl });
+        if (sent.ok) anyOk = true;
+        await admin.from('email_log').insert({
+          to_email: recip.email, kind: 'task_comment', subject: tpl.subject,
+          ok: sent.ok, error: sent.ok ? null : (sent.error ?? null),
+          requested_by: userData.user.id,
+        });
+      }
+      return json({ ok: anyOk, skipped: anyOk ? undefined : 'email not configured' });
     }
 
     /* ── assigned / updated → notify the assignee ─────────────────────── */

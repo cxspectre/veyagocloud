@@ -109,90 +109,45 @@
       <!-- Staff view: rendered by dashboard.js for assistants/employees. -->
       <div id="view-staff" hidden></div>
 
-      <!-- Manager view: the full publishing + company picture. -->
+      <!-- Manager view: command centre — tasks, team health, finance, site. -->
       <div id="view-manager" hidden>
-      <div class="adm-page-head">
-        <div>
-          <h1>Dashboard</h1>
-          <p>Everything published on veyago.cloud.</p>
+
+        <div class="adm-page-head">
+          <div>
+            <h1 id="mgr-greeting">Dashboard</h1>
+            <p id="mgr-date"></p>
+          </div>
+          <div class="adm-actions">
+            <a class="btn" href="/admin/tasks">All tasks</a>
+            <a class="btn btn-primary" href="/admin/article">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New article
+            </a>
+          </div>
         </div>
-        <div class="adm-actions">
-          <a class="btn btn-primary" href="/admin/article">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New article
-          </a>
+
+        <!-- 4 key metric cards -->
+        <div class="dash-stats dash-stats--4" id="mgr-stats"></div>
+
+        <!-- Command grid: My tasks + Team pulse / Site status -->
+        <div class="dash-cmd-grid">
+          <div class="card-pane" style="margin-bottom:0">
+            <div class="card-head">
+              <h2 style="margin:0">My tasks</h2>
+              <a class="btn btn-sm" href="/admin/tasks?mine=1">All mine</a>
+            </div>
+            <ul class="adm-list" id="mgr-tasks">
+              <li class="skel"></li><li class="skel"></li><li class="skel"></li>
+            </ul>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="dash-status-card" id="mgr-pulse">
+              <div class="skel skel-sm" style="margin:12px 14px"></div>
+              <div class="skel skel-sm" style="margin:4px 14px 12px"></div>
+            </div>
+            <div class="dash-status-card" id="status-panel"></div>
+          </div>
         </div>
-      </div>
-
-      <!-- Stat cards -->
-      <div class="dash-stats" id="dash-stats">
-        <a class="dash-stat" href="/admin/journal" style="--stat-color:#0071e3">
-          <div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></div>
-          <div class="dash-stat-n" id="stat-articles">—</div>
-          <div class="dash-stat-n2" id="stat-articles-pub"></div>
-          <div class="dash-stat-label">Articles</div>
-        </a>
-        <a class="dash-stat" href="/admin/wallpapers" style="--stat-color:#5856d6">
-          <div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 13l5-4 4 4 3-2 5 3"/></svg></div>
-          <div class="dash-stat-n" id="stat-wallpapers">—</div>
-          <div class="dash-stat-n2" id="stat-wallpapers-pub"></div>
-          <div class="dash-stat-label">Wallpapers</div>
-        </a>
-        <a class="dash-stat" href="/admin/apps" style="--stat-color:#34c759">
-          <div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div>
-          <div class="dash-stat-n" id="stat-apps">—</div>
-          <div class="dash-stat-n2" id="stat-apps-pub"></div>
-          <div class="dash-stat-label">Apps</div>
-        </a>
-        <!-- Not a link: there is no /admin/projects screen. The count is real
-             (dashboard.js queries the projects table), so it stays; the dead
-             navigation does not. Make this an <a> again when the screen exists. -->
-        <div class="dash-stat dash-stat--static" style="--stat-color:#ff9500">
-          <div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
-          <div class="dash-stat-n" id="stat-projects">—</div>
-          <div class="dash-stat-n2" id="stat-projects-pub"></div>
-          <div class="dash-stat-label">Projects</div>
-        </div>
-        <a class="dash-stat" href="/admin/announcements" style="--stat-color:#ff3b30">
-          <div class="dash-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
-          <div class="dash-stat-n" id="stat-ann-status" style="font-size:1rem;letter-spacing:0;margin-top:4px">—</div>
-          <div class="dash-stat-label" style="margin-top:10px">Announcement</div>
-        </a>
-      </div>
-
-      <!-- Quick actions -->
-      <div class="dash-quick">
-        <a class="dash-qcard" href="/admin/article" style="--qcard-bg:#e8f0fe">
-          <div class="dash-qcard-icon" style="background:#e8f0fe">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#1a56db" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </div>
-          <div><div class="dash-qcard-label">New article</div><div class="dash-qcard-sub">Write a field note</div></div>
-        </a>
-        <a class="dash-qcard" href="/admin/wallpapers">
-          <div class="dash-qcard-icon" style="background:#f0ebff">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#5856d6" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 13l5-4 4 4 3-2 5 3"/></svg>
-          </div>
-          <div><div class="dash-qcard-label">Upload wallpaper</div><div class="dash-qcard-sub">Add a new set</div></div>
-        </a>
-        <a class="dash-qcard" href="/admin/announcements">
-          <div class="dash-qcard-icon" style="background:#fff0f0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#ff3b30" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-          </div>
-          <div><div class="dash-qcard-label">Announcement</div><div class="dash-qcard-sub">Edit the site bar</div></div>
-        </a>
-        <a class="dash-qcard" href="/admin/team">
-          <div class="dash-qcard-icon" style="background:#f0fdf4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          </div>
-          <div><div class="dash-qcard-label">Team</div><div class="dash-qcard-sub">Invite & manage</div></div>
-        </a>
-      </div>
-
-      <!-- Company row — populated by dashboard.js once the role is known -->
-      <div class="dash-stats dash-stats--4" id="dash-company" hidden></div>
-
-      <!-- Main content area -->
-      <div class="dash-body">
 
         <!-- Recent articles -->
         <div class="card-pane" style="margin-bottom:0">
@@ -212,14 +167,6 @@
           </div>
         </div>
 
-        <!-- Status sidebar -->
-        <div>
-          <div class="dash-status-card" id="status-panel">
-            <!-- populated by dashboard.js -->
-          </div>
-        </div>
-
-      </div>
       </div>
     </main>
   </div>

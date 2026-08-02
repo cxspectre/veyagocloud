@@ -108,6 +108,23 @@
           </div>
         </div>
       </div>
+
+      <div class="card-pane" id="comments-pane" hidden>
+        <h2>Comments</h2>
+        <ul class="adm-timeline" id="comments-list"></ul>
+        <form id="comment-form" style="margin-top:14px">
+          <div class="field" style="margin-bottom:8px">
+            <textarea class="input" id="comment-body" rows="3"
+              placeholder="Add a comment — share context, ask a question, leave an update…"
+              style="resize:vertical"></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary btn-sm" type="submit" id="comment-submit">Post comment</button>
+            <span class="msg" id="comment-msg" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </div>
+
     </main>
   </div>
 

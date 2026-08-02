@@ -20,6 +20,8 @@
     'self-completed':1,  // you completed your own task — no point emailing yourself
     'self-blocked':  1,  // same
     'no creator':    1,  // legacy task with no created_by — nobody to tell
+    'no recipients': 1,  // commenter is the only person on the task
+    'no body':       1,  // guarded client-side, but harmless if edge function sees it
   };
 
   /* Fire and report. Never awaited into a save's success path: the task is

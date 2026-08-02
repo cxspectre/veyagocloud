@@ -37,6 +37,7 @@
     employees = res.data || [];
     render();
     loadStats();
+    if (isManager) loadWorkload();
   }
 
   async function loadStats() {
@@ -79,6 +80,84 @@
     }
     listEl.innerHTML = '';
     employees.forEach(function (e) { listEl.appendChild(renderRow(e)); });
+  }
+
+  async function loadWorkload() {
+    var pane   = document.getElementById('workload-pane');
+    var listEl = document.getElementById('workload-list');
+    if (!pane || !listEl) return;
+
+    var t0  = window.admin.localDate();
+    var res = await window.sb.from('tasks')
+      .select('assignee_id,status,due_date')
+      .neq('status', 'done')
+      .not('assignee_id', 'is', null)
+      .limit(2000);
+
+    if (res.error) { pane.hidden = true; return; }
+
+    var tasks = res.data || [];
+    var byId  = {};
+    tasks.forEach(function (t) {
+      var g = byId[t.assignee_id] || (byId[t.assignee_id] = { open: 0, blocked: 0, overdue: 0 });
+      g.open++;
+      if (t.status === 'blocked') g.blocked++;
+      if (t.due_date && t.due_date < t0) g.overdue++;
+    });
+
+    var withTasks = employees.filter(function (e) { return byId[e.id]; }).sort(function (a, b) {
+      var ga = byId[a.id], gb = byId[b.id];
+      if (gb.blocked !== ga.blocked) return gb.blocked - ga.blocked;
+      if (gb.overdue !== ga.overdue) return gb.overdue - ga.overdue;
+      return gb.open - ga.open;
+    });
+
+    if (!withTasks.length) {
+      listEl.innerHTML =
+        '<li class="dash-empty-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="1.5" width="34" height="34" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>' +
+          '<p>No tasks assigned to anyone yet.</p>' +
+        '</li>';
+      pane.hidden = false;
+      return;
+    }
+
+    listEl.innerHTML = '';
+    withTasks.forEach(function (e) {
+      var g  = byId[e.id];
+      var li = document.createElement('li'); li.className = 'adm-item';
+
+      var av = document.createElement('div'); av.className = 'avatar';
+      av.style.cssText = 'background:' + (e.status === 'inactive' ? '#c7c7cc' : (ROLE_COLOR[e.role] || '#86868b')) + ';font-size:11px';
+      av.textContent = initials(e.full_name);
+
+      var main = document.createElement('div'); main.className = 'adm-item-main';
+      var title = document.createElement('div'); title.className = 'adm-item-title'; title.textContent = e.full_name;
+      var sub   = document.createElement('div'); sub.className = 'adm-item-sub';
+      var parts = ['<span>' + g.open + ' open</span>'];
+      if (g.blocked) parts.push('<span style="color:var(--fg-warn)">' + g.blocked + ' blocked</span>');
+      if (g.overdue) parts.push('<span style="color:var(--fg-danger)">' + g.overdue + ' overdue</span>');
+      sub.innerHTML = parts.join(' · ');
+      main.appendChild(title); main.appendChild(sub);
+
+      var acts = document.createElement('div'); acts.className = 'adm-item-acts';
+      if (g.blocked) {
+        var bw = document.createElement('span'); bw.className = 'badge badge-warn'; bw.textContent = 'blocked';
+        acts.appendChild(bw);
+      } else if (g.overdue) {
+        var bd = document.createElement('span'); bd.className = 'badge badge-danger'; bd.textContent = 'overdue';
+        acts.appendChild(bd);
+      }
+      var lnk = document.createElement('a');
+      lnk.className = 'btn btn-sm';
+      lnk.href = '/admin/tasks?assignee=' + encodeURIComponent(e.id);
+      lnk.textContent = 'View tasks';
+      acts.appendChild(lnk);
+
+      li.appendChild(av); li.appendChild(main); li.appendChild(acts);
+      listEl.appendChild(li);
+    });
+    pane.hidden = false;
   }
 
   /* A row is a link, not a disclosure control: a real <a> is focusable, works

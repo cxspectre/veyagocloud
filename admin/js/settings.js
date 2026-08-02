@@ -21,6 +21,7 @@
     loadAccounts();
     loadEmail();
     loadLegacy();
+    loadBankDetails();
   }
 
   /* ── Connected accounts ───────────────────────────────────────────── */
@@ -132,6 +133,49 @@
       acts.appendChild(badge);
       li.appendChild(main); li.appendChild(acts);
       listEl.appendChild(li);
+    });
+  }
+
+  /* ── Remittance / bank details ───────────────────────────────────── */
+  var BANK_KEYS = ['bank_routing', 'bank_account', 'bank_name', 'bank_address', 'bank_account_type'];
+  var BANK_FIELDS = {
+    bank_name:         'bank-name',
+    bank_address:      'bank-address',
+    bank_routing:      'bank-routing',
+    bank_account:      'bank-account',
+    bank_account_type: 'bank-account-type',
+  };
+
+  async function loadBankDetails() {
+    var res = await window.sb.from('workspace_settings')
+      .select('key,value').in('key', BANK_KEYS);
+    if (res.error) return; // table may not exist yet; silently skip
+    (res.data || []).forEach(function (row) {
+      var fieldId = BANK_FIELDS[row.key];
+      if (!fieldId) return;
+      var el = document.getElementById(fieldId);
+      if (el) el.value = row.value || '';
+    });
+  }
+
+  var bankForm = document.getElementById('bank-form');
+  if (bankForm) {
+    bankForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var btn = document.getElementById('bank-save');
+      btn.disabled = true;
+      var rows = Object.keys(BANK_FIELDS).map(function (key) {
+        var el = document.getElementById(BANK_FIELDS[key]);
+        return { key: key, value: (el ? el.value.trim() : '') || null, updated_at: new Date().toISOString() };
+      });
+      var res = await window.sb.from('workspace_settings')
+        .upsert(rows, { onConflict: 'key' });
+      btn.disabled = false;
+      if (res.error) {
+        setMsg('Could not save remittance details: ' + res.error.message, 'err');
+      } else {
+        window.admin.toast('Remittance details saved');
+      }
     });
   }
 

@@ -241,7 +241,13 @@
     /* A direct lookup against the loaded employees, NOT a built selector
        string: `?assignee=a"]` used to throw a SyntaxError out of
        querySelector and strand the board on skeletons forever. */
-    if (wanted && byId[wanted]) filterSel.value = wanted;
+    if (wanted && byId[wanted]) {
+      filterSel.value = wanted;
+    } else if (params.get('mine') === '1' && selfEmployee) {
+      filterSel.value = selfEmployee.id;
+      var mb = document.getElementById('f-mine');
+      if (mb) mb.classList.add('btn-primary');
+    }
 
     var searchEl = document.getElementById('f-search');
     var wantQ = params.get('q');

@@ -138,6 +138,7 @@
 
     fillForm();
     renderChrome();
+    loadComments(task.id);
 
     if (emps.error) setMsg('form-msg', 'Could not load the team list: ' + emps.error.message, 'err');
   }
@@ -394,6 +395,147 @@
   if (saveBtn) saveBtn.addEventListener('click', save);
   var delBtn = el('del-btn');
   if (delBtn) delBtn.addEventListener('click', remove);
+
+  /* ── Comments ─────────────────────────────────────────────────────── */
+
+  var commentsByTask = {};   // cache so re-renders don't re-query
+
+  async function loadComments(taskId) {
+    var pane   = el('comments-pane');
+    var listEl = el('comments-list');
+    if (!pane || !listEl) return;
+
+    var res = await window.sb.from('task_comments')
+      .select('id,body,created_at,author_id')
+      .eq('task_id', taskId)
+      .order('created_at', { ascending: true });
+
+    if (res.error) {
+      /* Table may not exist yet (migration not applied). Hide rather than error. */
+      return;
+    }
+
+    /* Current auth user id — author_id is auth.users.id, not employees.id. */
+    var authRes = await window.sb.auth.getUser();
+    var selfUid = (authRes.data && authRes.data.user) ? authRes.data.user.id : null;
+
+    var comments = res.data || [];
+    commentsByTask[taskId] = comments;
+
+    /* Look up author names from employees via user_id. */
+    var authorIds = comments.map(function (c) { return c.author_id; });
+    var authorMap = {};
+    if (authorIds.length) {
+      var empRes = await window.sb.from('employees')
+        .select('user_id,full_name').in('user_id', authorIds);
+      (empRes.data || []).forEach(function (e) { authorMap[e.user_id] = e.full_name; });
+    }
+    if (selfUid && selfEmployee) authorMap[selfUid] = selfEmployee.full_name;
+
+    renderComments(comments, authorMap, selfUid);
+    pane.hidden = false;
+  }
+
+  function renderComments(comments, authorMap, selfUid) {
+    var listEl = el('comments-list');
+    if (!listEl) return;
+
+    if (!comments.length) {
+      listEl.innerHTML =
+        '<li style="padding:12px 0;color:var(--muted);font-size:var(--t-sub);list-style:none">' +
+          'No comments yet — be the first to leave one.' +
+        '</li>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    comments.forEach(function (c) {
+      var name = authorMap[c.author_id] || 'Unknown';
+      var isOwn = c.author_id === selfUid;
+      var dt = new Date(c.created_at);
+      var stamp = isNaN(dt.getTime()) ? '' :
+        dt.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+      var li = document.createElement('li');
+      li.className = 'adm-timeline-item';
+      li.dataset.commentId = c.id;
+
+      var header = document.createElement('div');
+      header.style.cssText = 'display:flex;align-items:baseline;gap:8px;margin-bottom:4px';
+      var nameEl = document.createElement('strong');
+      nameEl.style.cssText = 'font-size:var(--t-sub);color:var(--ink)';
+      nameEl.textContent = name;
+      var timeEl = document.createElement('span');
+      timeEl.style.cssText = 'font-size:var(--t-eyebrow);color:var(--muted)';
+      timeEl.textContent = stamp;
+      header.appendChild(nameEl);
+      header.appendChild(timeEl);
+
+      var body = document.createElement('p');
+      body.style.cssText = 'margin:0 0 4px;font-size:var(--t-sub);line-height:1.55;white-space:pre-wrap;word-break:break-word';
+      body.textContent = c.body;
+
+      li.appendChild(header);
+      li.appendChild(body);
+
+      if (isOwn || isManager) {
+        var del = document.createElement('button');
+        del.className = 'btn-link';
+        del.style.cssText = 'font-size:var(--t-eyebrow);color:var(--muted);padding:0';
+        del.textContent = 'Delete';
+        del.addEventListener('click', function () { deleteComment(c.id); });
+        li.appendChild(del);
+      }
+
+      listEl.appendChild(li);
+    });
+  }
+
+  async function deleteComment(commentId) {
+    var res = await window.sb.from('task_comments').delete().eq('id', commentId);
+    if (res.error) {
+      window.admin.toast('Could not delete comment: ' + res.error.message, 'err');
+      return;
+    }
+    if (task) loadComments(task.id);
+  }
+
+  var commentForm = el('comment-form');
+  if (commentForm) {
+    commentForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var bodyEl  = el('comment-body');
+      var submitBtn = el('comment-submit');
+      var body = (bodyEl ? bodyEl.value : '').trim();
+      if (!body) return;
+      if (!task) return;
+
+      submitBtn.disabled = true;
+      setMsg('comment-msg', '');
+
+      var authUser = await window.sb.auth.getUser();
+      var userId = authUser.data && authUser.data.user ? authUser.data.user.id : null;
+      if (!userId) { setMsg('comment-msg', 'Not signed in.', 'err'); submitBtn.disabled = false; return; }
+
+      var res = await window.sb.from('task_comments').insert({
+        task_id: task.id,
+        author_id: userId,
+        body: body,
+      });
+
+      submitBtn.disabled = false;
+      if (res.error) {
+        setMsg('comment-msg', 'Could not post: ' + res.error.message, 'err');
+        return;
+      }
+
+      if (bodyEl) bodyEl.value = '';
+      loadComments(task.id);
+
+      /* Notify without blocking — failure is silent (task was still saved). */
+      window.adminTaskNotify.notify(task.id, null, 'commented');
+    });
+  }
 
   var copyBtn = el('copy-link-btn');
   if (copyBtn) {

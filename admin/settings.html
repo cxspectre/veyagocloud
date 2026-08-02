@@ -51,6 +51,40 @@
       </div>
 
       <div class="card-pane">
+        <h2>Remittance details</h2>
+        <p class="card-lede">Bank details that appear on every invoice PDF. Leave blank and the invoice will show a "contact us" line instead.</p>
+        <form id="bank-form" autocomplete="off" style="display:flex;flex-direction:column;gap:12px;max-width:480px;margin-top:4px">
+          <div style="display:flex;gap:10px">
+            <div style="flex:1">
+              <label class="label" for="bank-name">Bank name</label>
+              <input class="input" id="bank-name" type="text" placeholder="e.g. Chase" />
+            </div>
+            <div style="flex:0 0 140px">
+              <label class="label" for="bank-account-type">Account type</label>
+              <input class="input" id="bank-account-type" type="text" placeholder="Checking" />
+            </div>
+          </div>
+          <div>
+            <label class="label" for="bank-address">Bank address <span style="font-weight:400;color:var(--muted-2)">(separate lines with |)</span></label>
+            <input class="input" id="bank-address" type="text" placeholder="100 Main St|New York, NY 10001" />
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1">
+              <label class="label" for="bank-routing">Routing number</label>
+              <input class="input" id="bank-routing" type="text" inputmode="numeric" placeholder="021000021" />
+            </div>
+            <div style="flex:1">
+              <label class="label" for="bank-account">Account number</label>
+              <input class="input" id="bank-account" type="text" inputmode="numeric" placeholder="000123456789" />
+            </div>
+          </div>
+          <div>
+            <button class="btn btn-primary" id="bank-save" type="submit">Save remittance details</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card-pane">
         <h2>Publishing</h2>
         <!-- The panel used to live here, which is why assistants could not reach
              it: this page is manager-gated twice over. It has its own screen now,

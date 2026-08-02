@@ -66,21 +66,36 @@ const BUSINESS_BASE = {
   website: 'veyago.cloud',
 };
 
-function business() {
-  const routing = Deno.env.get('BANK_ROUTING');
-  const account = Deno.env.get('BANK_ACCOUNT');
-  /* Both halves or neither — a remittance block showing a routing number with
-     no account (or vice versa) is worse than none at all. */
-  const bank = routing && account
-    ? {
-        name: Deno.env.get('BANK_NAME') ?? 'Bank',
-        addressLines: (Deno.env.get('BANK_ADDRESS') ?? '').split('|').map((s) => s.trim()).filter(Boolean),
-        routing,
-        account,
-        accountType: Deno.env.get('BANK_ACCOUNT_TYPE') ?? 'Checking',
-      }
-    : null;
-  return { ...BUSINESS_BASE, bank };
+/* Read bank details from workspace_settings (DB), falling back to env
+   secrets for backwards compatibility. DB wins when both are present. */
+async function bankDetails(admin: ReturnType<typeof createClient>) {
+  const KEYS = ['bank_routing', 'bank_account', 'bank_name', 'bank_address', 'bank_account_type'];
+  const { data } = await admin
+    .from('workspace_settings')
+    .select('key,value')
+    .in('key', KEYS);
+
+  const kv: Record<string, string> = {};
+  (data ?? []).forEach((r: { key: string; value: string | null }) => {
+    if (r.value) kv[r.key] = r.value;
+  });
+
+  const routing = kv['bank_routing'] ?? Deno.env.get('BANK_ROUTING') ?? '';
+  const account = kv['bank_account'] ?? Deno.env.get('BANK_ACCOUNT') ?? '';
+  if (!routing || !account) return null;
+
+  return {
+    name: kv['bank_name'] ?? Deno.env.get('BANK_NAME') ?? 'Bank',
+    addressLines: (kv['bank_address'] ?? Deno.env.get('BANK_ADDRESS') ?? '')
+      .split('|').map((s) => s.trim()).filter(Boolean),
+    routing,
+    account,
+    accountType: kv['bank_account_type'] ?? Deno.env.get('BANK_ACCOUNT_TYPE') ?? 'Checking',
+  };
+}
+
+async function business(admin: ReturnType<typeof createClient>) {
+  return { ...BUSINESS_BASE, bank: await bankDetails(admin) };
 }
 
 function money(n: number, currency: string): string {
@@ -123,8 +138,10 @@ Deno.serve(async (req) => {
        before anything is created. */
     if (send && !clientEmail) return json({ error: 'A client email is required to send the invoice.' }, 400);
 
+    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
     const invoice = { number, client, clientEmail, amount, currency, issuedOn, dueOn, notes };
-    const pdf = await buildInvoicePdf(pdfLib, invoice, business());
+    const pdf = await buildInvoicePdf(pdfLib, invoice, await business(admin));
 
     if (!send) {
       /* Base64 in JSON rather than raw bytes: the browser reaches this through
@@ -132,8 +149,6 @@ Deno.serve(async (req) => {
          back into a Blob for the preview frame. */
       return json({ ok: true, preview: true, pdfBase64: toBase64(pdf), filename: `invoice-${number}.pdf` });
     }
-
-    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
     const tpl = invoiceEmail({
       clientName: client,

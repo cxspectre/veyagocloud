@@ -15,7 +15,7 @@
 (function () {
   'use strict';
 
-  var TABS = ['overview', 'transactions', 'invoices'];
+  var TABS = ['overview', 'transactions', 'invoices', 'budgets'];
 
   function currentTab() {
     var h = (window.location.hash || '').replace(/^#/, '');

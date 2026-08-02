@@ -35,6 +35,7 @@
         <button class="adm-tab active" type="button" role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
         <button class="adm-tab" type="button" role="tab" id="tab-transactions" aria-controls="panel-transactions" aria-selected="false" tabindex="-1">Transactions</button>
         <button class="adm-tab" type="button" role="tab" id="tab-invoices" aria-controls="panel-invoices" aria-selected="false" tabindex="-1">Invoices</button>
+        <button class="adm-tab" type="button" role="tab" id="tab-budgets" aria-controls="panel-budgets" aria-selected="false" tabindex="-1">Budgets</button>
       </div>
 
       <!-- ── Overview ─────────────────────────────────────────────────── -->
@@ -150,6 +151,49 @@
         <ul class="adm-list" id="inv-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
       </section>
 
+      <!-- ── Budgets ──────────────────────────────────────────────────── -->
+      <section class="adm-tabpanel" id="panel-budgets" role="tabpanel" aria-labelledby="tab-budgets" hidden>
+        <p class="msg" id="msg-budgets" role="status" aria-live="polite"></p>
+
+        <div class="adm-split">
+          <!-- Budget tracker -->
+          <div class="u-min0">
+            <div class="card-pane" style="margin-bottom:0">
+              <div class="card-head">
+                <h2 style="margin:0">This month vs budget</h2>
+                <span class="adm-item-sub" id="budget-month"></span>
+              </div>
+              <ul class="adm-list" id="budget-list">
+                <li class="skel skel-sm"></li><li class="skel skel-sm"></li><li class="skel skel-sm"></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Add / edit budget sidebar -->
+          <div class="adm-side-sticky">
+            <div class="card-pane">
+              <h2 id="budget-form-title">Set a budget</h2>
+              <p class="adm-item-sub" style="margin-bottom:14px">Monthly spending target per category. Appears in the tracker on the left.</p>
+              <div class="field">
+                <label for="b-category">Category</label>
+                <input class="input" id="b-category" type="text" list="b-category-list"
+                       placeholder="e.g. Marketing, Payroll…" autocomplete="off" />
+                <datalist id="b-category-list"></datalist>
+              </div>
+              <div class="field">
+                <label for="b-amount">Monthly budget <span class="qualifier">(USD)</span></label>
+                <input class="input" id="b-amount" type="number" min="1" step="1" placeholder="2000" />
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" id="b-save" type="button">Save budget</button>
+                <button class="btn" id="b-cancel" type="button" hidden>Cancel</button>
+                <span class="msg" id="b-msg" role="status" aria-live="polite"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -164,5 +208,6 @@
   <script src="/admin/js/finance.js?v=12"></script>
   <script src="/admin/js/transactions.js?v=12"></script>
   <script src="/admin/js/invoices.js?v=12"></script>
+  <script src="/admin/js/budgets.js?v=12"></script>
 </body>
 </html>
