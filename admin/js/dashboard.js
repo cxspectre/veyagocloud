@@ -130,7 +130,7 @@
       cards.push({
         href: '/admin/publish',
         color: '#5856d6',
-        n: '↑',
+        n: '0',
         n2: 'nothing pending',
         label: 'Publish',
         icon: '<path d="M12 19V5"/><polyline points="5 12 12 5 19 12"/>',
@@ -340,6 +340,10 @@
     renderArticles(res.data || []);
   }
 
+  function humanizeStatus(s) {
+    return String(s || '').replace(/[-_]/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
   function renderArticles(rows) {
     if (!listEl) return;
     if (!rows.length) {
@@ -378,7 +382,7 @@
 
       var acts = document.createElement('div'); acts.className = 'adm-item-acts';
       var badge = document.createElement('span');
-      badge.className = 'badge badge-' + a.status; badge.textContent = a.status;
+      badge.className = 'badge badge-' + a.status; badge.textContent = humanizeStatus(a.status);
       var edit = document.createElement('a');
       edit.className = 'btn btn-sm';
       edit.href = '/admin/article?id=' + encodeURIComponent(a.id);

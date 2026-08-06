@@ -30,15 +30,6 @@
             <h1 id="d-title">Task</h1>
             <div class="adm-detail-meta" id="d-meta"></div>
           </div>
-          <button class="btn btn-sm" id="copy-link-btn" type="button"
-                  title="Copy a direct link to this task"
-                  style="margin-left:auto;flex:none">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round" width="13" height="13"
-                 aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            Copy link
-          </button>
         </div>
 
         <div class="adm-split">
@@ -88,10 +79,20 @@
 
           <div class="adm-side-sticky">
             <div class="card-pane">
-              <h2>Move it along</h2>
+              <h2>Update status</h2>
               <div class="adm-actions" id="act-list"></div>
               <p class="msg" id="act-msg" role="status" aria-live="polite"></p>
               <p class="msg" id="act-note" style="color:var(--muted)" hidden></p>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--hair)">
+                <button class="btn btn-sm" id="copy-link-btn" type="button"
+                        title="Copy a direct link to this task">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round" width="13" height="13"
+                       aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  Copy link
+                </button>
+              </div>
             </div>
 
             <div class="card-pane">
@@ -107,22 +108,22 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="card-pane" id="comments-pane" hidden>
-        <h2>Comments</h2>
-        <ul class="adm-timeline" id="comments-list"></ul>
-        <form id="comment-form" style="margin-top:14px">
-          <div class="field" style="margin-bottom:8px">
-            <textarea class="input" id="comment-body" rows="3"
-              placeholder="Add a comment — share context, ask a question, leave an update…"
-              style="resize:vertical"></textarea>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary btn-sm" type="submit" id="comment-submit">Post comment</button>
-            <span class="msg" id="comment-msg" role="status" aria-live="polite"></span>
-          </div>
-        </form>
+        <div class="card-pane" id="comments-pane" hidden style="margin-top:0">
+          <h2>Comments</h2>
+          <ul class="adm-timeline" id="comments-list"></ul>
+          <form id="comment-form" style="margin-top:14px">
+            <div class="field" style="margin-bottom:8px">
+              <textarea class="input" id="comment-body" rows="3"
+                placeholder="Add a comment — share context, ask a question, leave an update…"
+                style="resize:vertical"></textarea>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary btn-sm" type="submit" id="comment-submit">Post comment</button>
+              <span class="msg" id="comment-msg" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </div>
       </div>
 
     </main>

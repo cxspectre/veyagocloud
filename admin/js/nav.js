@@ -62,7 +62,7 @@
     /* The company-wide template. Editing it changes every employee's list, which
        is exactly why it should not be findable only through one small header
        button on a page about a single person. */
-    { label: 'Checklist',     href: '/admin/checklist',      sub: true, manager: true },
+    { label: 'Checklist',     href: '/admin/checklist',      icon: '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/>', manager: true },
     { label: 'Finance',       href: '/admin/finance',        icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', manager: true }
   ];
 

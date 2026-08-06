@@ -87,6 +87,9 @@
     var listEl = document.getElementById('workload-list');
     if (!pane || !listEl) return;
 
+    /* Show skeletons immediately so the page doesn't jump when data arrives. */
+    pane.hidden = false;
+
     var t0  = window.admin.localDate();
     var res = await window.sb.from('tasks')
       .select('assignee_id,status,due_date')

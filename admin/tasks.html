@@ -54,18 +54,18 @@
                placeholder="Search tasks…" autocomplete="off"
                aria-label="Search tasks" style="flex:1;min-width:100px;max-width:220px" />
         <span class="adm-toolbar-count" id="task-count"></span>
-      </div>
-
-      <!-- View toggle: List (default) or Calendar month grid. -->
-      <div class="task-view-toggle">
-        <button class="btn btn-sm btn-primary" id="view-list" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-          List
-        </button>
-        <button class="btn btn-sm" id="view-cal" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Calendar
-        </button>
+        <!-- View toggle sits at the far right of the toolbar so filters and view
+             mode read as one control strip. -->
+        <div class="task-view-toggle">
+          <button class="btn btn-sm btn-primary" id="view-list" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            List
+          </button>
+          <button class="btn btn-sm" id="view-cal" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Calendar
+          </button>
+        </div>
       </div>
 
       <!-- Quick add. One line, because the everyday case is a personal to-do
@@ -75,7 +75,7 @@
       <form class="task-quick" id="quick-add">
         <svg class="task-quick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         <input class="input" id="q-title" type="text" autocomplete="off"
-               placeholder="Add a task for yourself…" aria-label="Add a task for yourself" />
+               placeholder="Add a task…" aria-label="Add a task" />
         <!-- Optional due date on quick-add. Hidden on very narrow screens where
              the bar already has no room. Cleared along with the title after a
              successful add. -->
