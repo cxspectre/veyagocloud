@@ -163,6 +163,9 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 .nav-drawer.open .nav-drawer-links > *:nth-child(5) { transition-delay: .24s; }
 .nav-drawer.open .nav-drawer-links > *:nth-child(6) { transition-delay: .28s; }
 .nav-drawer.open .nav-drawer-links > *:nth-child(7) { transition-delay: .32s; }
+.nav-drawer.open .nav-drawer-links > *:nth-child(8) { transition-delay: .36s; }
+.nav-drawer.open .nav-drawer-links > *:nth-child(9) { transition-delay: .40s; }
+.nav-drawer.open .nav-drawer-links > *:nth-child(10) { transition-delay: .44s; }
 
 /* Lock background scroll while the drawer is open (iOS-safe: fix the body, JS restores scrollY on close) */
 html.menu-open { overflow: hidden; }
