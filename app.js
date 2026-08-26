@@ -231,6 +231,9 @@
 
       if (dict.meta) {
         var path = location.pathname.replace(/index\.html$/, '');
+        /* Clean URLs land visitors on /services while every meta key is /services/ -
+           normalise the slash so the localised title and description still apply. */
+        if (path && !/\/$/.test(path) && !/\.[^\/]+$/.test(path)) path += '/';
         if (path === '') path = '/';
         var m = dict.meta[path];
         if (m) {
