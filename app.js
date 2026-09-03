@@ -39,7 +39,9 @@
           '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
         '</button>' +
       '</div>';
-    document.body.insertBefore(bar, document.body.firstChild);
+    /* After the skip link, so keyboard users still reach "Skip to content" first. */
+    var skip = document.querySelector('.skip-link');
+    document.body.insertBefore(bar, skip ? skip.nextSibling : document.body.firstChild);
 
     var root = document.documentElement;
     function measure() { root.style.setProperty('--lb-h', bar.offsetHeight + 'px'); }
@@ -109,12 +111,53 @@
        their locale (see the toast at the end), never force it. */
     var lang = stored() || 'en';
     if (!SUP[lang]) lang = 'en';
+
+    /* A page built by tools/build-locales.js is already in one language
+       (data-i18n-static="nl" on <html>). It is never re-translated here; it IS
+       that language, whatever the stored preference says. */
+    var staticLang = document.documentElement.getAttribute('data-i18n-static');
+    if (staticLang && SUP[staticLang]) lang = staticLang;
     document.documentElement.lang = lang;
+
+    /* Where the same page exists in another language, the head lists it as an
+       hreflang alternate. The picker prefers navigating there over translating
+       in place, so a visitor who chose Dutch lands on the crawlable Dutch page. */
+    function siblingFor(code) {
+      var sel = 'link[rel="alternate"][hreflang="' + (code === 'en' ? 'x-default' : code) + '"]';
+      var el = document.querySelector(sel);
+      if (!el) return null;
+      /* Paths only: the hreflang hrefs are the production URLs, and a local
+         preview or a staging deploy must navigate within its own origin. */
+      var there = (el.getAttribute('href') || '').replace(/^https?:\/\/[^\/]+/, '').replace(/index\.html$/, '') || '/';
+      var here = location.pathname.replace(/index\.html$/, '') || '/';
+      return there.replace(/\/?$/, '/') === here.replace(/\/?$/, '/') ? null : there;
+    }
+    /* The one place that navigates. Tests replace window.__veyagoNavigate to
+       observe where the picker would send a visitor without leaving the page. */
+    function go(path, replace) {
+      if (typeof window.__veyagoNavigate === 'function') return window.__veyagoNavigate(path, !!replace);
+      if (replace) location.replace(path); else location.href = path;
+    }
+    /* An explicit earlier choice follows the visitor onto the page's static
+       twin in that language, in either direction. Nothing happens for
+       first-time visitors, and nothing happens on pages without a twin. */
+    if (stored() && SUP[stored()]) {
+      var twin = siblingFor(stored());
+      if (twin) { go(twin, true); }
+    }
 
     function setLang(code) {
       if (!SUP[code]) return;
       try { localStorage.setItem(LS, code); } catch (e) {}
+      var twin = siblingFor(code);
+      if (twin) { go(twin); return; }
       if (code === lang) return;
+      /* On a generated twin there is no dictionary to reload into: the English
+         source is where a language without its own twin gets applied. */
+      if (staticLang) {
+        var source = siblingFor('en');
+        if (source) { go(source); return; }
+      }
       location.reload();   // English source + dict-on-load makes reload the clean path
     }
 
@@ -237,10 +280,16 @@
         if (path === '') path = '/';
         var m = dict.meta[path];
         if (m) {
-          if (m.title) document.title = m.title;
+          var setMeta = function (sel, v) { var el = document.querySelector(sel); if (el) el.setAttribute('content', v); };
+          if (m.title) {
+            document.title = m.title;
+            setMeta('meta[property="og:title"]', m.title);
+            setMeta('meta[name="twitter:title"]', m.title);
+          }
           if (m.description) {
-            var md = document.querySelector('meta[name="description"]');
-            if (md) md.setAttribute('content', m.description);
+            setMeta('meta[name="description"]', m.description);
+            setMeta('meta[property="og:description"]', m.description);
+            setMeta('meta[name="twitter:description"]', m.description);
           }
         }
       }
@@ -251,7 +300,7 @@
       lang: lang,
       register: function (code, dict) { if (code === lang) { try { applyDict(dict); } catch (e) {} } }
     };
-    if (lang !== 'en') {
+    if (lang !== 'en' && !staticLang) {
       var s = document.createElement('script');
       s.src = '/i18n/' + lang + '.js';
       s.onerror = function () { document.documentElement.lang = 'en'; };
@@ -263,6 +312,7 @@
       if (stored()) return;                          // an explicit choice wins, no nagging
       var code = detect();
       if (code === 'en' || !SUGGEST[code]) return;   // English preferred (or unsupported) - nothing to offer
+      if (code === lang) return;                     // already reading it (a static twin) - nothing to offer
       try { if (localStorage.getItem(SUGGEST_LS) === '1') return; } catch (e) {}  // already dismissed
 
       var copy = SUGGEST[code];
