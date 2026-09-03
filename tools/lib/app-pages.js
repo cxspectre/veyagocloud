@@ -155,7 +155,7 @@ function appOgImage(app) {
 function renderAppPage(app) {
   var layout = Array.isArray(app.layout) ? app.layout : [];
   var sections = layout.map(renderSection).filter(Boolean).join('\n    ');
-  var body = '  <main class="app-page">\n    ' + sections + '\n  </main>';
+  var body = '  <main class="app-page" id="main">\n    ' + sections + '\n  </main>';
 
   return page({
     lang: 'en',

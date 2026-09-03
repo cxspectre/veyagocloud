@@ -41,7 +41,7 @@ function renderWallpapersIndex(wallpapers) {
     ? '<div class="wp-grid">\n        ' + cards + '\n      </div>'
     : '<p class="ji-empty">No wallpapers published yet.</p>';
 
-  var body = `  <main class="wallpapers-index">
+  var body = `  <main class="wallpapers-index" id="main">
     <section class="section">
       <div class="wrap">
         <header class="ji-head">

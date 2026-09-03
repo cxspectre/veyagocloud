@@ -12,6 +12,9 @@ var { esc, attr } = require('./escape');
 var SITE = 'https://www.veyago.cloud';
 var DEFAULT_OG_IMAGE = SITE + '/assets/og.png';
 
+/* Cache-busted like the hand-authored pages — bump both together when the file changes. */
+var SITE_CONFIG_SRC = '/assets/js/site-config.js?v=20260721';
+
 /* Privacy-preserving analytics. OFF until ANALYTICS_DOMAIN is set, so nothing
    third-party is ever added to the site without an explicit decision.
    To turn it on: sign up at plausible.io (or a self-hosted instance), then
@@ -124,10 +127,10 @@ function footer() {
     <div class="wrap">
       <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
-        <div><h5>Apps</h5><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
-        <div><h5>Company</h5><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/services/">Services</a><a href="/websites/">Websites</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
-        <div><h5>Legal</h5><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
-        <div><h5>Get in touch</h5><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
+        <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/services/">Services</a><a href="/websites/">Websites</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
+        <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15028535090">+1 (502) 853-5090</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
       <div class="footer-base">
         <span>&copy; <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
@@ -135,6 +138,15 @@ function footer() {
       </div>
     </div>
   </footer>`;
+}
+
+/* The skip link is the first element in <body> on every page; it targets <main id="main">. */
+var SKIP_LINK = '<a class="skip-link" href="#main">Skip to content</a>';
+
+/* Every page needs exactly one #main landmark for the skip link. Templates that render
+   their own <main> tag it themselves; anything else gets wrapped here. */
+function ensureMain(body) {
+  return /\bid="main"/.test(body) ? body : '  <main id="main">\n' + body + '\n  </main>';
 }
 
 /* Assemble a full document. `scripts` is a list of extra <script src> appended after app.js. */
@@ -147,13 +159,13 @@ function page(opts) {
   return '<!DOCTYPE html>\n' +
     '<html lang="' + attr(lang) + '">\n' +
     '<head>\n  ' + headTags(opts.head || {}) + '\n</head>\n' +
-    '<body>\n  ' + header() + '\n\n' +
-    opts.body + '\n\n' +
+    '<body>\n  ' + SKIP_LINK + '\n  ' + header() + '\n\n' +
+    ensureMain(opts.body) + '\n\n' +
     '  ' + footer() + '\n' +
-    '  <script src="/assets/js/site-config.js"></script>\n' +
+    '  <script src="' + SITE_CONFIG_SRC + '"></script>\n' +
     '  <script src="/app.js" defer></script>\n' +
     (scripts ? scripts + '\n' : '') +
     '</body>\n</html>\n';
 }
 
-module.exports = { headTags, header, footer, page, SITE, DEFAULT_OG_IMAGE };
+module.exports = { headTags, header, footer, page, ensureMain, SKIP_LINK, SITE, DEFAULT_OG_IMAGE };

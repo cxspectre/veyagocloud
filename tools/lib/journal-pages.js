@@ -106,7 +106,7 @@ function renderJournalIndex(articles) {
     ? '<div class="journal-grid">\n        ' + cards + '\n      </div>'
     : '<p class="ji-empty">No articles yet — the first field note is on its way.</p>';
 
-  var body = `  <main class="journal-index">
+  var body = `  <main class="journal-index" id="main">
     <section class="section">
       <div class="wrap">
         <header class="ji-head">
@@ -125,7 +125,10 @@ function renderJournalIndex(articles) {
       title: 'Articles | Veyago',
       description: INDEX_LEDE,
       canonical: SITE + '/journal/',
-      ogType: 'website'
+      ogType: 'website',
+      /* An empty index is a placeholder, not a page worth ranking: keep crawlers
+         following the links but out of the index until the first article lands. */
+      robots: articles && articles.length ? 'index,follow' : 'noindex,follow'
     },
     body: body
   });

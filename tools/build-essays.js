@@ -7,7 +7,8 @@
    URLs (linkified), --- dividers. */
 const fs = require('fs');
 const path = require('path');
-const { page: renderPage, SITE } = require('./lib/chrome');
+const { execFileSync } = require('child_process');
+const { page: renderPage, SITE, DEFAULT_OG_IMAGE } = require('./lib/chrome');
 const { esc } = require('./lib/escape');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -15,17 +16,20 @@ const SRC = path.join(ROOT, 'data', 'research');
 const OUT = path.join(ROOT, 'projects');
 
 // Per-paper metadata: SEO description, accent colour (matches the pipeline stage
-// colour on /projects/), and the related app (cross-link to the Apps page).
+// colour on /projects/), the related app (cross-link to the Apps page), and the
+// publication date (the day the paper first landed on the site — git 941db4d).
 const ESSAYS = {
   'the-unkept-life': {
     description: 'Why personal life admin fails - and the case for a private, on-device system of record. The research behind Kept.',
     accent: '#0071e3',
     related: { label: 'Kept', href: '/apps/#kept' },
+    published: '2026-06-12',
   },
   'the-edge-moves-in': {
     description: 'How intelligence is migrating to the device, WWDC 2026 as its consumer inflection point, and what it means for privacy-first software.',
     accent: '#0a8d7c',
     related: null,
+    published: '2026-06-12',
   },
 };
 
@@ -90,6 +94,57 @@ function parse(md) {
   return { title, dek, byline, body: body.join('\n        '), toc };
 }
 
+const ORG_ID = SITE + '/#organization';
+
+// Date of the last commit that touched the paper's source, so dateModified tracks
+// real edits. Falls back to the publication date outside a git checkout.
+function lastModified(slug, fallback) {
+  try {
+    const out = execFileSync('git', ['log', '-1', '--format=%cs', '--', path.join('data', 'research', slug + '.md')], {
+      cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'],
+    }).toString().trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(out) ? out : fallback;
+  } catch (err) {
+    return fallback;
+  }
+}
+
+// Structured data for one paper. `Report` matches what /projects/ already declares
+// for these two papers in its CollectionPage, and the Organization @id is the same
+// node, so the graphs join up.
+function jsonLd(slug, meta, doc, url) {
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'Report',
+    '@id': url + '#report',
+    headline: doc.title,
+    description: meta.description,
+    abstract: doc.dek,
+    url: url,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    image: DEFAULT_OG_IMAGE,
+    inLanguage: 'en',
+    isAccessibleForFree: true,
+    datePublished: meta.published,
+    dateModified: lastModified(slug, meta.published),
+    author: { '@type': 'Organization', '@id': ORG_ID, name: 'Veyago Inc.', url: SITE + '/' },
+    publisher: { '@id': ORG_ID },
+  };
+  // "</" can never close the script element early, whatever a title contains.
+  return JSON.stringify(data, null, 2).replace(/<\//g, '<\\/');
+}
+
+// Extra <head> tags: the JSON-LD block plus the Open Graph article properties
+// (og:type is already "article"; these give it a date and a byline).
+function headExtra(slug, meta, doc, url) {
+  return [
+    '<meta name="author" content="Veyago Inc." />',
+    '<meta property="article:published_time" content="' + meta.published + '" />',
+    '<meta property="article:author" content="Veyago Inc." />',
+    '<script type="application/ld+json">\n  ' + jsonLd(slug, meta, doc, url).replace(/\n/g, '\n  ') + '\n  </script>',
+  ].join('\n  ');
+}
+
 function page(slug, meta, doc, next) {
   const url = SITE + '/projects/' + slug + '/';
   const toc = doc.toc.map((s) => '<li><a href="#' + s.id + '">' + esc(s.label) + '</a></li>').join('\n          ');
@@ -99,7 +154,8 @@ function page(slug, meta, doc, next) {
   const readNext = next
     ? '<a class="pf-next" href="/projects/' + next.slug + '/"><span class="pf-next-k">Read next</span><span class="pf-next-t">' + esc(next.title) + ' &rarr;</span></a>'
     : '';
-  const body = `  <article class="paper" style="--st:${meta.accent}">
+  const body = `  <main id="main">
+  <article class="paper" style="--st:${meta.accent}">
     <div class="paper-shell">
       <nav class="paper-toc" aria-label="Contents">
         <p class="ptoc-label">Contents</p>
@@ -125,14 +181,16 @@ function page(slug, meta, doc, next) {
         </footer>
       </div>
     </div>
-  </article>`;
+  </article>
+  </main>`;
   return renderPage({
     lang: 'en',
     head: {
       title: doc.title + ' | Veyago research',
       description: meta.description,
       canonical: url,
-      ogType: 'article'
+      ogType: 'article',
+      extra: headExtra(slug, meta, doc, url)
     },
     body
   });

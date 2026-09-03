@@ -1,22 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.veyago.cloud/</loc><lastmod>2026-06-07</lastmod><priority>1.0</priority></url>
-  <url><loc>https://www.veyago.cloud/apps/</loc><lastmod>2026-06-12</lastmod><priority>0.9</priority></url>
-  <url><loc>https://www.veyago.cloud/projects/</loc><lastmod>2026-06-12</lastmod><priority>0.8</priority></url>
-  <url><loc>https://www.veyago.cloud/projects/the-unkept-life/</loc><lastmod>2026-06-12</lastmod><priority>0.6</priority></url>
-  <url><loc>https://www.veyago.cloud/projects/the-edge-moves-in/</loc><lastmod>2026-06-12</lastmod><priority>0.6</priority></url>
-  <url><loc>https://www.veyago.cloud/kept/</loc><lastmod>2026-06-07</lastmod><priority>0.9</priority></url>
-  <url><loc>https://www.veyago.cloud/veyago/</loc><lastmod>2026-06-07</lastmod><priority>0.9</priority></url>
-  <url><loc>https://www.veyago.cloud/services/</loc><lastmod>2026-06-07</lastmod><priority>0.7</priority></url>
-  <url><loc>https://www.veyago.cloud/websites/</loc><lastmod>2026-08-16</lastmod><priority>0.8</priority></url>
-  <url><loc>https://www.veyago.cloud/company/</loc><lastmod>2026-06-07</lastmod><priority>0.7</priority></url>
-  <url><loc>https://www.veyago.cloud/team/</loc><lastmod>2026-06-07</lastmod><priority>0.6</priority></url>
-  <url><loc>https://www.veyago.cloud/approach/</loc><lastmod>2026-06-07</lastmod><priority>0.6</priority></url>
-  <url><loc>https://www.veyago.cloud/support/</loc><lastmod>2026-06-07</lastmod><priority>0.5</priority></url>
-  <url><loc>https://www.veyago.cloud/kept-privacy/</loc><lastmod>2026-06-07</lastmod><priority>0.3</priority></url>
-  <url><loc>https://www.veyago.cloud/privacy/</loc><lastmod>2026-06-07</lastmod><priority>0.3</priority></url>
-  <url><loc>https://www.veyago.cloud/terms/</loc><lastmod>2026-06-07</lastmod><priority>0.3</priority></url>
-  <url><loc>https://www.veyago.cloud/legal/</loc><lastmod>2026-06-07</lastmod><priority>0.3</priority></url>
+  <url><loc>https://www.veyago.cloud/</loc><lastmod>2026-09-03</lastmod><priority>1.0</priority></url>
+  <url><loc>https://www.veyago.cloud/apps/</loc><lastmod>2026-09-03</lastmod><priority>0.9</priority></url>
+  <url><loc>https://www.veyago.cloud/projects/</loc><lastmod>2026-09-03</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.veyago.cloud/projects/the-unkept-life/</loc><lastmod>2026-09-03</lastmod><priority>0.6</priority></url>
+  <url><loc>https://www.veyago.cloud/projects/the-edge-moves-in/</loc><lastmod>2026-09-03</lastmod><priority>0.6</priority></url>
+  <url><loc>https://www.veyago.cloud/kept/</loc><lastmod>2026-09-03</lastmod><priority>0.9</priority></url>
+  <url><loc>https://www.veyago.cloud/veyago/</loc><lastmod>2026-09-03</lastmod><priority>0.9</priority></url>
+  <url><loc>https://www.veyago.cloud/services/</loc><lastmod>2026-09-03</lastmod><priority>0.7</priority></url>
+  <url><loc>https://www.veyago.cloud/websites/</loc><lastmod>2026-09-03</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.veyago.cloud/nl/websites/</loc><lastmod>2026-09-03</lastmod><priority>0.7</priority></url>
+  <url><loc>https://www.veyago.cloud/de/websites/</loc><lastmod>2026-09-03</lastmod><priority>0.7</priority></url>
+  <url><loc>https://www.veyago.cloud/company/</loc><lastmod>2026-09-03</lastmod><priority>0.7</priority></url>
+  <url><loc>https://www.veyago.cloud/team/</loc><lastmod>2026-09-03</lastmod><priority>0.6</priority></url>
+  <url><loc>https://www.veyago.cloud/approach/</loc><lastmod>2026-09-03</lastmod><priority>0.6</priority></url>
+  <url><loc>https://www.veyago.cloud/support/</loc><lastmod>2026-09-03</lastmod><priority>0.5</priority></url>
+  <url><loc>https://www.veyago.cloud/kept-privacy/</loc><lastmod>2026-09-03</lastmod><priority>0.3</priority></url>
+  <url><loc>https://www.veyago.cloud/privacy/</loc><lastmod>2026-09-03</lastmod><priority>0.3</priority></url>
+  <url><loc>https://www.veyago.cloud/terms/</loc><lastmod>2026-09-03</lastmod><priority>0.3</priority></url>
+  <url><loc>https://www.veyago.cloud/legal/</loc><lastmod>2026-09-03</lastmod><priority>0.3</priority></url>
   <!-- BUILD:generated:start -->
   <url><loc>https://www.veyago.cloud/journal/</loc><priority>0.8</priority></url>
   <url><loc>https://www.veyago.cloud/wallpapers/</loc><priority>0.7</priority></url>
