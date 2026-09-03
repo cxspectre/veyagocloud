@@ -60,3 +60,27 @@ renders static HTML into the repo, so `veyago.cloud` stays first-party and call-
 - The admin pages check for a Supabase session on load and redirect to the login screen if
   there is none. This is **UX only** — RLS is the actual security, so a session-less visitor
   reaching an admin URL still cannot read drafts or write anything.
+
+## Get-a-quote form (website-enquiry)
+
+The forms on `/websites/` and `/services/` post to the `website-enquiry` Edge
+Function, which stores the lead in `public.website_enquiries`, emails us
+through Resend and sends the visitor a fixed acknowledgement. The public site
+still makes no third-party calls: the only request is to our own function, and
+if it fails the page falls back to a pre-filled `mailto:`.
+
+Deploy once, in this order:
+
+```bash
+supabase db push                                           # applies 0019_website_enquiries.sql
+supabase functions deploy website-enquiry --no-verify-jwt  # visitors have no session
+supabase secrets set ENQUIRY_TO=hello@veyago.cloud ENQUIRY_IP_SALT="$(openssl rand -hex 24)"
+```
+
+`ENQUIRY_IP_SALT` is mandatory: the function refuses every request until it is
+set, because an IP hashed with a salt that lives in this repository would be
+a reversible IP. `RESEND_API_KEY`, `EMAIL_FROM` and `SITE_URL` are shared with
+the other functions and must already be set. `ENQUIRY_ORIGINS` (comma-separated) overrides
+the allowed origins, which default to the production domains plus localhost.
+Leads are readable by managers in the dashboard's database view; the attempt
+log (`website_enquiry_attempts`) is service-role only and prunes itself.

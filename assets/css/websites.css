@@ -1,0 +1,85 @@
+/* websites.css - the sales layer on /websites/ and /services/: the header
+   "Get a quote" button, the package tiers, the FAQ, and the enquiry form.
+   Extends styles.css and reuses its tokens; nothing here is loaded elsewhere. */
+
+/* ── Header button - shown at every width, unlike the retired .nav-cta ─── */
+.nav-quote { display: inline-flex; align-items: center; background: var(--blue-2); color: #fff; padding: 7px 14px; border-radius: 980px; font-size: 0.8rem; font-weight: 500; white-space: nowrap; transition: background .18s var(--ease), transform .18s var(--ease); }
+.nav-quote:hover { background: var(--blue-press); }
+.nav-quote:active { transform: scale(0.97); }
+@media (max-width: 400px) { .nav-quote { padding: 6px 11px; font-size: 0.76rem; } }
+
+/* ── Package tiers ────────────────────────────────────────────────────────── */
+.tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: var(--maxw-wide); margin: clamp(28px, 4vw, 44px) auto 0; padding-inline: var(--gutter); text-align: left; align-items: stretch; }
+.tier { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: clamp(22px, 2.6vw, 32px); position: relative; }
+.tier.featured { background: #fff; border-color: rgba(0,113,227,.35); box-shadow: 0 18px 50px -24px rgba(0,113,227,.35); }
+.tier-flag { position: absolute; top: 18px; right: 18px; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--blue); background: rgba(0,113,227,.08); padding: 4px 9px; border-radius: 980px; }
+.tier h3 { font-size: 1.35rem; letter-spacing: -0.02em; margin: 0 0 4px; }
+.tier-for { font-size: .95rem; color: var(--muted); margin: 0 0 18px; min-height: 2.6em; }
+.tier-price { font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.5rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1; color: var(--ink); }
+.tier-price small { font-size: .95rem; font-weight: 400; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
+.tier-alt { font-size: .9rem; color: var(--muted); margin: 6px 0 0; }
+.tier-time { font-size: .9rem; color: var(--ink); margin: 14px 0 0; padding: 10px 0; border-top: 1px solid var(--hair-soft); border-bottom: 1px solid var(--hair-soft); }
+.tier-list { list-style: none; margin: 16px 0 0; padding: 0; flex: 1; }
+.tier-list li { position: relative; padding-left: 26px; margin-bottom: 9px; font-size: .97rem; color: var(--text); line-height: 1.45; }
+.tier-list li::before { content: ""; position: absolute; left: 2px; top: .55em; width: 11px; height: 6px; border-left: 2px solid var(--blue); border-bottom: 2px solid var(--blue); transform: rotate(-45deg); transform-origin: left; }
+.tier-list li.plus { color: var(--muted); }
+.tier-list li.plus::before { width: 0; height: 0; border: none; content: "+"; top: 0; left: 4px; color: var(--blue); font-weight: 600; }
+.tier .btn { margin-top: 22px; align-self: flex-start; }
+.tier-note { font-size: .9rem; color: var(--muted); max-width: 70ch; margin: 22px auto 0; padding-inline: var(--gutter); }
+
+/* What costs extra */
+.extras { max-width: 760px; margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); text-align: left; }
+.extras dl { display: grid; grid-template-columns: 1fr auto; gap: 0; margin: 0; border-top: 1px solid var(--hair-soft); }
+.extras dt, .extras dd { padding: 13px 0; margin: 0; border-bottom: 1px solid var(--hair-soft); }
+.extras dt { color: var(--text); padding-right: 24px; }
+.extras dt span { display: block; font-size: .88rem; color: var(--muted); margin-top: 2px; }
+.extras dd { color: var(--ink); font-weight: 600; text-align: right; white-space: nowrap; }
+
+/* ── FAQ ──────────────────────────────────────────────────────────────────── */
+.faq { max-width: 760px; margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); text-align: left; border-top: 1px solid var(--hair-soft); }
+.faq details { border-bottom: 1px solid var(--hair-soft); }
+.faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 0; font-size: 1.08rem; font-weight: 600; letter-spacing: -0.012em; color: var(--ink); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--hair); display: grid; place-items: center; font-weight: 400; color: var(--blue); transition: transform .25s var(--ease); }
+.faq details[open] summary::after { content: "−"; }
+.faq details p { color: var(--muted); margin: 0 0 18px; max-width: 64ch; font-size: var(--fz-body); line-height: 1.55; }
+.faq summary:focus-visible { outline: 3px solid rgba(0,113,227,.5); outline-offset: 3px; border-radius: 6px; }
+
+/* ── Enquiry form ─────────────────────────────────────────────────────────── */
+.enq { max-width: 720px; margin: clamp(22px, 3vw, 36px) auto 0; text-align: left; }
+.enq-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+.enq-field { display: flex; flex-direction: column; gap: 6px; }
+.enq-field.wide { grid-column: 1 / -1; }
+.enq-label { font-size: .92rem; font-weight: 600; color: var(--ink); }
+.enq-label span { font-weight: 400; color: var(--muted); }
+.enq-input { width: 100%; font: inherit; font-size: var(--fz-body); color: var(--ink); background: #fff; border: 1px solid var(--hair); border-radius: 12px; padding: 12px 15px; transition: border-color .2s var(--ease), box-shadow .2s var(--ease); -webkit-appearance: none; appearance: none; }
+.enq-input:focus { outline: none; border-color: var(--blue-2); box-shadow: 0 0 0 3px rgba(0,113,227,.18); }
+.enq-input.enq-invalid { border-color: #b3261e; }
+textarea.enq-input { min-height: 132px; resize: vertical; line-height: 1.5; }
+.enq-hint { font-size: .86rem; color: var(--muted); }
+.enq-hp { position: absolute; left: -10000px; top: auto; width: 1px; height: 1px; overflow: hidden; }
+.enq-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; margin-top: 6px; }
+.enq-foot .btn[disabled] { opacity: .6; cursor: progress; }
+.enq-privacy { font-size: .86rem; color: var(--muted); max-width: 46ch; }
+.enq-status { margin-top: 16px; font-size: .95rem; color: var(--muted); }
+.enq-status.enq-err { color: #b3261e; }
+.enq-status.enq-err a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+.enq-done { background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: clamp(22px, 3vw, 32px); outline: none; }
+.enq-done h3 { font-size: 1.35rem; letter-spacing: -0.02em; margin: 0 0 8px; }
+.enq-done p { color: var(--muted); margin: 0; }
+.enq-msgs { display: none; }
+
+@media (max-width: 820px) {
+  .tiers { grid-template-columns: 1fr; max-width: 560px; }
+  .tier-for { min-height: 0; }
+}
+@media (max-width: 600px) {
+  .enq-fields { grid-template-columns: 1fr; }
+  .extras dl { grid-template-columns: 1fr; }
+  .extras dd { text-align: left; padding-top: 0; border-bottom: 1px solid var(--hair-soft); }
+  .extras dt { border-bottom: none; padding-bottom: 4px; }
+}
+
+/* late additions */
+.tier-from { font-size: .95rem; font-weight: 400; letter-spacing: 0; color: var(--muted); margin-right: 6px; }
+.extras h3 { font-size: 1.2rem; letter-spacing: -0.015em; margin: 0 0 8px; }

@@ -410,3 +410,95 @@ export async function sendEmail(opts: {
     return { ok: false, error: 'Could not reach the email service: ' + message };
   }
 }
+
+/* ── Get-a-quote form (website-enquiry) ────────────────────────────────────── */
+
+function fieldRow(label: string, value: string, opts: { link?: string; pre?: boolean } = {}): string {
+  const v = opts.link
+    ? `<a href="${escapeHtml(opts.link)}" style="color:${BLUE};">${escapeHtml(value)}</a>`
+    : escapeHtml(value);
+  const style = opts.pre ? 'white-space:pre-wrap;' : '';
+  return `<tr>
+    <td style="padding:8px 12px 8px 0;font-size:13px;color:${MUTED};vertical-align:top;white-space:nowrap;">${escapeHtml(label)}</td>
+    <td style="padding:8px 0;font-size:15px;color:${INK};vertical-align:top;${style}">${v}</td>
+  </tr>`;
+}
+
+/* To us. Everything the visitor typed, escaped, with reply-to set by the
+   caller so a plain Reply goes straight back to them. */
+export function enquiryEmail(opts: {
+  id: string;
+  kind: 'website' | 'product';
+  name: string;
+  email: string;
+  business?: string;
+  website?: string;
+  message?: string;
+  locale?: string;
+  page?: string;
+}) {
+  const what = opts.kind === 'product' ? 'project' : 'website';
+  const who = opts.business ? `${opts.business} (${opts.name})` : opts.name;
+  const subject = `New ${what} enquiry - ${who}`;
+  const rows = [
+    fieldRow('Name', opts.name),
+    fieldRow('Email', opts.email, { link: `mailto:${opts.email}` }),
+    opts.business ? fieldRow('Business', opts.business) : '',
+    opts.website ? fieldRow('Current site', opts.website, { link: opts.website }) : '',
+    opts.message ? fieldRow('Message', opts.message, { pre: true }) : '',
+    fieldRow('Sent from', `${opts.page || '/'} · ${(opts.locale || 'en').toUpperCase()}`),
+    fieldRow('Reference', opts.id),
+  ].join('');
+  return {
+    subject,
+    html: layout({
+      title: subject,
+      preheader: opts.message ? opts.message.slice(0, 120) : `${who} would like a quote.`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 22px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">New ${escapeHtml(what)} enquiry</h1>
+        <p style="margin:0 0 18px;">Reply to this email and it goes straight to ${escapeHtml(opts.name)}.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${HAIR};border-bottom:1px solid ${HAIR};width:100%;">${rows}</table>`,
+    }),
+    text:
+      `${subject}\n\n` +
+      `Name: ${opts.name}\nEmail: ${opts.email}\n` +
+      (opts.business ? `Business: ${opts.business}\n` : '') +
+      (opts.website ? `Current site: ${opts.website}\n` : '') +
+      (opts.message ? `\n${opts.message}\n` : '') +
+      `\nSent from ${opts.page || '/'} (${(opts.locale || 'en').toUpperCase()}) · ref ${opts.id}`,
+  };
+}
+
+/* To the visitor. Deliberately fixed copy. The only visitor-supplied fragment
+   is a greeting, and it is reduced to letters only and capped, so a "name"
+   like a URL or a payment demand can never ride a veyago.cloud-signed email
+   into a stranger's inbox. Everything else they typed stays out. */
+export function greetingName(name: string): string {
+  const first = (String(name ?? '').trim().split(/\s+/)[0] || '')
+    .replace(/[^\p{L}\p{M}'-]/gu, '')
+    .slice(0, 24);
+  return first || 'there';
+}
+
+export function enquiryAckEmail(opts: { name: string; kind: 'website' | 'product' }) {
+  const first = greetingName(opts.name);
+  const what = opts.kind === 'product' ? 'project' : 'website';
+  const subject = 'We got your enquiry';
+  return {
+    subject,
+    html: layout({
+      title: subject,
+      preheader: `Thanks ${first} - a real person reads this, and replies within one working day.`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 22px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">Thanks, ${escapeHtml(first)}.</h1>
+        <p style="margin:0 0 14px;">Your ${escapeHtml(what)} enquiry has reached us. A person, not a pipeline, reads it.</p>
+        <p style="margin:0 0 14px;">Within one working day you'll get either a couple of questions or a scope and a fixed price in writing. No sales call unless you want one.</p>
+        <p style="margin:0;font-size:14px;color:${MUTED};">If anything is urgent in the meantime, reply to this email or write to hello@veyago.cloud.</p>`,
+    }),
+    text:
+      `Thanks, ${first}.\n\n` +
+      `Your ${what} enquiry has reached us. A person, not a pipeline, reads it.\n\n` +
+      `Within one working day you'll get either a couple of questions or a scope and a fixed price in writing. No sales call unless you want one.\n\n` +
+      `If anything is urgent in the meantime, reply to this email or write to hello@veyago.cloud.`,
+  };
+}

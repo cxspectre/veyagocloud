@@ -9,6 +9,7 @@
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/assets/css/websites.css" />
   <meta property="og:title" content="Product design &amp; engineering studio for hire | Veyago" />
   <meta property="og:description" content="The studio behind Kept and Veyago travel takes on a few outside iOS product and engineering projects a year - privacy-first, built to last. Let's talk." />
   <meta property="og:image" content="https://www.veyago.cloud/assets/og.png" />
@@ -83,6 +84,7 @@
   </script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="nav" id="site-nav">
     <div class="wrap">
       <a class="brand" href="/"><img src="/assets/veyago-icon.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
@@ -102,7 +104,7 @@
         </div>
       </nav>
       <div class="nav-right">
-        <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
+        <a class="nav-quote" href="#quote">Get a quote</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
         </button>
@@ -128,9 +130,10 @@
       <a class="nm-sub" href="/company/">About</a>
       <a class="nm-sub" href="/team/">Team</a>
       <a class="nm-sub" href="/approach/">Approach</a>
-      <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
+      <a class="nav-cta nm-cta" href="#quote">Get a quote</a>
     </nav>
   </aside>
+  <main id="main">
 
   <section class="section hero"><div class="wrap">
     <p class="eyebrow">Build with Veyago</p>
@@ -215,17 +218,62 @@
   <section class="section"><div class="wrap">
     <h2 class="section-headline">If the fit is right.</h2>
     <p class="lead">Founders building something worth building, companies with a product that needs more attention than it's getting. The best projects start with a conversation about the problem. If that's where you are - write to us.</p>
-    <div class="actions"><a class="btn btn-blue" href="mailto:hello@veyago.cloud?subject=Project%20enquiry">Start a conversation</a></div>
+    <form class="enq" id="quote" data-enquiry="product" action="mailto:hello@veyago.cloud?subject=Project%20enquiry" method="post" enctype="text/plain">
+      <div class="enq-fields">
+        <div class="enq-field">
+          <label class="enq-label" for="enq-name">Your name</label>
+          <input class="enq-input" id="enq-name" name="name" type="text" autocomplete="name" required maxlength="80" />
+        </div>
+        <div class="enq-field">
+          <label class="enq-label" for="enq-email">Email</label>
+          <input class="enq-input" id="enq-email" name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254" />
+        </div>
+        <div class="enq-field">
+          <label class="enq-label" for="enq-business">Company <span>(optional)</span></label>
+          <input class="enq-input" id="enq-business" name="business" type="text" autocomplete="organization" maxlength="120" />
+        </div>
+        <div class="enq-field">
+          <label class="enq-label" for="enq-website">Where can we see it? <span>(optional)</span></label>
+          <input class="enq-input" id="enq-website" name="website" type="text" inputmode="url" autocomplete="url" placeholder="A site, an App Store page, a prototype" maxlength="200" />
+        </div>
+        <div class="enq-field wide">
+          <label class="enq-label" for="enq-message">What are you building, and where is it stuck? <span>(optional)</span></label>
+          <textarea class="enq-input" id="enq-message" name="message" rows="5" maxlength="2000"></textarea>
+          <span class="enq-hint">The problem, the stage you're at, and what you'd want from us. Rough is fine.</span>
+        </div>
+        <div class="enq-hp" aria-hidden="true">
+          <label for="enq-hp-ref">Leave this field empty</label>
+          <input id="enq-hp-ref" name="hp_ref" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+        <div class="enq-foot">
+          <button class="btn btn-blue" type="submit">Start a conversation</button>
+          <p class="enq-privacy">Goes straight to us through our own server. No form provider, no tracking, and we never share it.</p>
+        </div>
+      </div>
+      <p class="enq-status" role="status" aria-live="polite" hidden></p>
+      <div class="enq-done" hidden>
+        <h3>Thanks. It's on its way.</h3>
+        <p>You'll hear back within one working day, from a person. If it's urgent in the meantime, write to hello@veyago.cloud.</p>
+      </div>
+      <div class="enq-msgs" hidden>
+        <span data-msg="sending">Sending…</span>
+        <span data-msg="invalid">Please check the highlighted fields.</span>
+        <span data-msg="error">That didn't go through.</span>
+        <span data-msg="rate-limited">Too many messages from this address just now.</span>
+        <span data-msg="fallback-link">Send it by email instead</span>
+      </div>
+    </form>
   </div></section>
 
+  </main>
   <footer class="footer">
     <div class="wrap">
       <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
-        <div><h5>Apps</h5><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
-        <div><h5>Company</h5><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/services/">Services</a><a href="/websites/">Websites</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
-        <div><h5>Legal</h5><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
-        <div><h5>Get in touch</h5><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15028535090">+1 (502) 853-5090</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
+        <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/services/">Services</a><a href="/websites/">Websites</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
+        <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15028535090">+1 (502) 853-5090</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
       <p class="footer-press">Press &amp; investors: <a href="mailto:hello@veyago.cloud?subject=Press%20%26%20investors">hello@veyago.cloud</a> · <a href="https://wefunder.com/veyago" target="_blank" rel="noopener">Invest on Wefunder ↗</a></p>
       <div class="footer-base">
@@ -236,5 +284,6 @@
   </footer>
   <script src="/assets/js/site-config.js?v=20260721"></script>
   <script src="/app.js" defer></script>
+  <script src="/assets/js/enquiry.js" defer></script>
 </body>
 </html>

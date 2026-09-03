@@ -83,6 +83,7 @@
   </script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="nav" id="site-nav">
     <div class="wrap">
       <a class="brand" href="/"><img src="/assets/veyago-icon.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
@@ -131,6 +132,7 @@
       <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
     </nav>
   </aside>
+  <main id="main">
 
   <section class="section hero split">
     <div class="wrap">
@@ -140,12 +142,15 @@
         <p class="subhead muted">An independent studio crafting calm, private apps - for where you'll go next, and everything you keep along the way.</p>
         <div class="actions">
           <a class="btn btn-blue" href="/apps/">See our apps</a>
-          <a class="link" href="/company/">About the studio</a>
+          <a class="btn btn-line" href="/websites/">Websites for business</a>
         </div>
       </div>
       <div class="hero-media">
         <div class="device framed">
-          <img src="/assets/kept-upcoming.png?v=20260721" alt="Kept app showing upcoming items sorted by what's next" width="1470" height="3000" decoding="async" loading="eager">
+          <picture>
+            <source type="image/webp" srcset="/assets/kept-upcoming-330w.webp?v=20260721 1x, /assets/kept-upcoming-660w.webp?v=20260721 2x">
+            <img src="/assets/kept-upcoming.png?v=20260721" alt="Kept app showing upcoming items sorted by what's next" width="1470" height="3000" decoding="async" fetchpriority="high" loading="eager">
+          </picture>
         </div>
       </div>
     </div>
@@ -174,6 +179,26 @@
     </div>
   </div>
 
+  <section class="section soft">
+    <div class="wrap">
+      <p class="eyebrow">Websites</p>
+      <h2 class="section-headline">We build websites too.</h2>
+      <p class="subhead muted">Landing pages, corporate sites, SEO, and the dashboards and CRMs behind them - for businesses anywhere in the world. Hand-written HTML or React, whichever the job needs.</p>
+      <ul class="values-strip">
+        <li>Landing pages to corporate sites</li>
+        <li>SEO built in, not bolted on</li>
+        <li>Dashboards, CRMs &amp; admin tools</li>
+        <li>Rebuilds of Wix, Lovable &amp; AI-made sites</li>
+        <li>Fixed price, from $699 or €750</li>
+        <li>Yours to own, not to rent</li>
+      </ul>
+      <div class="actions">
+        <a class="btn btn-blue" href="/websites/">Websites for business</a>
+        <a class="link" href="/websites/#quote">Get a quote</a>
+      </div>
+    </div>
+  </section>
+
   <section class="section">
     <div class="wrap">
       <p class="eyebrow">The Studio</p>
@@ -181,6 +206,7 @@
       <p class="lead">Quick, beautiful, genuinely useful, and respectful of your data. Small catalogue, high standards, no dark patterns.</p>
       <div class="actions">
         <a class="link" href="/approach/">Our approach</a>
+        <a class="link" href="/company/">About the studio</a>
       </div>
     </div>
   </section>
@@ -240,7 +266,10 @@
           <a class="link" href="/kept/">View Kept</a>
         </div>
         <div class="tile-media">
-          <img class="shot" src="/assets/kept-upcoming.png?v=20260721" alt="Kept showing upcoming expiry dates and reminders" width="1470" height="3000" decoding="async" loading="lazy">
+          <picture>
+            <source type="image/webp" srcset="/assets/kept-upcoming-330w.webp?v=20260721 1x, /assets/kept-upcoming-660w.webp?v=20260721 2x">
+            <img class="shot" src="/assets/kept-upcoming.png?v=20260721" alt="Kept showing upcoming expiry dates and reminders" width="1470" height="3000" decoding="async" loading="lazy">
+          </picture>
         </div>
       </div>
       <div class="tile reveal">
@@ -252,28 +281,11 @@
           <a class="link" href="/veyago/">Learn more</a>
         </div>
         <div class="tile-media">
-          <img class="shot" src="/assets/veyago-discover.jpg" alt="The Veyago Discover screen - an editorial feature on Tokyo with time-sensitive in-season picks" width="720" height="1565" decoding="async" loading="lazy">
+          <picture>
+            <source type="image/webp" srcset="/assets/veyago-discover-330w.webp 1x, /assets/veyago-discover-660w.webp 2x">
+            <img class="shot" src="/assets/veyago-discover.jpg" alt="The Veyago Discover screen - an editorial feature on Tokyo with time-sensitive in-season picks" width="720" height="1565" decoding="async" loading="lazy">
+          </picture>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section soft">
-    <div class="wrap">
-      <p class="eyebrow">Websites</p>
-      <h2 class="section-headline">We build websites too.</h2>
-      <p class="subhead muted">Landing pages, corporate sites, SEO, and the dashboards and CRMs behind them - for businesses anywhere in the world. Hand-written HTML or React, whichever the job needs.</p>
-      <ul class="values-strip">
-        <li>Landing pages to corporate sites</li>
-        <li>SEO built in, not bolted on</li>
-        <li>Dashboards, CRMs &amp; admin tools</li>
-        <li>Rebuilds of Wix, Lovable &amp; AI-made sites</li>
-        <li>Fixed price, from $699 or €750</li>
-        <li>Yours to own, not to rent</li>
-      </ul>
-      <div class="actions">
-        <a class="btn btn-blue" href="/websites/">Websites for business</a>
-        <a class="link" href="mailto:hello@veyago.cloud?subject=Website%20enquiry">Get in touch</a>
       </div>
     </div>
   </section>
@@ -295,14 +307,15 @@
     </div>
   </section>
 
+  </main>
   <footer class="footer">
     <div class="wrap">
       <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
-        <div><h5>Apps</h5><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
-        <div><h5>Company</h5><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/services/">Services</a><a href="/websites/">Websites</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
-        <div><h5>Legal</h5><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
-        <div><h5>Get in touch</h5><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15028535090">+1 (502) 853-5090</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
+        <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/services/">Services</a><a href="/websites/">Websites</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
+        <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15028535090">+1 (502) 853-5090</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
       <p class="footer-press">Press &amp; investors: <a href="mailto:hello@veyago.cloud?subject=Press%20%26%20investors">hello@veyago.cloud</a> · <a href="https://wefunder.com/veyago" target="_blank" rel="noopener">Invest on Wefunder ↗</a></p>
       <div class="footer-base">
