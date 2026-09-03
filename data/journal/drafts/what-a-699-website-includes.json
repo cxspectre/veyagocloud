@@ -1,0 +1,89 @@
+{
+  "articles": [
+    {
+      "slug": "what-a-699-website-includes",
+      "title": "What a $699 website includes, line by line.",
+      "dek": "The three packages, what every line means, what you need to bring, and what happens when the scope moves.",
+      "excerpt": "Our three website packages, line by line: what each item means, why it is in or out, what you bring, and what happens if the scope changes.",
+      "status": "draft",
+      "tier": "free",
+      "published_at": "2026-09-03T09:00:00Z",
+      "body": [
+        {
+          "type": "section_marker",
+          "text": "Websites"
+        },
+        {
+          "type": "text",
+          "html": "<p>A price on a website is only useful if you know what it buys. Most quotes keep that in a PDF, or save it for a call. Ours is short enough to put on a page, so here it is, line by line, with the reasoning next to each line.</p><p>Every price below is fixed and excludes tax. What both of those mean in practice is at the end.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Launch. A landing page, $699 or €750."
+        },
+        {
+          "type": "text",
+          "html": "<p>One page, up to five sections: typically a hero (who you are and what you do, in a line), what you do, proof or services, about, and contact. Five is about what a single page can hold before it stops being a landing page and starts being a website folded up small.</p><ul><li><strong>A contact form or a booking link.</strong> The form delivers to your inbox. If you already take bookings somewhere, we link to that rather than build a second system.</li><li><strong>Mobile-first, fast, hand-written HTML and CSS.</strong> No builder runtime, no template. The page is written for your five sections and nothing else, which is why it loads the way it does.</li><li><strong>SEO basics done properly.</strong> A title and description written for the search you want to win, an Open Graph image so the link looks right when it is shared, structured data so search engines know you are a business and where, a sitemap, and Google Search Console set up so you can see how people find you.</li><li><strong>Hosting in your own account.</strong> We set the site up on a free static host, Vercel or Cloudflare, under an account in your name, and connect your domain. There is no hosting bill from us and no host to migrate away from later.</li><li><strong>One round of revisions.</strong> You see the finished page, you send one list of changes, we make them.</li><li><strong>Typically live in seven to ten working days</strong> once we have the content.</li></ul><p>Why one round? Because a page this size does not need three, and pricing in rounds nobody uses makes the number go up for everyone.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Business. A multi-page site, $1,690 or €1,790."
+        },
+        {
+          "type": "text",
+          "html": "<p>Everything above, across up to six pages: usually home, services or products, about, a page or two that support those, and contact.</p><ul><li><strong>On-page SEO per page.</strong> Each page gets its own title, description and structured data, written for the search it should answer rather than copied from the home page.</li><li><strong>Google Business Profile and Search Console set up.</strong> The map listing and the search dashboard, both in your account.</li><li><strong>An optional news or blog section.</strong> If you are going to publish, we build the place for it. If you are not, we say so rather than sell it to you.</li><li><strong>Two rounds of revisions.</strong></li><li><strong>Typically two to four weeks.</strong></li></ul><p>Six pages covers most small businesses. It is enough for a page per service, which is what search tends to reward, and small enough that you can still hold the whole site in your head.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Back office. Site plus the tools behind it, from $3,900 or €4,100."
+        },
+        {
+          "type": "text",
+          "html": "<p>Everything in Business, plus a login area. That might be a client dashboard, a CRM that fits how you actually sell, invoicing, or an internal tool your team uses every day. It is built on Supabase, the platform we run our own studio on.</p><p>This tier says \"from\" because no two back offices are the same. We scope it with you, quote the whole number in writing, and then that number is fixed. Typically four to eight weeks.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "What costs extra, on any tier."
+        },
+        {
+          "type": "text",
+          "html": "<ul><li><strong>Copywriting, from $120 or €130 per page.</strong> If you bring the words, this is zero. If you would rather we wrote them from a conversation with you, this is what it costs.</li><li><strong>Extra pages, $140 or €150 each.</strong> Beyond the five sections or six pages.</li><li><strong>A care plan, $49 or €49 a month.</strong> Updates, uptime monitoring, backups, and small changes when you need them. It is optional, you can stop it whenever you like, and the site does not depend on it.</li><li><strong>Rush delivery, plus 25 percent.</strong> If the date is fixed and close, we reorder our week around it.</li></ul><p>Rebuilds of an existing Wix, Squarespace, Lovable or AI-built site are priced as whichever tier they land in. Moving your content across and setting up redirects from the old addresses is included, not extra.</p><p>Two things are out. We do not design logos or brands. If you need one, we will point you to people who do it well. And nothing here is rented: you own the code, the repository and the domain, and you can leave at any time with all of it.</p>"
+        },
+        {
+          "type": "quote",
+          "text": "Nothing is rented. You own the code, the repository and the domain, and you can leave at any time."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "What you bring."
+        },
+        {
+          "type": "text",
+          "html": "<p>A fixed price depends on both of us knowing what the job is. From your side we need:</p><ul><li><strong>The content.</strong> Your words, or a conversation we can write them from (that is the copywriting line above).</li><li><strong>Photos.</strong> Real photographs of your business, your work and your people beat stock every time. Phone photos in good light are fine.</li><li><strong>A logo, if you have one.</strong> If you do not, plain text set well beats a rushed one.</li><li><strong>Access to your domain.</strong> Usually a login to wherever you bought it, so the new site can be connected.</li><li><strong>The address of your old site,</strong> if there is one, so we can carry the content and the URLs across.</li></ul><p>The clock starts when the content is in. The most common delay on any website is waiting for words, so we say that out loud at the start rather than discover it in week three.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Excluding tax, fixed price, and when scope changes."
+        },
+        {
+          "type": "text",
+          "html": "<p><strong>Excluding tax</strong> means the price on the page is before any sales tax or VAT that applies to you. We are a New York company. Whether tax is added depends on where you are and the rules that apply there, and it shows as its own line on the invoice. The number above it does not move.</p><p><strong>Fixed price</strong> means we write down what is included, we agree it, and that is the invoice. There are no hours to overrun, and we do not charge for changing your mind about a colour.</p><p><strong>Scope changes</strong> are handled the same way. If, halfway through, you would like a seventh page or a booking system you had not mentioned, we tell you what it costs (usually one of the lines above), you say yes or no, and we carry on. Nothing is added to the bill without a yes. If the answer is no, the original scope and the original number stand.</p>"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "text",
+          "html": "<p>If you are not sure which tier your business lands in, <a href=\"https://www.veyago.cloud/websites/#quote\">send us the address of your current site</a>, or a line about what you do if there is no site yet, and we will tell you honestly what it would take. If a landing page is enough, we will say so.</p>"
+        }
+      ]
+    }
+  ],
+  "wallpapers": []
+}
