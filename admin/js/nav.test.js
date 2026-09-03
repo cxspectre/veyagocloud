@@ -101,12 +101,15 @@ test('the checklist template is reachable from the nav', async () => {
   assert.ok(allHrefs.includes('/admin/checklist'), '/admin/checklist must be in the sidebar');
 });
 
-test('second-level destinations render indented and without an icon', async () => {
+/* Checklist was briefly an indented, icon-less sub-item under Onboarding. The
+   dashboard UX audit promoted it to a first-class entry — editing it changes
+   every employee's list, so it is not a detail of one person's onboarding. */
+test('the checklist is a first-class entry: its own icon, no sub-item indent', async () => {
   const { window } = await mountAt('/admin/');
   const a = window.document.querySelector('.adm-nav a[href="/admin/checklist"]');
-  assert.ok(a.classList.contains('adm-nav-sub'), '/admin/checklist is a sub item');
-  assert.equal(a.querySelector('svg'), null, '/admin/checklist carries no icon');
-  // ...and top-level items still do have one.
+  assert.ok(!a.classList.contains('adm-nav-sub'), '/admin/checklist is not indented as a sub item');
+  assert.ok(a.querySelector('svg'), '/admin/checklist carries its own icon');
+  // ...and the other top-level items still have theirs.
   assert.ok(window.document.querySelector('.adm-nav a[href="/admin/finance"] svg'));
 });
 

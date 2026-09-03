@@ -14,16 +14,42 @@ const vm = require('node:vm');
 const { JSDOM, VirtualConsole } = require('jsdom');
 
 const SRC = fs.readFileSync(path.join(__dirname, 'finance-tabs.js'), 'utf8');
+const FINANCE_HTML = fs.readFileSync(path.join(__dirname, '..', 'finance.html'), 'utf8');
 
+/* A copy of finance.html's tab strip, not the real thing, so each test can
+   start from a known hash. The guard tests at the bottom pin this copy to the
+   real markup and the real markup to finance-tabs.js's TABS list. */
 const PANEL_HTML =
   '<div class="adm-tabs" role="tablist">' +
     '<button class="adm-tab active" id="tab-overview" role="tab" aria-selected="true">Overview</button>' +
     '<button class="adm-tab" id="tab-transactions" role="tab" aria-selected="false" tabindex="-1">Transactions</button>' +
     '<button class="adm-tab" id="tab-invoices" role="tab" aria-selected="false" tabindex="-1">Invoices</button>' +
+    '<button class="adm-tab" id="tab-budgets" role="tab" aria-selected="false" tabindex="-1">Budgets</button>' +
   '</div>' +
   '<section id="panel-overview">overview content</section>' +
   '<section id="panel-transactions" hidden>transactions content</section>' +
-  '<section id="panel-invoices" hidden>invoices content</section>';
+  '<section id="panel-invoices" hidden>invoices content</section>' +
+  '<section id="panel-budgets" hidden>budgets content</section>';
+
+/* Parse a chunk of markup the way a browser would. The guards at the bottom
+   compare three copies of the tab strip, so they must read tab ids reliably —
+   a tab this cannot understand throws, it never quietly vanishes from the
+   list and shows up as "that tab does not exist". */
+function parse(html) {
+  return new JSDOM(html, { virtualConsole: new VirtualConsole() }).window.document;
+}
+
+function tabIdsIn(html) {
+  return [...parse(html).querySelectorAll('button[role="tab"]')].map((button) => {
+    const m = /^tab-(.+)$/.exec(button.id);
+    if (!m) throw new Error('tab button without a tab-* id: ' + button.outerHTML);
+    return m[1];
+  });
+}
+
+/* The one list of tabs this file knows about. Every other list below derives
+   from it, so a tab added to PANEL_HTML is covered everywhere at once. */
+const FIXTURE_TABS = tabIdsIn(PANEL_HTML);
 
 function mountAt(hash) {
   const dom = new JSDOM('<!doctype html><body>' + PANEL_HTML + '</body>', {
@@ -36,8 +62,7 @@ function mountAt(hash) {
 }
 
 function visiblePanels(window) {
-  return ['overview', 'transactions', 'invoices']
-    .filter((t) => !window.document.getElementById('panel-' + t).hidden);
+  return FIXTURE_TABS.filter((t) => !window.document.getElementById('panel-' + t).hidden);
 }
 
 /* jsdom dispatches 'hashchange' asynchronously, same as a real browser — a
@@ -72,7 +97,7 @@ test('loading straight into a hash shows that tab from the start', () => {
 /* ── Exactly one visible, always ─────────────────────────────────────── */
 
 test('exactly one panel is ever visible', () => {
-  for (const hash of ['', '#overview', '#transactions', '#invoices', '#garbage']) {
+  for (const hash of ['', ...FIXTURE_TABS.map((t) => '#' + t), '#garbage']) {
     assert.equal(visiblePanels(mountAt(hash)).length, 1, hash);
   }
 });
@@ -136,14 +161,14 @@ test('ArrowLeft wraps from the first tab to the last', () => {
   const w = mountAt('');
   const overview = w.document.getElementById('tab-overview');
   overview.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }));
-  assert.equal(w.location.hash, '#invoices');
+  assert.equal(w.location.hash, '#budgets');
 });
 
 test('Home and End jump to the first and last tab', () => {
   const w = mountAt('#transactions');
   const current = w.document.getElementById('tab-transactions');
   current.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
-  assert.equal(w.location.hash, '#invoices');
+  assert.equal(w.location.hash, '#budgets');
 
   current.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
   assert.equal(w.location.hash, '#overview');
@@ -156,4 +181,29 @@ test('an unrelated key does nothing', () => {
   overview.dispatchEvent(ev);
   assert.equal(w.location.hash, '');
   assert.equal(ev.defaultPrevented, false);
+});
+
+/* ── The tab strip exists in two places — finance-tabs.js's TABS and the
+   buttons in finance.html — and PANEL_HTML above is a third. Budgets was
+   added to the first two while the fixture stayed at three tabs, and the
+   keyboard tests above quietly began asserting the wrong "last" tab. Pin the
+   fixture to the real markup and the real markup to TABS, so the next added
+   tab fails here, loudly. ─────────────────────────────────────────────── */
+
+test('TABS in finance-tabs.js matches the tab buttons in finance.html, in order', () => {
+  const w = mountAt('');
+  // Array.from: TABS was built inside the jsdom realm, and a strict deep
+  // comparison also checks prototypes, which differ across realms.
+  assert.deepStrictEqual(Array.from(w.adminFinanceTabs.TABS), tabIdsIn(FINANCE_HTML));
+});
+
+test('this fixture carries every tab finance.html does', () => {
+  assert.deepStrictEqual(FIXTURE_TABS, tabIdsIn(FINANCE_HTML));
+});
+
+test('every tab button in finance.html has the panel it controls', () => {
+  const doc = parse(FINANCE_HTML);
+  for (const t of tabIdsIn(FINANCE_HTML)) {
+    assert.ok(doc.getElementById('panel-' + t), 'finance.html has no #panel-' + t + ' for #tab-' + t);
+  }
 });

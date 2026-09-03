@@ -37,6 +37,25 @@ function fakeSb(tables) {
   return { from: (table) => builder(table, (tables[table] || []).slice()) };
 }
 
+/* Every fixture date is relative to this one "today". finance.js reads the
+   clock itself — new Date() and Date.now() — to decide what "this month" is,
+   so the clock inside the jsdom window is frozen to the same instant (see
+   freezeClock). Without that, these tests only passed during July 2026. */
+const TODAY = '2026-07-28T12:00:00Z';
+
+/* Same yyyy-mm-dd formula as admin.localDate() in client.js: local time, not
+   UTC, so the fake localDate, the fixture dates and finance.js's own "this
+   month" all agree on what day it is in every timezone. */
+function localYmd(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function todayMinusDays(n) {
+  const d = new Date(TODAY);
+  d.setDate(d.getDate() - n);
+  return localYmd(d);
+}
+
 /* A permissive stand-in for the real statCards, capturing what it was called
    with instead of rendering markup — these tests care about which color/value
    the logic computed, not the HTML it produces (that's covered by browser
@@ -48,15 +67,28 @@ function fakeAdmin() {
     admin: {
       statCards: (wrap, cards) => { calls.push(cards); wrap.innerHTML = ''; },
       toast: () => {},
-      localDate: () => '2026-07-28',
+      localDate: () => localYmd(new Date(TODAY)),
     },
   };
 }
 
-function todayMinusDays(n) {
-  const d = new Date('2026-07-28T12:00:00Z');
-  d.setUTCDate(d.getUTCDate() - n);
-  return d.toISOString().slice(0, 10);
+/* Pin the window's Date to TODAY. A bare `new Date()` or `Date.now()` returns
+   the frozen instant; a Date built from explicit arguments is untouched, so
+   finance.js's months-back arithmetic still works. jsdom gives each window its
+   own realm, which is why node:test's mock.timers on this file's own Date
+   would never reach the code under test. */
+function freezeClock(window, iso) {
+  const RealDate = window.Date;
+  const fixed = new RealDate(iso).getTime();
+  function FrozenDate() {
+    if (!new.target) return new RealDate(fixed).toString();
+    return arguments.length === 0 ? new RealDate(fixed) : new RealDate(...arguments);
+  }
+  FrozenDate.prototype = RealDate.prototype;
+  FrozenDate.now = () => fixed;
+  FrozenDate.parse = RealDate.parse;
+  FrozenDate.UTC = RealDate.UTC;
+  window.Date = FrozenDate;
 }
 
 async function mount(transactions) {
@@ -67,6 +99,7 @@ async function mount(transactions) {
   });
   const { window } = dom;
   const fake = fakeAdmin();
+  freezeClock(window, TODAY);
 
   window.adminRoles = { requireManager: async () => true };
   window.admin = fake.admin;

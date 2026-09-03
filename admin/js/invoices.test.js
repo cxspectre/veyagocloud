@@ -47,6 +47,19 @@ function fakeSb(tables) {
   return { from: (table) => builder(table, (tables[table] || []).slice()) };
 }
 
+/* The one "today" every fixture date is written against. Most of invoices.js
+   asks admin.localDate() for the date, which fakeAdmin below answers, but
+   "Paid this month" compares paid_on to the window's own clock — so that
+   clock is frozen to the same instant (see freezeClock). Without it the
+   paid-this-month test only passed during July 2026. */
+const TODAY = '2026-07-28T12:00:00Z';
+
+/* Same yyyy-mm-dd formula as admin.localDate() in client.js: local time, not
+   UTC, so the fake and the frozen clock agree on the date in every timezone. */
+function localYmd(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 function fakeAdmin() {
   var calls = [];
   return {
@@ -54,9 +67,27 @@ function fakeAdmin() {
     admin: {
       statCards: (wrap, cards) => { calls.push(cards); wrap.innerHTML = ''; },
       toast: () => {},
-      localDate: () => '2026-07-28',
+      localDate: () => localYmd(new Date(TODAY)),
     },
   };
+}
+
+/* Pin the window's Date to TODAY. A bare `new Date()` or `Date.now()` returns
+   the frozen instant; a Date built from explicit arguments is untouched. jsdom
+   gives each window its own realm, which is why node:test's mock.timers on
+   this file's own Date would never reach the code under test. */
+function freezeClock(window, iso) {
+  const RealDate = window.Date;
+  const fixed = new RealDate(iso).getTime();
+  function FrozenDate() {
+    if (!new.target) return new RealDate(fixed).toString();
+    return arguments.length === 0 ? new RealDate(fixed) : new RealDate(...arguments);
+  }
+  FrozenDate.prototype = RealDate.prototype;
+  FrozenDate.now = () => fixed;
+  FrozenDate.parse = RealDate.parse;
+  FrozenDate.UTC = RealDate.UTC;
+  window.Date = FrozenDate;
 }
 
 async function mount(invoices, statusFilter) {
@@ -67,6 +98,7 @@ async function mount(invoices, statusFilter) {
   });
   const { window } = dom;
   const fake = fakeAdmin();
+  freezeClock(window, TODAY);
 
   window.adminRoles = { requireManager: async () => true };
   window.admin = fake.admin;
