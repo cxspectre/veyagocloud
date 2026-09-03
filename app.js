@@ -395,16 +395,24 @@
     window.addEventListener('scroll', syncScroll, { passive: true });
   }
 
-  /* Active nav link */
-  var page = window.location.pathname.split('/').pop() || 'index.html';
-  document.querySelectorAll('.nav-links > a, .nav-dropdown a').forEach(function (a) {
-    if (a.getAttribute('href') === page) {
-      a.classList.add('active');
-      var item = a.closest('.nav-item');
-      if (item) {
-        var btn = item.querySelector('.nav-drop-btn');
-        if (btn) btn.classList.add('active');
-      }
+  /* Current page in the nav. Compared as clean paths - "/services" and
+     "/services/" are the same page, and so is its Dutch or German twin under
+     /nl/ or /de/ - so the row, the Company dropdown and the drawer all agree. */
+  function cleanPath(p) {
+    p = String(p || '').replace(/index\.html$/, '').replace(/^\/(nl|de|fr|es)(?=\/)/, '');
+    if (!/\/$/.test(p)) p += '/';
+    return p;
+  }
+  var here = cleanPath(window.location.pathname);
+  document.querySelectorAll('.nav-links > a, .nav-dropdown a, .nav-drawer-links a').forEach(function (a) {
+    var href = a.getAttribute('href') || '';
+    if (!/^\//.test(href) || cleanPath(href) !== here) return;
+    a.classList.add('active');
+    a.setAttribute('aria-current', 'page');
+    var item = a.closest('.nav-item');
+    if (item) {
+      var btn = item.querySelector('.nav-drop-btn');
+      if (btn) btn.classList.add('active');
     }
   });
 
@@ -494,6 +502,14 @@
     toggle.addEventListener('click', function () {
       drawerOpen() ? closeDrawer() : openDrawer();
     });
+    /* Crossing into the desktop layout hides the hamburger; an open drawer
+       would otherwise keep the page scroll-locked with no way to close it. */
+    if (window.matchMedia) {
+      var desktop = window.matchMedia('(min-width: 1000px)');
+      var onDesktop = function (e) { if (e.matches) closeDrawer(); };
+      if (desktop.addEventListener) desktop.addEventListener('change', onDesktop);
+      else if (desktop.addListener) desktop.addListener(onDesktop);
+    }
     if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
     scrim.addEventListener('click', closeDrawer);
 

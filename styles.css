@@ -178,10 +178,29 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 html.menu-open { overflow: hidden; }
 html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow: hidden; }
 
-/* Hamburger + drawer at ALL widths (brand left, hamburger right) */
+/* Two navigations, one breakpoint. Below 1000px (phones, iPads, small
+   laptops in split view): brand left, hamburger right, links in the drawer.
+   From 1000px: the inline link row, the Company dropdown and the contact pill
+   come back and the hamburger goes away. The drawer markup stays in the page
+   at every width so the same script serves both; it is simply unreachable
+   on desktop. */
 .nav-links { display: none; }
 .nav-right .nav-cta { display: none; }
 .nav-toggle { display: flex; }
+@media (min-width: 1000px) {
+  .nav-links { display: flex; }
+  .nav-right .nav-cta { display: inline-flex; }
+  .nav-toggle { display: none; }
+  .nav-scrim, .nav-drawer { display: none; }
+}
+/* Desktop link row: a little more room and a clear current-page mark */
+.nav-links > a, .nav-drop-btn { padding: 6px 2px; border-radius: 6px; white-space: nowrap; }
+.nav-links > a[aria-current="page"] { opacity: 1; color: var(--blue); }
+/* Pointer devices open the dropdown on hover too; touch and keyboard use the button */
+@media (hover: hover) {
+  .nav-item:hover .nav-dropdown { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  .nav-item:hover .nav-chev { transform: rotate(180deg); }
+}
 @media (prefers-reduced-motion: reduce) {
   .nav-drawer, .nav-scrim { transition: visibility .01s; }
   .nav-drawer-links > *,
