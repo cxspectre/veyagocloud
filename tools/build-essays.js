@@ -4,7 +4,12 @@
    end-of-paper footer. Run after adding/editing a paper:
      node tools/build-essays.js
    Supported Markdown subset: #/##/### headings, paragraphs, **bold**, bare
-   URLs (linkified), --- dividers. */
+   URLs (linkified), --- dividers.
+
+   As a module it exports renderEssays(), which builds every page in memory
+   without writing; tools/check.js uses that to prove the committed pages match
+   the sources. */
+'use strict';
 const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
@@ -13,7 +18,7 @@ const { esc } = require('./lib/escape');
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'data', 'research');
-const OUT = path.join(ROOT, 'projects');
+const OUT_DIR = 'projects';
 
 // Per-paper metadata: SEO description, accent colour (matches the pipeline stage
 // colour on /projects/), the related app (cross-link to the Apps page), and the
@@ -96,13 +101,20 @@ function parse(md) {
 
 const ORG_ID = SITE + '/#organization';
 
+function git(args) {
+  return execFileSync('git', args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+}
+
 // Date of the last commit that touched the paper's source, so dateModified tracks
-// real edits. Falls back to the publication date outside a git checkout.
+// real edits. A source with uncommitted edits is dated today — the date the next
+// commit will carry — so a page regenerated alongside an edit stays fresh once
+// both are committed (tools/check.js compares them). Falls back to the
+// publication date outside a git checkout.
 function lastModified(slug, fallback) {
+  const source = path.join('data', 'research', slug + '.md');
   try {
-    const out = execFileSync('git', ['log', '-1', '--format=%cs', '--', path.join('data', 'research', slug + '.md')], {
-      cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'],
-    }).toString().trim();
+    if (git(['status', '--porcelain', '--', source])) return new Date().toISOString().slice(0, 10);
+    const out = git(['log', '-1', '--format=%cs', '--', source]);
     return /^\d{4}-\d{2}-\d{2}$/.test(out) ? out : fallback;
   } catch (err) {
     return fallback;
@@ -196,20 +208,36 @@ function page(slug, meta, doc, next) {
   });
 }
 
-// Parse all first so "Read next" can reference the other papers' titles.
-const slugs = Object.keys(ESSAYS);
-const docs = {};
-for (const slug of slugs) docs[slug] = parse(fs.readFileSync(path.join(SRC, slug + '.md'), 'utf8'));
-
-let built = 0;
-for (let i = 0; i < slugs.length; i++) {
-  const slug = slugs[i];
-  const nextSlug = slugs[(i + 1) % slugs.length];
-  const next = nextSlug !== slug ? { slug: nextSlug, title: docs[nextSlug].title } : null;
-  const dir = path.join(OUT, slug);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, 'index.html'), page(slug, ESSAYS[slug], docs[slug], next));
-  console.log('built /projects/' + slug + '/  (' + docs[slug].title + ', ' + docs[slug].toc.length + ' sections)');
-  built++;
+// Every paper, rendered in memory: [{ slug, file, html, title, sections }], where
+// `file` is repo-relative (projects/<slug>/index.html). Nothing is written. All
+// papers are parsed first so "Read next" can name the other paper's title.
+function renderEssays() {
+  const slugs = Object.keys(ESSAYS);
+  const docs = Object.fromEntries(slugs.map((slug) => [slug, parse(fs.readFileSync(path.join(SRC, slug + '.md'), 'utf8'))]));
+  return slugs.map((slug, i) => {
+    const nextSlug = slugs[(i + 1) % slugs.length];
+    const next = nextSlug !== slug ? { slug: nextSlug, title: docs[nextSlug].title } : null;
+    return {
+      slug,
+      file: path.posix.join(OUT_DIR, slug, 'index.html'),
+      html: page(slug, ESSAYS[slug], docs[slug], next),
+      title: docs[slug].title,
+      sections: docs[slug].toc.length,
+    };
+  });
 }
-console.log(built + ' essay page(s) generated.');
+
+function main() {
+  const pages = renderEssays();
+  for (const p of pages) {
+    const file = path.join(ROOT, p.file);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, p.html);
+    console.log('built /projects/' + p.slug + '/  (' + p.title + ', ' + p.sections + ' sections)');
+  }
+  console.log(pages.length + ' essay page(s) generated.');
+}
+
+module.exports = { renderEssays, parse, ESSAYS };
+
+if (require.main === module) main();
