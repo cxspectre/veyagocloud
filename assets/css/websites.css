@@ -83,3 +83,42 @@ textarea.enq-input { min-height: 132px; resize: vertical; line-height: 1.5; }
 /* late additions */
 .tier-from { font-size: .95rem; font-weight: 400; letter-spacing: 0; color: var(--muted); margin-right: 6px; }
 .extras h3 { font-size: 1.2rem; letter-spacing: -0.015em; margin: 0 0 8px; }
+
+
+/* ── Hero actions + promise line ──────────────────────────────────────── */
+.hero .promise { margin: 14px 0 0; font-size: .95rem; color: var(--muted); }
+/* ── Our side of the deal ──────────────────────────────────────────────── */
+.deal { max-width: var(--maxw); margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); }
+.deal ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 28px; }
+.deal li { position: relative; padding-left: 26px; font-size: 1rem; color: var(--text); line-height: 1.45; }
+.deal li::before { content: ""; position: absolute; left: 2px; top: .55em; width: 11px; height: 6px; border-left: 2px solid var(--blue); border-bottom: 2px solid var(--blue); transform: rotate(-45deg); transform-origin: left; }
+/* ── Who you'll work with ──────────────────────────────────────────────── */
+.people { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: var(--maxw); margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); }
+.person { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: center; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: 18px 20px; }
+.person picture { display: block; }
+.person-photo, .person-mono { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+.person-mono { display: grid; place-items: center; background: #fff; border: 1px solid var(--hair); font-weight: 600; color: var(--ink); }
+.person h3 { font-size: 1.05rem; margin: 0 0 2px; letter-spacing: -0.012em; }
+.person p { margin: 0; font-size: .92rem; color: var(--muted); line-height: 1.45; }
+/* ── Recent work ───────────────────────────────────────────────────────── */
+.work-note { max-width: 70ch; margin: 18px auto 0; padding-inline: var(--gutter); font-size: .9rem; color: var(--muted); }
+/* ── This site is the sample ──────────────────────────────────────────── */
+.sample { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: var(--maxw); margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); }
+.sample div { background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: 16px; padding: 16px 18px; }
+.sample b { display: block; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.025em; color: var(--ink); }
+.sample span { font-size: .85rem; color: var(--muted); }
+/* ── Package radio group in the form ──────────────────────────────────── */
+.enq-radios { display: flex; flex-wrap: wrap; gap: 8px; }
+.enq-radio { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--hair); border-radius: 980px; background: #fff; font-size: .95rem; cursor: pointer; }
+.enq-radio input { accent-color: var(--blue-2); margin: 0; }
+.enq-radio:has(input:checked) { border-color: var(--blue-2); box-shadow: 0 0 0 3px rgba(0,113,227,.14); }
+/* ── Field-level errors ───────────────────────────────────────────────── */
+.enq-error { font-size: .86rem; color: #b3261e; margin: 0; }
+.enq-status:empty { display: none; }
+@media (max-width: 760px) {
+  .deal ul, .people { grid-template-columns: 1fr; }
+  .sample { grid-template-columns: 1fr 1fr; }
+}
+
+.hero .signpost { margin: 14px auto 0; font-size: .95rem; color: var(--muted); max-width: 60ch; }
+.hero .signpost .link { font-size: .95rem; }
