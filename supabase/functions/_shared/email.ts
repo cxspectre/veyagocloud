@@ -47,10 +47,10 @@ function escapeHtml(s: string): string {
 /* The shared shell every Veyago email uses: white card on a grey canvas,
    wordmark at the top, legal footer at the bottom. `bodyHtml` is trusted
    markup assembled by the callers below — never raw user input. */
-function layout(opts: { title: string; bodyHtml: string; preheader?: string }): string {
+function layout(opts: { title: string; bodyHtml: string; preheader?: string; lang?: string }): string {
   const site = (Deno.env.get('SITE_URL') ?? 'https://www.veyago.cloud').replace(/\/+$/, '');
   return `<!doctype html>
-<html lang="en">
+<html lang="${escapeHtml(opts.lang ?? 'en')}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -436,6 +436,7 @@ export function enquiryEmail(opts: {
   message?: string;
   locale?: string;
   page?: string;
+  packageLabel?: string;   // already words ("Back office") — see packageLabel() in enquiry.ts
 }) {
   const what = opts.kind === 'product' ? 'project' : 'website';
   const who = opts.business ? `${opts.business} (${opts.name})` : opts.name;
@@ -445,6 +446,7 @@ export function enquiryEmail(opts: {
     fieldRow('Email', opts.email, { link: `mailto:${opts.email}` }),
     opts.business ? fieldRow('Business', opts.business) : '',
     opts.website ? fieldRow('Current site', opts.website, { link: opts.website }) : '',
+    opts.packageLabel ? fieldRow('Package', opts.packageLabel) : '',
     opts.message ? fieldRow('Message', opts.message, { pre: true }) : '',
     fieldRow('Sent from', `${opts.page || '/'} · ${(opts.locale || 'en').toUpperCase()}`),
     fieldRow('Reference', opts.id),
@@ -464,15 +466,17 @@ export function enquiryEmail(opts: {
       `Name: ${opts.name}\nEmail: ${opts.email}\n` +
       (opts.business ? `Business: ${opts.business}\n` : '') +
       (opts.website ? `Current site: ${opts.website}\n` : '') +
+      (opts.packageLabel ? `Package: ${opts.packageLabel}\n` : '') +
       (opts.message ? `\n${opts.message}\n` : '') +
       `\nSent from ${opts.page || '/'} (${(opts.locale || 'en').toUpperCase()}) · ref ${opts.id}`,
   };
 }
 
-/* To the visitor. Deliberately fixed copy. The only visitor-supplied fragment
-   is a greeting, and it is reduced to letters only and capped, so a "name"
-   like a URL or a payment demand can never ride a veyago.cloud-signed email
-   into a stranger's inbox. Everything else they typed stays out. */
+/* To the visitor. Deliberately fixed copy, in their language. The only
+   visitor-supplied fragment is a greeting, and it is reduced to letters only
+   and capped, so a "name" like a URL or a payment demand can never ride a
+   veyago.cloud-signed email into a stranger's inbox. Everything else they
+   typed stays out — including the locale, which is only ever a lookup key. */
 export function greetingName(name: string): string {
   const first = (String(name ?? '').trim().split(/\s+/)[0] || '')
     .replace(/[^\p{L}\p{M}'-]/gu, '')
@@ -480,25 +484,153 @@ export function greetingName(name: string): string {
   return first || 'there';
 }
 
-export function enquiryAckEmail(opts: { name: string; kind: 'website' | 'product' }) {
+export type AckLocale = 'en' | 'nl' | 'de';
+
+/* 'nl' and 'de' are the languages the site is published in (/nl/, /de/);
+   anything else, including a region suffix we do not know, reads as English. */
+export function ackLocale(locale: string | null | undefined): AckLocale {
+  const l = String(locale ?? '').toLowerCase().slice(0, 2);
+  return l === 'nl' || l === 'de' ? l : 'en';
+}
+
+const ACK_SITE = 'https://www.veyago.cloud';
+const ACK_LINKS: Record<'website' | 'product', { key: 'packages' | 'faq' | 'services'; href: string }[]> = {
+  website: [
+    { key: 'packages', href: `${ACK_SITE}/websites/#packages` },
+    { key: 'faq',      href: `${ACK_SITE}/websites/#faq` },
+  ],
+  product: [
+    { key: 'services', href: `${ACK_SITE}/services/` },
+  ],
+};
+const ACK_CONTACT = { email: 'hello@veyago.cloud', us: '+1 (518) 913 2531', intl: '+1 (943) 273 6579' };
+
+interface AckCopy {
+  subject: string;
+  preheader: (first: string) => string;
+  thanks: (first: string) => string;
+  received: Record<'website' | 'product', string>;
+  nextHeading: string;
+  next: string;
+  hours: string;
+  meanwhile: Record<'website' | 'product', string>;
+  linkLabel: Record<'packages' | 'faq' | 'services', string>;
+  sooner: string;     // "Need us sooner? Reply to this email, write to"
+  orCall: string;     // "or call:"
+  us: string;
+  intl: string;
+  closing: string;
+}
+
+/* Informal address in nl and de ("je", "du") — the same register the
+   published /nl/ and /de/ pages use. */
+const ACK_COPY: Record<AckLocale, AckCopy> = {
+  en: {
+    subject: 'We got your enquiry',
+    preheader: (first) => `Thanks ${first} - a real person reads this, and replies within one working day.`,
+    thanks: (first) => `Thanks, ${first}.`,
+    received: {
+      website: 'Your website enquiry has reached us. A person, not a pipeline, reads it.',
+      product: 'Your project enquiry has reached us. A person, not a pipeline, reads it.',
+    },
+    nextHeading: 'What happens next',
+    next: 'Within one working day you\'ll get either a couple of questions or a scope and a fixed price in writing. No sales call unless you want one.',
+    hours: 'We work New York hours (Mon–Fri, ET), so a message sent on a Friday evening gets its answer on Monday.',
+    meanwhile: {
+      website: 'In the meantime, the packages and the FAQ answer most of what people ask before we reply:',
+      product: 'In the meantime, the services page explains how we scope and price a project:',
+    },
+    linkLabel: { packages: 'Packages', faq: 'FAQ', services: 'Services' },
+    sooner: 'Need us sooner? Reply to this email, write to',
+    orCall: 'or call:',
+    us: 'US',
+    intl: 'International',
+    closing: 'Speak soon,',
+  },
+  nl: {
+    subject: 'We hebben je aanvraag ontvangen',
+    preheader: (first) => `Bedankt ${first} - een echt mens leest dit en antwoordt binnen één werkdag.`,
+    thanks: (first) => `Bedankt, ${first}.`,
+    received: {
+      website: 'Je aanvraag voor een website is bij ons binnen. Een mens leest hem, geen pipeline.',
+      product: 'Je projectaanvraag is bij ons binnen. Een mens leest hem, geen pipeline.',
+    },
+    nextHeading: 'Wat er nu gebeurt',
+    next: 'Binnen één werkdag krijg je óf een paar vragen, óf een scope en een vaste prijs op papier. Geen verkoopgesprek, tenzij je dat zelf wilt.',
+    hours: 'We werken op New Yorkse kantoortijden (ma–vr, ET). Een bericht op vrijdagavond krijgt dus maandag antwoord.',
+    meanwhile: {
+      website: 'In de tussentijd beantwoorden de pakketten en de veelgestelde vragen het meeste van wat mensen vragen voordat we reageren:',
+      product: 'In de tussentijd legt de servicepagina uit hoe we een project afbakenen en prijzen:',
+    },
+    linkLabel: { packages: 'Pakketten', faq: 'Veelgestelde vragen', services: 'Services' },
+    sooner: 'Eerder nodig? Beantwoord deze e-mail, schrijf naar',
+    orCall: 'of bel:',
+    us: 'VS',
+    intl: 'Internationaal',
+    closing: 'Tot snel,',
+  },
+  de: {
+    subject: 'Wir haben deine Anfrage erhalten',
+    preheader: (first) => `Danke ${first} - ein echter Mensch liest das und antwortet innerhalb eines Werktags.`,
+    thanks: (first) => `Danke, ${first}.`,
+    received: {
+      website: 'Deine Website-Anfrage ist bei uns angekommen. Ein Mensch liest sie, keine Pipeline.',
+      product: 'Deine Projektanfrage ist bei uns angekommen. Ein Mensch liest sie, keine Pipeline.',
+    },
+    nextHeading: 'Wie es weitergeht',
+    next: 'Innerhalb eines Werktags bekommst du entweder ein paar Rückfragen oder Umfang und Festpreis schriftlich. Kein Verkaufsgespräch, außer du willst eins.',
+    hours: 'Wir arbeiten zu New Yorker Bürozeiten (Mo–Fr, ET). Eine Nachricht am Freitagabend wird also am Montag beantwortet.',
+    meanwhile: {
+      website: 'Bis dahin beantworten die Pakete und die häufigen Fragen das meiste, was uns vor einer Antwort gefragt wird:',
+      product: 'Bis dahin erklärt die Services-Seite, wie wir ein Projekt abgrenzen und bepreisen:',
+    },
+    linkLabel: { packages: 'Pakete', faq: 'Häufige Fragen', services: 'Services' },
+    sooner: 'Brauchst du uns früher? Antworte auf diese E-Mail, schreib an',
+    orCall: 'oder ruf an:',
+    us: 'USA',
+    intl: 'International',
+    closing: 'Bis bald,',
+  },
+};
+
+export function enquiryAckEmail(opts: { name: string; kind: 'website' | 'product'; locale?: string | null }) {
   const first = greetingName(opts.name);
-  const what = opts.kind === 'product' ? 'project' : 'website';
-  const subject = 'We got your enquiry';
+  const c = ACK_COPY[ackLocale(opts.locale)];
+  const kind: 'website' | 'product' = opts.kind === 'product' ? 'product' : 'website';
+  const links = ACK_LINKS[kind];
+  const linksHtml = links
+    .map((l) => `<a href="${l.href}" style="color:${BLUE};">${escapeHtml(c.linkLabel[l.key])}</a>`)
+    .join(' · ');
+  const linksText = links.map((l) => `${c.linkLabel[l.key]}: ${l.href}`).join('\n');
+  const contactHtml =
+    `${escapeHtml(c.sooner)} <a href="mailto:${ACK_CONTACT.email}" style="color:${BLUE};">${ACK_CONTACT.email}</a> ${escapeHtml(c.orCall)}<br />` +
+    `${escapeHtml(c.us)}: ${ACK_CONTACT.us} · ${escapeHtml(c.intl)}: ${ACK_CONTACT.intl}`;
+  const contactText =
+    `${c.sooner} ${ACK_CONTACT.email} ${c.orCall}\n${c.us}: ${ACK_CONTACT.us}\n${c.intl}: ${ACK_CONTACT.intl}`;
+  const font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
   return {
-    subject,
+    subject: c.subject,
     html: layout({
-      title: subject,
-      preheader: `Thanks ${first} - a real person reads this, and replies within one working day.`,
+      title: c.subject,
+      preheader: c.preheader(first),
+      lang: ackLocale(opts.locale),
       bodyHtml: `
-        <h1 style="margin:0 0 14px;font:600 22px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">Thanks, ${escapeHtml(first)}.</h1>
-        <p style="margin:0 0 14px;">Your ${escapeHtml(what)} enquiry has reached us. A person, not a pipeline, reads it.</p>
-        <p style="margin:0 0 14px;">Within one working day you'll get either a couple of questions or a scope and a fixed price in writing. No sales call unless you want one.</p>
-        <p style="margin:0;font-size:14px;color:${MUTED};">If anything is urgent in the meantime, reply to this email or write to hello@veyago.cloud.</p>`,
+        <h1 style="margin:0 0 14px;font:600 22px/1.25 ${font};color:${INK};letter-spacing:-0.02em;">${escapeHtml(c.thanks(first))}</h1>
+        <p style="margin:0 0 18px;">${escapeHtml(c.received[kind])}</p>
+        <h2 style="margin:0 0 8px;font:600 16px/1.3 ${font};color:${INK};">${escapeHtml(c.nextHeading)}</h2>
+        <p style="margin:0 0 14px;">${escapeHtml(c.next)}</p>
+        <p style="margin:0 0 14px;">${escapeHtml(c.hours)}</p>
+        <p style="margin:0 0 18px;">${escapeHtml(c.meanwhile[kind])}<br />${linksHtml}</p>
+        <p style="margin:0 0 18px;font-size:14px;color:${MUTED};">${contactHtml}</p>
+        <p style="margin:0;">${escapeHtml(c.closing)}<br />Veyago</p>`,
     }),
     text:
-      `Thanks, ${first}.\n\n` +
-      `Your ${what} enquiry has reached us. A person, not a pipeline, reads it.\n\n` +
-      `Within one working day you'll get either a couple of questions or a scope and a fixed price in writing. No sales call unless you want one.\n\n` +
-      `If anything is urgent in the meantime, reply to this email or write to hello@veyago.cloud.`,
+      `${c.thanks(first)}\n\n` +
+      `${c.received[kind]}\n\n` +
+      `${c.nextHeading}\n${c.next}\n\n` +
+      `${c.hours}\n\n` +
+      `${c.meanwhile[kind]}\n${linksText}\n\n` +
+      `${contactText}\n\n` +
+      `${c.closing}\nVeyago`,
   };
 }
