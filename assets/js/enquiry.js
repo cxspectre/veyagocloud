@@ -33,7 +33,8 @@
     if (!box) return;
     box.textContent = text;
     box.className = 'enq-status' + (kind ? ' enq-' + kind : '');
-    box.hidden = !text;
+    box.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+    box.hidden = false;
   }
 
   function val(form, name) {
@@ -41,11 +42,17 @@
     return el ? String(el.value || '').trim() : '';
   }
 
-  function markInvalid(form, name, invalid) {
+  function markInvalid(form, name, invalid, text) {
     var el = form.elements[name];
     if (!el) return;
     el.classList.toggle('enq-invalid', !!invalid);
     if (invalid) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid');
+    var err = form.querySelector('#' + el.id + '-err');
+    if (err) {
+      err.textContent = invalid ? (text || msg(form, 'invalid-' + name, msg(form, 'invalid', 'Please check this field.'))) : '';
+      err.hidden = !invalid;
+      if (invalid) el.setAttribute('aria-describedby', err.id); else el.removeAttribute('aria-describedby');
+    }
   }
 
   var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -79,6 +86,7 @@
       business: val(form, 'business'),
       website: val(form, 'website'),
       message: val(form, 'message'),
+      package: val(form, 'package'),
       hp_ref: val(form, 'hp_ref'),                         // honeypot - stays empty for humans
       t: Number(form.getAttribute('data-rendered-at') || 0), // when the form was drawn
       locale: document.documentElement.lang || 'en',
@@ -95,7 +103,8 @@
       'Name: ' + p.name,
       'Email: ' + p.email,
       p.business ? 'Business: ' + p.business : '',
-      p.website ? 'Current site: ' + p.website : ''
+      p.website ? 'Current site: ' + p.website : '',
+      p.package && p.package !== 'unsure' ? 'Package: ' + p.package : ''
     ].filter(Boolean);
     var body = lines.join('\n') + (p.message ? '\n\n' + p.message : '');
     return 'mailto:' + CONFIG.FALLBACK_EMAIL +
@@ -112,6 +121,7 @@
     a.href = mailtoHref(form);
     a.textContent = msg(form, 'fallback-link', 'Send it by email instead');
     box.appendChild(a);
+    box.appendChild(document.createTextNode(', ' + msg(form, 'fallback-address', 'or write to') + ' ' + CONFIG.FALLBACK_EMAIL + '.'));
     box.className = 'enq-status enq-err';
     box.hidden = false;
   }
@@ -182,6 +192,19 @@
       if (button) button.disabled = false;
     });
   }
+
+  /* A tier button carries data-package; clicking it pre-selects that package
+     in the form it scrolls to, so the studio knows what the visitor was
+     looking at without the visitor typing it again. */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-package]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var value = btn.getAttribute('data-package');
+      Array.prototype.forEach.call(forms, function (form) {
+        var radio = form.querySelector('input[name="package"][value="' + value + '"]');
+        if (radio) radio.checked = true;
+      });
+    });
+  });
 
   Array.prototype.forEach.call(forms, function (form) {
     form.setAttribute('data-rendered-at', String(Date.now()));

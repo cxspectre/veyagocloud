@@ -86,7 +86,8 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 .btn-line { color: var(--blue); border-color: rgba(0,102,204,.4); }
 .btn-line:hover { background: rgba(0,102,204,.06); }
 
-:where(a, button):focus-visible { outline: 3px solid rgba(0,113,227,.5); outline-offset: 3px; border-radius: 6px; }
+:where(a, button, summary, input, textarea, select):focus-visible { outline: 2px solid var(--blue-2); outline-offset: 2px; box-shadow: 0 0 0 5px #fff; border-radius: 6px; }
+.section.dark :where(a, button):focus-visible { outline-color: #fff; box-shadow: 0 0 0 5px #000; }
 
 /* Skip link: first focusable element on every page. Parked off-canvas until it receives
    keyboard focus, then drops in above the fixed nav. Its target is <main id="main">. */
@@ -266,7 +267,7 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .devices .device:nth-child(2) { margin-bottom: clamp(16px, 3vw, 34px); }
 
 /* ---------- Two-up tiles (Apple paired) ---------- */
-.tiles2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: var(--maxw-wide); margin: 0 auto; padding-inline: var(--gutter); }
+.tiles2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: var(--maxw-wide); margin: clamp(28px, 4vw, 44px) auto 0; padding-inline: var(--gutter); }
 .tile { background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: clamp(34px, 4vw, 52px) clamp(28px, 3vw, 44px) 0; text-align: center; overflow: hidden; display: flex; flex-direction: column; min-height: 460px; transition: transform .5s var(--ease), box-shadow .5s var(--ease); }
 .tile:hover { transform: translateY(-6px); box-shadow: 0 20px 60px -20px rgba(0,0,0,0.14); }
 .tile .eyebrow { margin-bottom: 6px; }
@@ -440,8 +441,8 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .section.dark .stat { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.09); }
 .section.dark .stat .sv { color: #f5f5f7; }
 .section.dark .stat .sl { color: rgba(245,245,247,.55); }
-.section.dark .btn-blue { background: #2997ff; }
-.section.dark .btn-blue:hover { background: #3da8ff; }
+.section.dark .btn-blue { background: #f5f5f7; color: #1d1d1f; }
+.section.dark .btn-blue:hover { background: #ffffff; }
 .section.dark .btn-line { color: #2997ff; border-color: rgba(41,151,255,.4); }
 
 /* ---------- Split hero (text + device side-by-side) ---------- */
@@ -554,7 +555,7 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 
 /* ---------- Scrolling fact strip ---------- */
 .fact-strip { overflow: hidden; border-top: 1px solid var(--hair-soft); border-bottom: 1px solid var(--hair-soft); padding: 15px 0; background: var(--bg); }
-.fact-strip-inner { display: flex; gap: 52px; width: max-content; animation: factMarquee 38s linear infinite; }
+.fact-strip-inner { flex-wrap: wrap; justify-content: center; display: flex; gap: 52px; width: max-content;  }
 @keyframes factMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .fs-item { white-space: nowrap; font-size: .9375rem; color: var(--muted); display: flex; align-items: center; gap: 10px; letter-spacing: -.01em; }
 .fs-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--blue); flex-shrink: 0; }
@@ -579,7 +580,7 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
   .feat-row .actions { justify-content: center; }
 }
 @media (max-width: 600px) {
-  .cards, .steps, .stats { grid-template-columns: 1fr; }
+  .cards, .cards.two, .steps, .stats { grid-template-columns: 1fr; }
   .stats, .stats.five { grid-template-columns: 1fr 1fr; }
   .fact { grid-template-columns: 1fr; gap: 4px; }
   .proc-step { grid-template-columns: 1fr; gap: 10px; }
@@ -588,7 +589,7 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; transition: none; }
-  .fact-strip-inner { animation: none; }
+  .fact-strip-inner {  }
 }
 
 /* ---------- Launch announcement bar ----------
@@ -1022,3 +1023,17 @@ a.paper-tile:hover .pt-read { text-decoration: underline; }
 .nl-status.nl-ok { color: #1a7f37; }
 .nl-status.nl-err { color: #b3261e; }
 .nl-status a { color: var(--blue); text-decoration: underline; }
+
+
+/* LCP: the hero image and headline are painted immediately; only the smaller lines stagger in */
+.hero.split .wrap > .hero-media, .hero .headline { animation-name: heroInLcp; animation-delay: 0s; }
+@keyframes heroInLcp { from { opacity: 1; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+/* Larger touch targets for the compact header controls without changing their look */
+.nav-quote, .lang-btn, .nav-cta { position: relative; }
+.nav-quote::before, .lang-btn::before, .nav-cta::before { content: ""; position: absolute; inset: -7px -4px; }
+/* Traction stat that used to wrap */
+.stats.five .sv { white-space: nowrap; }
+
+/* A monogram where there is no portrait yet, same geometry as the photo */
+.tc-photo.tc-mono { display: grid; place-items: center; background: #fff; border: 1px solid var(--hair); color: var(--ink); font-weight: 600; font-size: 2.4rem; letter-spacing: -0.02em; }
+.team-grid { align-items: start; }
