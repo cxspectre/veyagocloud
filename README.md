@@ -17,6 +17,7 @@ Veyago travel app) with the privacy policies.
 | `nl/`, `de/` | Generated locale twins of `websites/` — never edit by hand, run `npm run build:locales` |
 | `projects/<slug>/` | Generated research papers — edit `data/research/<slug>.md`, run `npm run build:essays` |
 | `tools/` | Build scripts and the `npm run check` gate, with their tests (see **Scripts and checks**) |
+| `docs/seo-keywords.md` | What the Position Tracking campaign should measure, and which page answers each query |
 | `.github/workflows/` | `check.yml` (tests + checks on every PR), `publish.yml` (Supabase → static export), `drift.yml` |
 
 ## Deploy (Vercel)
