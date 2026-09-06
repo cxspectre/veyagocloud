@@ -130,7 +130,7 @@ Stated plainly, what is well established is that personal life administration is
 
 ## References
 
-C+R Research, 2024 Subscription Survey, as reported in consumer-finance coverage and aggregations including Just Cancel, Subscription Spending Statistics, https://www.justcancel.io/research/subscription-spending-statistics
+C+R Research, 2024 Subscription Survey, as reported in consumer-finance coverage and aggregations. The aggregator page the figure was first taken from has since been withdrawn; the corroborating sources below carry the same finding.
 
 Self Financial, Cost of Unused Paid Subscriptions, https://www.self.inc/info/cost-of-unused-paid-subscriptions/
 

@@ -48,6 +48,16 @@ function inline(s) {
   });
   return s;
 }
+/* A reference reads "Author, title, publication, https://…". Auto-linking the
+   naked URL gives crawlers an anchor whose text is the URL itself, which says
+   nothing about the target and reads badly. Linking the description that
+   precedes it says exactly what is on the other end. Lines without a trailing
+   URL (a source cited but not linked) are left as prose. */
+function reference(s) {
+  const m = s.match(/^([\s\S]+?)[,;]?\s+(https?:\/\/\S+)$/);
+  if (!m) return inline(s);
+  return '<a href="' + m[2] + '" target="_blank" rel="noopener">' + inline(m[1]) + '</a>';
+}
 const sectionId = (h) => {
   const m = h.match(/^(\d+)\./);
   if (m) return 'section-' + m[1];
@@ -67,7 +77,10 @@ function parse(md) {
   let para = [];
   const flush = () => {
     if (!para.length) return;
-    body.push('<p' + (inRefs ? ' class="ref"' : '') + '>' + inline(para.join(' ')) + '</p>');
+    const text = para.join(' ');
+    body.push(inRefs
+      ? '<p class="ref">' + reference(text) + '</p>'
+      : '<p>' + inline(text) + '</p>');
     para = [];
   };
   for (const raw of lines) {
