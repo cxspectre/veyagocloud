@@ -1,0 +1,50 @@
+# Veyago
+
+> An independent New York studio (Veyago Inc., a New York C-Corporation) that ships
+> privacy-first iOS apps and builds fast, hand-written websites, dashboards and CRMs
+> for small businesses. Two people, no account managers, fixed prices in writing.
+
+Two lines of work sit under one bar. The apps are private by design: on-device where
+it can be, no ad trackers, no dark patterns, yours to own rather than to rent. The
+client work is the same discipline applied to someone else's business - hand-written
+HTML, CSS and JS (React only when a site genuinely needs it), SEO handled as the site
+is built, hosting set up in the client's own account, and the code, repository and
+domain owned outright by the client.
+
+The site itself carries no third-party scripts, analytics or cookie banner. Content is
+published in English, Dutch (/nl/) and German (/de/); the three are translations of one
+another, not separate offers.
+
+## Services
+
+- [Websites for business](https://www.veyago.cloud/websites/): Fixed-price websites for small business - landing pages from $699 / €750 excl. tax, multi-page business sites, SEO, and the dashboards, CRMs and admin tools behind them. Packages, what costs extra, process and FAQ are all on the page.
+- [Product and app work](https://www.veyago.cloud/services/): Design and engineering for people building a product rather than a marketing site.
+- [Our approach](https://www.veyago.cloud/approach/): The principles the work is held to - privacy by design, on-device where it can be, no dark patterns, fair pricing, yours to own.
+
+## Apps
+
+- [Kept](https://www.veyago.cloud/kept/): A private, on-device tracker for warranties, receipts, documents, subscriptions and expiry dates. iOS. No accounts, no servers, nothing leaves the device.
+- [Veyago travel](https://www.veyago.cloud/veyago/): A travel app that turns "where should we go?" into a decision - a bracket tournament for destinations, solo or with a group - then plans the trip. iOS and Android.
+- [All apps](https://www.veyago.cloud/apps/): What every app in the catalogue is held to, and where each one stands.
+
+## Research and writing
+
+- [Projects](https://www.veyago.cloud/projects/): The research that comes before a build, and where each idea sits in the pipeline.
+- [The Unkept Life](https://www.veyago.cloud/projects/the-unkept-life/): The research behind Kept - the cognitive cost of personal life administration, and why a private, on-device answer is now possible.
+- [The Edge Moves In](https://www.veyago.cloud/projects/the-edge-moves-in/): On-device inference and what moves off the cloud as consumer hardware catches up.
+- [Articles](https://www.veyago.cloud/journal/): Build logs, research notes and the occasional opinion from the studio.
+
+## Company
+
+- [About](https://www.veyago.cloud/company/): The studio, the founder, and where things actually stand.
+- [Team](https://www.veyago.cloud/team/): The people building it.
+- [Support](https://www.veyago.cloud/support/): Help for the apps.
+- [Contact](mailto:hello@veyago.cloud): hello@veyago.cloud - a reply from a person within one working day.
+
+## Optional
+
+- [Wallpapers](https://www.veyago.cloud/wallpapers/): Free downloads made for the brand. Nothing tracked, nothing sold.
+- [Privacy Policy](https://www.veyago.cloud/privacy/): For this website and Veyago travel.
+- [Kept Privacy Policy](https://www.veyago.cloud/kept-privacy/): Kept holds no data off your device; this says so precisely.
+- [Terms of Use](https://www.veyago.cloud/terms/): Including the general terms for client website work.
+- [Legal / Imprint](https://www.veyago.cloud/legal/): Company details, registered address, and the imprint required in the EU.

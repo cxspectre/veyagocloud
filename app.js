@@ -86,6 +86,15 @@
       { code: 'es', name: 'Español' }
     ];
     var SUP = {}; LANGS.forEach(function (l) { SUP[l.code] = l.name; });
+    /* The few strings app.js writes into the page itself. The dictionaries
+       translate page text; these never appear in the HTML, so they live here. */
+    var UI = {
+      en: { open: 'Open menu', close: 'Close menu', language: 'Language', change: 'Change language' },
+      nl: { open: 'Menu openen', close: 'Menu sluiten', language: 'Taal', change: 'Taal wijzigen' },
+      fr: { open: 'Ouvrir le menu', close: 'Fermer le menu', language: 'Langue', change: 'Changer de langue' },
+      de: { open: 'Menü öffnen', close: 'Menü schließen', language: 'Sprache', change: 'Sprache ändern' },
+      es: { open: 'Abrir el menú', close: 'Cerrar el menú', language: 'Idioma', change: 'Cambiar de idioma' }
+    };
     var LS = 'veyago.lang';
     var SUGGEST_LS = 'veyago.lang.suggest';   // '1' once the suggestion has been dismissed
     /* Suggestion toast copy, shown in the target language so a speaker recognises it. */
@@ -111,6 +120,7 @@
        their locale (see the toast at the end), never force it. */
     var lang = stored() || 'en';
     if (!SUP[lang]) lang = 'en';
+    var T = UI[lang] || UI.en;
 
     /* A page built by tools/build-locales.js is already in one language
        (data-i18n-static="nl" on <html>). It is never re-translated here; it IS
@@ -135,6 +145,7 @@
     /* The one place that navigates. Tests replace window.__veyagoNavigate to
        observe where the picker would send a visitor without leaving the page. */
     function go(path, replace) {
+      if (path.indexOf('#') === -1 && location.hash) path += location.hash;
       if (typeof window.__veyagoNavigate === 'function') return window.__veyagoNavigate(path, !!replace);
       if (replace) location.replace(path); else location.href = path;
     }
@@ -176,10 +187,10 @@
           '" data-setlang="' + l.code + '" lang="' + l.code + '">' + l.name + '</button>';
       }).join('');
       wrap.innerHTML =
-        '<button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Change language">' +
+        '<button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="lang-menu" aria-label="' + T.change + ': ' + SUP[lang] + '">' +
           GLOBE + '<span class="lang-cur">' + lang.toUpperCase() + '</span>' +
         '</button>' +
-        '<div class="lang-menu" role="menu">' + menu + '</div>';
+        '<div class="lang-menu" id="lang-menu" role="menu">' + menu + '</div>';
       navRight.insertBefore(wrap, toggle);
 
       var btn = wrap.querySelector('.lang-btn');
@@ -201,7 +212,7 @@
       var links = document.querySelector('.nav-drawer-links');
       if (!links) return;
       var label = document.createElement('p');
-      label.className = 'nm-label'; label.textContent = 'Language';
+      label.className = 'nm-label'; label.textContent = T.language;
       label.setAttribute('data-i18n-skip', '');
       links.appendChild(label);
       LANGS.forEach(function (l) {
@@ -298,6 +309,7 @@
     /* ---- Load + apply the active locale ---- */
     window.__veyagoI18n = {
       lang: lang,
+      ui: T,
       register: function (code, dict) { if (code === lang) { try { applyDict(dict); } catch (e) {} } }
     };
     if (lang !== 'en' && !staticLang) {
@@ -313,7 +325,10 @@
       var code = detect();
       if (code === 'en' || !SUGGEST[code]) return;   // English preferred (or unsupported) - nothing to offer
       if (code === lang) return;                     // already reading it (a static twin) - nothing to offer
-      try { if (localStorage.getItem(SUGGEST_LS) === '1') return; } catch (e) {}  // already dismissed
+      try {
+        var dismissed = Number(localStorage.getItem(SUGGEST_LS) || 0);
+        if (dismissed === 1 || (dismissed && Date.now() - dismissed < 30 * 864e5)) return;   // dismissed within the last month
+      } catch (e) {}
 
       var copy = SUGGEST[code];
       var el = document.createElement('div');
@@ -332,7 +347,7 @@
         '<button type="button" class="ls-close" aria-label="' + copy.no + '">' + CLOSE + '</button>';
 
       function close() {
-        try { localStorage.setItem(SUGGEST_LS, '1'); } catch (e) {}
+        try { localStorage.setItem(SUGGEST_LS, String(Date.now())); } catch (e) {}
         el.classList.remove('in');
         var rm = function () { if (el.parentNode) el.parentNode.removeChild(el); };
         el.addEventListener('transitionend', function (ev) { if (ev.propertyName === 'opacity') rm(); }, { once: true });
@@ -395,16 +410,24 @@
     window.addEventListener('scroll', syncScroll, { passive: true });
   }
 
-  /* Active nav link */
-  var page = window.location.pathname.split('/').pop() || 'index.html';
-  document.querySelectorAll('.nav-links > a, .nav-dropdown a').forEach(function (a) {
-    if (a.getAttribute('href') === page) {
-      a.classList.add('active');
-      var item = a.closest('.nav-item');
-      if (item) {
-        var btn = item.querySelector('.nav-drop-btn');
-        if (btn) btn.classList.add('active');
-      }
+  /* Current page in the nav. Compared as clean paths - "/services" and
+     "/services/" are the same page, and so is its Dutch or German twin under
+     /nl/ or /de/ - so the row, the Company dropdown and the drawer all agree. */
+  function cleanPath(p) {
+    p = String(p || '').replace(/index\.html$/, '').replace(/^\/(nl|de|fr|es)(?=\/)/, '');
+    if (!/\/$/.test(p)) p += '/';
+    return p;
+  }
+  var here = cleanPath(window.location.pathname);
+  document.querySelectorAll('.nav-links > a, .nav-dropdown a, .nav-drawer-links a').forEach(function (a) {
+    var href = a.getAttribute('href') || '';
+    if (!/^\//.test(href) || cleanPath(href) !== here) return;
+    a.classList.add('active');
+    a.setAttribute('aria-current', 'page');
+    var item = a.closest('.nav-item');
+    if (item) {
+      var btn = item.querySelector('.nav-drop-btn');
+      if (btn) btn.classList.add('active');
     }
   });
 
@@ -469,7 +492,7 @@
       drawer.classList.add('open');
       scrim.classList.add('open');
       toggle.setAttribute('aria-expanded', 'true');
-      toggle.setAttribute('aria-label', 'Close menu');
+      toggle.setAttribute('aria-label', ((window.__veyagoI18n || {}).ui || {}).close || 'Close menu');
       drawer.setAttribute('aria-hidden', 'false');
       document.body.style.top = (-scrollLockY) + 'px';
       document.documentElement.classList.add('menu-open');
@@ -482,7 +505,7 @@
       drawer.classList.remove('open');
       scrim.classList.remove('open');
       toggle.setAttribute('aria-expanded', 'false');
-      toggle.setAttribute('aria-label', 'Open menu');
+      toggle.setAttribute('aria-label', ((window.__veyagoI18n || {}).ui || {}).open || 'Open menu');
       drawer.setAttribute('aria-hidden', 'true');
       setBackgroundInert(false);
       document.documentElement.classList.remove('menu-open');
@@ -494,6 +517,14 @@
     toggle.addEventListener('click', function () {
       drawerOpen() ? closeDrawer() : openDrawer();
     });
+    /* Crossing into the desktop layout hides the hamburger; an open drawer
+       would otherwise keep the page scroll-locked with no way to close it. */
+    if (window.matchMedia) {
+      var desktop = window.matchMedia('(min-width: 1000px)');
+      var onDesktop = function (e) { if (e.matches) closeDrawer(); };
+      if (desktop.addEventListener) desktop.addEventListener('change', onDesktop);
+      else if (desktop.addListener) desktop.addListener(onDesktop);
+    }
     if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
     scrim.addEventListener('click', closeDrawer);
 

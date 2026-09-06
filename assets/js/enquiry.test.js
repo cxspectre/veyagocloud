@@ -152,15 +152,15 @@ test('the two real forms stay in sync: same field names, same status-message key
     const form = doc.querySelector('form[data-enquiry]');
     return {
       page: p,
-      fields: [...form.querySelectorAll('input, textarea')].map((el) => el.name).sort(),
+      fields: [...new Set([...form.querySelectorAll('input, textarea')].map((el) => el.name))].sort(),
       msgs: [...form.querySelectorAll('[data-msg]')].map((el) => el.getAttribute('data-msg')).sort(),
       honeypotLabel: form.querySelector('.enq-hp label').textContent,
     };
   });
   assert.deepEqual(pages[0].fields, pages[1].fields);
   assert.deepEqual(pages[0].msgs, pages[1].msgs);
-  assert.deepEqual(pages[0].fields, ['business', 'email', 'hp_ref', 'message', 'name', 'website']);
-  assert.deepEqual(pages[0].msgs, ['error', 'fallback-link', 'invalid', 'rate-limited', 'sending']);
+  assert.deepEqual([...new Set(pages[0].fields)], ['business', 'email', 'hp_ref', 'message', 'name', 'package', 'website']);
+  assert.deepEqual(pages[0].msgs, ['error', 'fallback-address', 'fallback-link', 'invalid', 'invalid-email', 'invalid-name', 'invalid-website', 'rate-limited', 'sending']);
   for (const p of pages) assert.equal(p.honeypotLabel, 'Leave this field empty', p.page + ': honeypot must not look like a real field to autofill');
 });
 
