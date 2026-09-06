@@ -13,6 +13,7 @@
     "build:essays": "node tools/build-essays.js",
     "build:locales": "node tools/build-locales.js",
     "sitemap:lastmod": "node tools/sitemap-lastmod.js",
+    "shots:work": "node tools/capture-work-shots.js",
     "test": "node --test \"tools/lib/*.test.js\" \"tools/*.test.js\" \"admin/js/*.test.js\" \"assets/js/*.test.js\" \"supabase/functions/_shared/*.test.js\"",
     "check": "node tools/check.js"
   },

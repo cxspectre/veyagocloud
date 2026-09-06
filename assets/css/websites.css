@@ -26,10 +26,12 @@
 .tier-list li.plus::before { width: 0; height: 0; border: none; content: "+"; top: 0; left: 4px; color: var(--blue); font-weight: 600; }
 .tier .btn { margin-top: 22px; align-self: flex-start; }
 .tier-note { font-size: .9rem; color: var(--muted); max-width: 70ch; margin: 22px auto 0; padding-inline: var(--gutter); }
+.extras .tier-note { margin: 20px 0 0; padding-inline: 0; }
 
 /* What costs extra */
-.extras { max-width: 760px; margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); text-align: left; }
-.extras dl { display: grid; grid-template-columns: 1fr auto; gap: 0; margin: 0; border-top: 1px solid var(--hair-soft); }
+.extras h3 { font-size: 1.2rem; letter-spacing: -0.015em; margin: 0 0 8px; }
+.extras { max-width: var(--maxw-wide); margin: clamp(26px, 3.4vw, 40px) auto 0; padding-inline: var(--gutter); text-align: left; }
+.extras dl { display: grid; grid-template-columns: 1fr auto; gap: 0; margin: 0; max-width: 720px; border-top: 1px solid var(--hair-soft); }
 .extras dt, .extras dd { padding: 13px 0; margin: 0; border-bottom: 1px solid var(--hair-soft); }
 .extras dt { color: var(--text); padding-right: 24px; }
 .extras dt span { display: block; font-size: .88rem; color: var(--muted); margin-top: 2px; }
@@ -80,45 +82,73 @@ textarea.enq-input { min-height: 132px; resize: vertical; line-height: 1.5; }
   .extras dt { border-bottom: none; padding-bottom: 4px; }
 }
 
-/* late additions */
+/* ── Package tiers, continued ──────────────────────────────────────────── */
 .tier-from { font-size: .95rem; font-weight: 400; letter-spacing: 0; color: var(--muted); margin-right: 6px; }
-.extras h3 { font-size: 1.2rem; letter-spacing: -0.015em; margin: 0 0 8px; }
 
-
-/* ── Hero actions + promise line ──────────────────────────────────────── */
-.hero .promise { margin: 14px 0 0; font-size: .95rem; color: var(--muted); }
-/* ── Our side of the deal ──────────────────────────────────────────────── */
-.deal { max-width: var(--maxw); margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); }
+/* Everything under the Packages headline shares the tiers' left edge - the
+   grid, the deal list and the price list all start on the same line. */
+.deal { max-width: var(--maxw-wide); margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); }
 .deal ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 28px; }
 .deal li { position: relative; padding-left: 26px; font-size: 1rem; color: var(--text); line-height: 1.45; }
 .deal li::before { content: ""; position: absolute; left: 2px; top: .55em; width: 11px; height: 6px; border-left: 2px solid var(--blue); border-bottom: 2px solid var(--blue); transform: rotate(-45deg); transform-origin: left; }
-/* ── Who you'll work with ──────────────────────────────────────────────── */
-.people { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: var(--maxw); margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); }
+
+/* ── Recent work - a real screenshot of every site, in a browser frame ──────
+   The apps pages show their screenshots in a phone; a page about websites
+   shows them in a window. Same idea, same restraint: chrome enough to read as
+   a browser, quiet enough that the site inside it is what you look at. */
+.work-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: var(--maxw-wide); margin: clamp(28px, 4vw, 44px) auto 0; padding-inline: var(--gutter); }
+.work-card { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: 14px 14px 0; transition: transform .5s var(--ease), box-shadow .5s var(--ease); }
+.work-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px -20px rgba(0,0,0,0.14); }
+.work-card:focus-visible { outline: 3px solid rgba(0,113,227,.5); outline-offset: 3px; }
+.work-frame { border-radius: 13px; overflow: hidden; background: #fff; border: 1px solid var(--hair-soft); box-shadow: 0 14px 34px -20px rgba(0,0,0,.4); }
+.work-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: #fbfbfd; border-bottom: 1px solid var(--hair-soft); }
+.work-bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--hair); flex-shrink: 0; }
+.work-host { margin-left: 10px; font-size: .72rem; color: var(--muted-2); letter-spacing: -0.004em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.work-frame img { display: block; width: 100%; height: auto; }
+.work-body { padding: 18px 8px 22px; }
+.work-body h3 { font-size: 1.1rem; letter-spacing: -0.018em; margin: 0 0 4px; }
+.work-body p { margin: 0; font-size: .93rem; color: var(--muted); line-height: 1.45; }
+.work-go { display: inline-flex; margin-top: 12px; font-size: var(--fz-link); color: var(--blue); }
+.work-card:hover .work-go { text-decoration: underline; text-underline-offset: 3px; }
+
+/* This page, on the same terms as the four above it. */
+.measured { max-width: var(--maxw-wide); margin: clamp(30px, 4vw, 46px) auto 0; padding-inline: var(--gutter); }
+.measured-head { margin: 0; font-size: 1.05rem; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); }
+.measured-list { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 26px; margin: 14px 0 0; padding: 18px 0 0; border-top: 1px solid var(--hair-soft); }
+.measured-list b { display: block; font-size: 1.45rem; font-weight: 600; letter-spacing: -0.028em; line-height: 1.1; color: var(--ink); }
+.measured-list span { font-size: .85rem; color: var(--muted); }
+.measured-note { margin: 16px 0 0; max-width: 74ch; font-size: .88rem; color: var(--muted); }
+.measured-note a { color: var(--blue); }
+
+/* ── Who you'll work with - a footnote to the process, not its own section ── */
+.people { max-width: var(--maxw); margin: clamp(30px, 4vw, 46px) auto 0; padding-inline: var(--gutter); }
+.people-label { margin: 0 0 14px; font-size: .95rem; font-weight: 600; letter-spacing: -0.012em; color: var(--ink); }
+.people-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .person { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: center; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: 18px 20px; }
 .person picture { display: block; }
 .person-photo, .person-mono { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
 .person-mono { display: grid; place-items: center; background: #fff; border: 1px solid var(--hair); font-weight: 600; color: var(--ink); }
 .person h3 { font-size: 1.05rem; margin: 0 0 2px; letter-spacing: -0.012em; }
 .person p { margin: 0; font-size: .92rem; color: var(--muted); line-height: 1.45; }
-/* ── Recent work ───────────────────────────────────────────────────────── */
-.work-note { max-width: 70ch; margin: 18px auto 0; padding-inline: var(--gutter); font-size: .9rem; color: var(--muted); }
-/* ── This site is the sample ──────────────────────────────────────────── */
-.sample { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: var(--maxw); margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); }
-.sample div { background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: 16px; padding: 16px 18px; }
-.sample b { display: block; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.025em; color: var(--ink); }
-.sample span { font-size: .85rem; color: var(--muted); }
+
 /* ── Package radio group in the form ──────────────────────────────────── */
 .enq-radios { display: flex; flex-wrap: wrap; gap: 8px; }
 .enq-radio { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--hair); border-radius: 980px; background: #fff; font-size: .95rem; cursor: pointer; }
 .enq-radio input { accent-color: var(--blue-2); margin: 0; }
 .enq-radio:has(input:checked) { border-color: var(--blue-2); box-shadow: 0 0 0 3px rgba(0,113,227,.14); }
+
 /* ── Field-level errors ───────────────────────────────────────────────── */
 .enq-error { font-size: .86rem; color: #b3261e; margin: 0; }
 .enq-status:empty { display: none; }
-@media (max-width: 760px) {
-  .deal ul, .people { grid-template-columns: 1fr; }
-  .sample { grid-template-columns: 1fr 1fr; }
-}
 
+/* ── /services/ hero signpost ─────────────────────────────────────────── */
 .hero .signpost { margin: 14px auto 0; font-size: .95rem; color: var(--muted); max-width: 60ch; }
 .hero .signpost .link { font-size: .95rem; }
+
+@media (max-width: 900px) {
+  .measured-list { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 760px) {
+  .deal ul, .people-row { grid-template-columns: 1fr; }
+  .work-grid { grid-template-columns: 1fr; max-width: 560px; }
+}

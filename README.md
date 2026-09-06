@@ -76,6 +76,7 @@ only and nothing here is shipped to the browser.
 | `npm run build:essays` | Renders `data/research/*.md` into `/projects/<slug>/index.html` | After editing a paper, or the shared chrome in `tools/lib/chrome.js` |
 | `npm run build:locales` | Writes the static `/nl/` and `/de/` twins of the pages listed in `tools/build-locales.js` (`PAGES`) from `i18n/<code>.js` | After editing `websites/index.html` or a dictionary; `npm run build:locales -- --check` only reports untranslated strings |
 | `npm run sitemap:lastmod` | Refreshes `<lastmod>` on the hand-written `sitemap.xml` entries from git history | Before committing a change to a hand-written page |
+| `npm run shots:work` | Retakes the portfolio screenshots on `/websites/` (`tools/capture-work-shots.js`) into `assets/work-*.webp`, driving a local Chromium; needs `cwebp` | When a site in the Recent work grid has been redesigned, or a new one joins it |
 | `npm test` | Unit tests (`node --test`) for the builders, sanitiser, verifier, admin and public scripts | Before every commit |
 | `npm run check` | The pre-merge gate (`tools/check.js`): no third-party requests on the public site, full locale coverage, generated essays and twins fresh, generated tree sound | Before opening a PR — `check.yml` runs `npm test` and `npm run check` on every PR and push to `main` |
 
