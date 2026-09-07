@@ -30,7 +30,11 @@
   <url><loc>https://www.veyago.cloud/terms/</loc><lastmod>2026-09-05</lastmod><priority>0.3</priority></url>
   <url><loc>https://www.veyago.cloud/legal/</loc><lastmod>2026-09-06</lastmod><priority>0.3</priority></url>
   <!-- BUILD:generated:start -->
-  <url><loc>https://www.veyago.cloud/journal/</loc><priority>0.8</priority></url>
+  <url><loc>https://www.veyago.cloud/journal/</loc><lastmod>2026-09-03</lastmod><priority>0.8</priority></url>
+  <url><loc>https://www.veyago.cloud/journal/from-ai-prototype-to-production/</loc><lastmod>2026-09-03</lastmod><priority>0.6</priority></url>
+  <url><loc>https://www.veyago.cloud/journal/what-a-699-website-includes/</loc><lastmod>2026-09-03</lastmod><priority>0.6</priority></url>
+  <url><loc>https://www.veyago.cloud/journal/why-your-wix-site-is-slow/</loc><lastmod>2026-09-03</lastmod><priority>0.6</priority></url>
+  <url><loc>https://www.veyago.cloud/journal/on-your-side-of-line/</loc><lastmod>2026-06-29</lastmod><priority>0.6</priority></url>
   <url><loc>https://www.veyago.cloud/wallpapers/</loc><priority>0.7</priority></url>
   <!-- BUILD:generated:end -->
 </urlset>

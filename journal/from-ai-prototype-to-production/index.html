@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>You built it with Lovable or an AI prompt. Here's how to take it to production. | Veyago</title>
+  <meta name="description" content="What Lovable, v0, Bolt and a ChatGPT prompt get right, the ways those sites usually fail a month later, and what taking one to production involves." />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="/styles.css" />
+  <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+  <meta property="og:title" content="You built it with Lovable or an AI prompt. Here's how to take it to production. | Veyago" />
+  <meta property="og:description" content="What Lovable, v0, Bolt and a ChatGPT prompt get right, the ways those sites usually fail a month later, and what taking one to production involves." />
+  <meta property="og:image" content="https://www.veyago.cloud/assets/og.png" />
+  <meta property="og:type" content="article" />
+  <link rel="canonical" href="https://www.veyago.cloud/journal/from-ai-prototype-to-production/" />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:url" content="https://www.veyago.cloud/journal/from-ai-prototype-to-production/" />
+  <meta property="og:site_name" content="Veyago" />
+  <meta property="og:locale" content="en_US" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="You built it with Lovable or an AI prompt. Here's how to take it to production. | Veyago" />
+  <meta name="twitter:description" content="What Lovable, v0, Bolt and a ChatGPT prompt get right, the ways those sites usually fail a month later, and what taking one to production involves." />
+  <meta name="twitter:image" content="https://www.veyago.cloud/assets/og.png" />
+  <meta name="author" content="Veyago Inc." />
+  <meta property="article:published_time" content="2026-09-03" />
+  <meta property="article:modified_time" content="2026-09-07" />
+  <meta property="article:publisher" content="https://www.veyago.cloud/" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        "@id": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/#article",
+        "headline": "You built it with Lovable or an AI prompt. Here's how to take it to production.",
+        "description": "What Lovable, v0, Bolt and a ChatGPT prompt get right, the ways those sites usually fail a month later, and what taking one to production involves.",
+        "url": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/",
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/"
+        },
+        "image": "https://www.veyago.cloud/assets/og.png",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "wordCount": 1080,
+        "datePublished": "2026-09-03",
+        "dateModified": "2026-09-07",
+        "author": {
+          "@type": "Organization",
+          "@id": "https://www.veyago.cloud/#organization",
+          "name": "Veyago Inc.",
+          "url": "https://www.veyago.cloud/"
+        },
+        "publisher": {
+          "@id": "https://www.veyago.cloud/#organization"
+        },
+        "isPartOf": {
+          "@type": "Blog",
+          "@id": "https://www.veyago.cloud/journal/#blog"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://www.veyago.cloud/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Articles",
+            "item": "https://www.veyago.cloud/journal/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "You built it with Lovable or an AI prompt. Here's how to take it to production."
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="nav" id="site-nav">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/assets/veyago-icon-44.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
+      <nav class="nav-links">
+        <a href="/apps/">Apps</a>
+        <a href="/projects/">Projects</a>
+        <a href="/journal/">Articles</a>
+        <a href="/websites/">Websites</a>
+        <a href="/services/">Services</a>
+        <div class="nav-item" id="company-nav">
+          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="/company/"><span class="dd-title">About</span><span class="dd-sub">The studio and our story</span></a>
+            <a href="/team/"><span class="dd-title">Team</span><span class="dd-sub">The people building it</span></a>
+            <a href="/approach/"><span class="dd-title">Approach</span><span class="dd-sub">How we think and build</span></a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav-right">
+        <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="nav-scrim" id="nav-scrim"></div>
+  <aside class="nav-drawer" id="nav-drawer" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
+    <div class="nav-drawer-top">
+      <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <nav class="nav-drawer-links" aria-label="Primary">
+      <a href="/apps/">Apps</a>
+      <a href="/projects/">Projects</a>
+      <a href="/journal/">Articles</a>
+      <a href="/websites/">Websites</a>
+      <a href="/services/">Services</a>
+      <p class="nm-label">Company</p>
+      <a class="nm-sub" href="/company/">About</a>
+      <a class="nm-sub" href="/team/">Team</a>
+      <a class="nm-sub" href="/approach/">Approach</a>
+      <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
+    </nav>
+  </aside>
+
+  <main id="main">
+  <article class="paper paper-journal" style="--st:#0071e3">
+    <div class="paper-shell">
+      <nav class="paper-toc" aria-label="Contents">
+        <p class="ptoc-label">Contents</p>
+        <ol>
+          <li><a href="#what-those-tools-do-well">What those tools do well.</a></li>
+          <li><a href="#where-they-usually-stop">Where they usually stop.</a></li>
+          <li><a href="#what-taking-it-the-rest-of-the-way-involves">What taking it the rest of the way involves.</a></li>
+          <li><a href="#how-to-tell-if-your-site-is-actually-fine">How to tell if your site is actually fine.</a></li>
+        </ol>
+      </nav>
+      <div class="paper-main">
+        <div class="paper-masthead">
+          <p class="paper-kicker"><a href="/journal/">&larr; Articles</a></p>
+          <h1 class="paper-title">You built it with Lovable or an AI prompt. Here's how to take it to production.</h1>
+          <p class="paper-dek">What the prompt-to-site tools get right, where they usually stop, and what finishing the job actually involves.</p>
+          <p class="paper-meta">September 3, 2026 · 5 min read</p>
+        </div>
+        <div class="paper-body">
+        <p class="eyebrow paper-marker">Websites</p>
+        <p>You typed a description of your business into Lovable, v0, Bolt or ChatGPT, and something came back that looked like a website. It had a hero, a grid of features, a contact form and colours you did not have to choose. You put it live the same evening.</p><p>A month on, it feels slower than it did, nobody can find it on Google, changing the phone number takes an hour, and the copy says things about your business that are not quite true. This is the state a lot of sites are in when someone writes to us, and it is worth saying plainly: the tool did not fail. It did the thing it is for. It is just not the thing you need next.</p>
+        <h2 id="what-those-tools-do-well">What those tools do well.</h2>
+        <p>Credit where it is due.</p><ul><li>They get you from nothing to something in an hour, which is more than most agencies manage in a fortnight of discovery calls.</li><li>They are good at layout. The hero, the three-column grid, the pricing table. The shape of a modern site is a solved problem, and they solve it.</li><li>They make it cheap to find out what you actually want. Looking at a wrong draft is the fastest route to a right brief.</li></ul><p>If the site is a way to find out whether anyone cares, they are exactly the right tool. The trouble starts when the test succeeds and the prototype quietly becomes the front door of the business.</p>
+        <h2 id="where-they-usually-stop">Where they usually stop.</h2>
+        <p>The failure modes are consistent enough to list.</p><ul><li><strong>No real SEO.</strong> The page has a title, and sometimes a description, but they are generic. There is no structured data, often no sitemap, and nobody has told Google the site exists. Not being indexed at all is one of the first things we check for, and it is common.</li><li><strong>Generic copy.</strong> The words were generated from a sentence about you. They read like every other generated site, and they make claims, "trusted by thousands", "industry-leading", that are not yours and may not be true.</li><li><strong>Forms that go nowhere.</strong> The contact form was drawn, not wired. Submissions vanish, or land in a service on a free plan that has since expired. Enquiries can go missing for months this way without anyone noticing.</li><li><strong>Framework weight for a brochure.</strong> The tool built a full React application to show five paragraphs and a phone number. The visitor downloads a runtime to read a menu. It is the same slowness a Wix site has, arrived at from the other direction.</li><li><strong>Nobody owns the hosting or the domain.</strong> The site lives on the tool's subdomain, or on an account created with a login nobody wrote down. When the tool changes its pricing, or you want to leave, you find out what you actually own.</li><li><strong>Security basics missing.</strong> No security headers, sometimes an API key sitting in the page source, occasionally a database the whole internet can read because the default was open and nobody closed it.</li></ul><p>Some of these are minor. Two of them, lost enquiries and open databases, are the kind of thing you would want to know about today.</p>
+        <blockquote class="pull-quote">
+          <p>The tool did not fail. It did what it is for. It is just not the thing you need next.</p>
+        </blockquote>
+        <h2 id="what-taking-it-the-rest-of-the-way-involves">What taking it the rest of the way involves.</h2>
+        <p>"The rest of the way" is deliberate. We do not throw the prototype out. It is the best brief you could have given us.</p><ul><li><strong>Keep what works.</strong> The structure you settled on, the sections you kept, the tone you liked. Those decisions are made, and they are yours.</li><li><strong>Rebuild the structure underneath.</strong> For a brochure site that means plain, hand-written HTML and CSS: no framework, no runtime, a page that arrives as a page. If the site genuinely needs interaction, a configurator or a customer portal, we reach for React. The tool follows the job.</li><li><strong>Real content.</strong> We replace the generated copy with what you actually do, in your words or ours, and we take out every claim that is not true.</li><li><strong>Forms that deliver.</strong> A contact form that lands in your inbox, with a copy kept somewhere you can find it, and a test we do together on launch day.</li><li><strong>Headers and security.</strong> Proper security headers, no secrets in the page, and if there is a database, rules that mean only the right people can read it.</li><li><strong>SEO that exists.</strong> Titles and descriptions per page, structured data, a sitemap, Search Console in your account, and redirects from whatever the old addresses were.</li><li><strong>Your own accounts.</strong> Hosting on a free static host in your name, your domain pointed at it, and the code in a repository you own. If we disappeared tomorrow, the site would not.</li><li><strong>Analytics-free by default.</strong> We do not add tracking unless you ask for it. Most small businesses need the Search Console numbers and their inbox, not a dashboard nobody opens. If you do want analytics, we will pick something that respects your visitors and say so on your privacy page.</li></ul><p>The result should feel like the site you already have, finished. Same shape, same sections, but fast, findable, honest, and yours.</p>
+        <h2 id="how-to-tell-if-your-site-is-actually-fine">How to tell if your site is actually fine.</h2>
+        <p>Not every prototype needs this, and we would rather say so than sell you a rebuild. Run through these, honestly.</p><ol><li>Search Google for your business name in quotes, and for your street address. Does your site appear? If not, it is not indexed, and that is the first thing to fix.</li><li>Fill in your own contact form from your phone. Did the message arrive? Where?</li><li>Open the site on a phone, away from wifi. Count the seconds before you can read it.</li><li>Read the copy aloud. Is every sentence true of your business?</li><li>Find the login for the hosting and for the domain. Can you? Are they in your name?</li><li>Paste your address into PageSpeed Insights, which Google offers free, and look at the mobile score.</li></ol><p>If the answers are yes, it arrived, quickly, yes, yes, and green, your site is fine. Keep it and spend the money on something else. If two or three of them are no, you have a working prototype and a very good brief, which is a better place to start than most people get.</p>
+        <hr class="paper-rule" />
+        <p><a href="https://www.veyago.cloud/websites/#quote" target="_blank" rel="noopener noreferrer">Send us the address of your current site</a> and we will tell you honestly what it would take to finish it, or that it does not need finishing. Either answer is free.</p>
+        </div>
+        <section class="newsletter" data-newsletter aria-labelledby="nl-h-article">
+          <div class="nl-inner">
+            <p class="eyebrow">Newsletter</p>
+            <h2 class="nl-heading" id="nl-h-article">Want the next field note?</h2>
+            <p class="nl-dek">Occasional field notes from the studio. Leave your address and we will add you by hand — no list software, no spam, and a reply to unsubscribe.</p>
+            <form class="nl-form" data-newsletter-form novalidate>
+              <label class="nl-label" for="nl-email-article">Email address</label>
+              <div class="nl-row">
+                <input class="nl-input" id="nl-email-article" type="email" name="email" autocomplete="email" placeholder="you@example.com" required />
+                <button class="nl-btn" type="submit">Send it to me</button>
+              </div>
+              <div class="nl-hp" aria-hidden="true">
+                <label>Leave this field empty<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+              </div>
+              <p class="nl-note">We hand your email to our newsletter tool only when you subscribe — never stored here, never sold.</p>
+              <p class="nl-status" data-newsletter-status role="status" aria-live="polite"></p>
+            </form>
+          </div>
+        </section>
+        <footer class="paper-foot">
+          <div class="pf-nav">
+            <a class="pf-back" href="/journal/">&larr; All articles</a>
+          </div>
+        </footer>
+      </div>
+    </div>
+  </article>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
+      <div class="footer-cols">
+        <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/services/">Services</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
+        <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15189132531">+1 (518) 913 2531 (US)</a><a href="tel:+19432736579">+1 (943) 273 6579 (international)</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
+      </div>
+      <div class="footer-base">
+        <span>&copy; <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
+        <span>Private apps and proper websites · New York</span>
+      </div>
+    </div>
+  </footer>
+  <script src="/assets/js/site-config.js?v=20260721"></script>
+  <script src="/app.js" defer></script>
+  <script src="/assets/js/newsletter.js" defer></script>
+</body>
+</html>
