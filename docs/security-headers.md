@@ -61,8 +61,9 @@ form-action 'self' mailto:; frame-ancestors 'none'; upgrade-insecure-requests
   add that origin to `connect-src`.
 - **Supabase project ref changes** (`assets/js/enquiry.js`,
   `admin/supabase-config.js`): update the host in both CSPs.
-- **Analytics switched on** (`tools/lib/chrome.js` `ANALYTICS_DOMAIN`): add the
-  script origin to `script-src` and `connect-src`.
+- **Analytics, or any other third-party script**: add the script origin to
+  `script-src` and `connect-src`. Until it is there, `npm run check` names every
+  page that loads it.
 - **An inline `<script>` on a public page**: move it to a file under
   `/assets/js/`, or add its `'sha256-…'` hash (see below).
 
@@ -104,3 +105,20 @@ form-action 'self' mailto:; frame-ancestors 'none'; upgrade-insecure-requests
 `tools/serve.py` reads `vercel.json` and sends the same headers, so a page that
 breaks under the policy breaks on `npm start` too. Open the browser console:
 CSP violations are logged as "Refused to …".
+
+## Automated check
+
+`npm run check` (`tools/check.js`, run by `.github/workflows/check.yml` on every
+pull request and push to `main`) scans every public page, stylesheet and script
+for requests to hosts the public CSP above does not allow: `<script src>`,
+`<link>` (stylesheet, icon, preload, preconnect, …), `<img>` and `srcset`,
+media, frames, plugins, `<form action>`, `url()` / `@import` in CSS, import
+maps, and `fetch` / `XMLHttpRequest` / `WebSocket` / `EventSource` /
+`sendBeacon` / `import()` calls with a literal URL. The allowlist is read from
+the public CSP block in `vercel.json`, so adding a third-party host is a
+one-place change there and the check follows; wildcards and bare schemes in
+the CSP allow nothing, only an exact host does. Plain `<a href>` links and
+`rel="canonical"` / `rel="alternate"` are navigations or relationships, not
+requests, and are not reported. A URL held in a variable cannot be resolved
+statically; the CSP remains the runtime backstop. The scanner itself is
+`tools/lib/external-requests.js`.

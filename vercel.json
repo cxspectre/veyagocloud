@@ -66,6 +66,83 @@
           "value": "noindex, nofollow"
         }
       ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/i18n/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/(styles\\.css|app\\.js)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(css|js)/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/quote",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept-language",
+          "value": "(?i)^nl.*"
+        }
+      ],
+      "destination": "/nl/websites/#quote",
+      "permanent": false
+    },
+    {
+      "source": "/quote",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept-language",
+          "value": "(?i)^de.*"
+        }
+      ],
+      "destination": "/de/websites/#quote",
+      "permanent": false
+    },
+    {
+      "source": "/quote",
+      "destination": "/websites/#quote",
+      "permanent": false
+    },
+    {
+      "source": "/offerte",
+      "destination": "/nl/websites/#quote",
+      "permanent": false
+    },
+    {
+      "source": "/angebot",
+      "destination": "/de/websites/#quote",
+      "permanent": false
     }
   ]
 }

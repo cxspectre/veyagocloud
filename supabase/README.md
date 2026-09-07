@@ -65,22 +65,87 @@ renders static HTML into the repo, so `veyago.cloud` stays first-party and call-
 
 The forms on `/websites/` and `/services/` post to the `website-enquiry` Edge
 Function, which stores the lead in `public.website_enquiries`, emails us
-through Resend and sends the visitor a fixed acknowledgement. The public site
-still makes no third-party calls: the only request is to our own function, and
-if it fails the page falls back to a pre-filled `mailto:`.
+through Resend and sends the visitor a fixed acknowledgement in their language
+(English, Dutch or German, from the page's `lang`). The public site still makes
+no third-party calls: the only request is to our own function, and if it fails
+the page falls back to a pre-filled `mailto:`.
 
 Deploy once, in this order:
 
 ```bash
-supabase db push                                           # applies 0019_website_enquiries.sql
+supabase db push                                           # applies 0019 + 0020
 supabase functions deploy website-enquiry --no-verify-jwt  # visitors have no session
 supabase secrets set ENQUIRY_TO=hello@veyago.cloud ENQUIRY_IP_SALT="$(openssl rand -hex 24)"
 ```
 
-`ENQUIRY_IP_SALT` is mandatory: the function refuses every request until it is
-set, because an IP hashed with a salt that lives in this repository would be
-a reversible IP. `RESEND_API_KEY`, `EMAIL_FROM` and `SITE_URL` are shared with
-the other functions and must already be set. `ENQUIRY_ORIGINS` (comma-separated) overrides
-the allowed origins, which default to the production domains plus localhost.
-Leads are readable by managers in the dashboard's database view; the attempt
-log (`website_enquiry_attempts`) is service-role only and prunes itself.
+Two secrets are mandatory and the function refuses every request (HTTP 500,
+page shows the mailto fallback) until both are set:
+
+- `ENQUIRY_IP_SALT` — an IP hashed with a salt that lives in this repository
+  would be a reversible IP, which the migration promises we never store.
+- `EMAIL_FROM` — shared with the other functions, but here it is required
+  rather than defaulted: the acknowledgement lands in a stranger's inbox
+  signed as Veyago, so Resend's test sender is never an acceptable fallback.
+
+`RESEND_API_KEY` and `SITE_URL` are shared with the other functions and must
+already be set. `ENQUIRY_ORIGINS` (comma-separated) overrides the allowed
+origins, which default to the production domains; Vercel preview deployments
+(`veyagocloud-*-ieglobal-pe.vercel.app`) and localhost are always allowed.
+
+### What the form sends
+
+Besides the fields 0019 introduced, the `/websites/` form sends `package`:
+one of `launch`, `business`, `backoffice` or `unsure`, or empty. Empty and
+missing become `NULL`; any other value is a 400 with `field: "package"`. The
+`/services/` form does not send it.
+
+### After the insert (0020_enquiry_ops.sql)
+
+Everything after the lead is stored is best-effort — none of it can fail the
+request, because the lead exists and the visitor has been promised a reply:
+
+1. **We are emailed** (`ENQUIRY_TO`, reply-to set to the visitor), including the
+   package line. Logged in `email_log` as kind `enquiry_notify`.
+2. **The visitor is acknowledged** in en/nl/de: what happens next, the
+   "New York hours (Mon–Fri, ET)" expectation, the packages/FAQ links (website)
+   or the services page (project), and hello@veyago.cloud plus both phone
+   numbers. Never echoes anything they typed except a letters-only first name.
+   Logged as kind `enquiry_ack`.
+3. **A follow-up task** is inserted into `public.tasks` with the service role:
+   title `Reply to <name> - <website|project> enquiry`, priority `high`, details
+   holding business, website, package, message, the reference id and a deep
+   link to `/admin/leads?id=<id>`, due the next New York working day (Fri, Sat
+   and Sun all land on Monday). Assigned to the first active owner, else the
+   first active admin, else left unassigned. No email goes out for it —
+   `notify-task` is only ever invoked from the admin UI, and the owner has just
+   received the enquiry itself.
+
+Both `email_log` rows carry the enquiry id in the new `reference` column, so
+`/admin/leads` can flag a lead nobody was told about ("not notified", red) or a
+visitor who got no confirmation ("no acknowledgement", grey).
+
+### Retention
+
+Enforced inside `submit_website_enquiry()` on every submission — no cron, no
+extension, no job that can silently stop:
+
+| What                          | When                  | Why                                 |
+| ----------------------------- | --------------------- | ----------------------------------- |
+| `ip_hash` cleared             | 30 days after entry   | abuse limiting is long over by then |
+| `lost` / `spam` leads deleted | 90 days after entry   | nothing left to follow up           |
+| every lead deleted            | 24 months after entry | a quote that old is not a lead      |
+
+The `ip_hash` scrub does not move `updated_at` (the trigger skips updates that
+only change `ip_hash`), so "last edited" on a lead stays honest. The attempt
+log (`website_enquiry_attempts`) is service-role only and prunes itself daily.
+
+### Working the leads: `/admin/leads`
+
+Managers only (RLS: managers read; the column grant lets `authenticated` update
+exactly `status`, `notes` and `next_follow_up_on` — nothing the visitor wrote
+can be edited from the browser, and nothing is deleted from it). The screen
+lists enquiries newest first, opens each in place with every field, a Reply
+`mailto:` carrying the reference in the subject, status chips
+(new → replied → quoted → won/lost/spam), notes and a follow-up date. "Open"
+is new + replied + quoted; "All" adds the closed ones. Follow-ups due today or
+earlier are flagged red and counted in the stat strip.

@@ -4,13 +4,18 @@
   "private": true,
   "description": "Build tooling for the veyago.cloud static site (journal + wallpapers static export). The site itself is plain static HTML/CSS/JS served by GitHub Pages; these dependencies are build-time only and never shipped to the browser.",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "python3 tools/serve.py 8765",
     "build": "node tools/build.js",
     "build:essays": "node tools/build-essays.js",
     "build:locales": "node tools/build-locales.js",
     "sitemap:lastmod": "node tools/sitemap-lastmod.js",
-    "test": "node --test \"tools/lib/*.test.js\" \"tools/*.test.js\" \"admin/js/*.test.js\" \"assets/js/*.test.js\" \"supabase/functions/_shared/*.test.js\""
+    "shots:work": "node tools/capture-work-shots.js",
+    "test": "node --test \"tools/lib/*.test.js\" \"tools/*.test.js\" \"admin/js/*.test.js\" \"assets/js/*.test.js\" \"supabase/functions/_shared/*.test.js\"",
+    "check": "node tools/check.js"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.45.0",

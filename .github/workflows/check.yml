@@ -1,0 +1,53 @@
+# Check — the pre-merge gate for the static site.
+#
+# `npm test` runs the unit tests; `npm run check` (tools/check.js) proves that no
+# public page, stylesheet or script asks the browser for a third-party host the
+# CSP in vercel.json does not allow, that every string on a page with a static
+# locale twin is translated, that the committed essays (/projects/<slug>/) and
+# twins (/nl/, /de/) match what their builders produce from the current sources,
+# and that the Supabase export on disk is structurally sound. Nothing here needs
+# a secret or the network beyond `npm ci`.
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One run per branch: a newer push supersedes the run in flight.
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Test and check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          # tools/build-essays.js dates each paper from `git log` on its source.
+          # A shallow clone would date every paper at HEAD and the freshness
+          # check would wrongly report the committed essays as stale.
+          fetch-depth: 0
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install build dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Site checks
+        run: npm run check

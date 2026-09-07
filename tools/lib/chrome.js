@@ -15,20 +15,6 @@ var DEFAULT_OG_IMAGE = SITE + '/assets/og.png';
 /* Cache-busted like the hand-authored pages — bump both together when the file changes. */
 var SITE_CONFIG_SRC = '/assets/js/site-config.js?v=20260721';
 
-/* Privacy-preserving analytics. OFF until ANALYTICS_DOMAIN is set, so nothing
-   third-party is ever added to the site without an explicit decision.
-   To turn it on: sign up at plausible.io (or a self-hosted instance), then
-     ANALYTICS_DOMAIN=veyago.cloud npm run build
-   or put ANALYTICS_DOMAIN=veyago.cloud in .env. Plausible is cookieless and
-   stores no personal data, so no consent banner is required — which matters
-   given how the apps are positioned on privacy. Swap ANALYTICS_SRC for a
-   self-hosted script URL if you'd rather not call plausible.io at all. */
-function analyticsTag() {
-  var domain = process.env.ANALYTICS_DOMAIN;
-  if (!domain) return '';
-  var src = process.env.ANALYTICS_SRC || 'https://plausible.io/js/script.js';
-  return '<script defer data-domain="' + attr(domain) + '" src="' + attr(src) + '"></script>';
-}
 
 /* The <head> inner markup. Mirrors the hand-authored pages + tools/build-essays.js. */
 function headTags(opts) {
@@ -51,6 +37,7 @@ function headTags(opts) {
     '<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />',
     '<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />',
     '<link rel="stylesheet" href="/styles.css" />',
+    '<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>',
     '<meta property="og:title" content="' + attr(ogTitle) + '" />',
     '<meta property="og:description" content="' + attr(ogDescription) + '" />',
     '<meta property="og:image" content="' + attr(ogImage) + '" />',
@@ -61,11 +48,9 @@ function headTags(opts) {
     '<meta property="og:site_name" content="Veyago" />',
     '<meta property="og:locale" content="en_US" />',
     '<meta name="twitter:card" content="summary_large_image" />',
-    '<meta name="twitter:site" content="@veyago_cloud" />',
     '<meta name="twitter:title" content="' + attr(ogTitle) + '" />',
     '<meta name="twitter:description" content="' + attr(ogDescription) + '" />',
     '<meta name="twitter:image" content="' + attr(ogImage) + '" />',
-    analyticsTag(),
     extra
   ].filter(Boolean).join('\n  ');
 }
@@ -74,13 +59,13 @@ function headTags(opts) {
 function header() {
   return `<header class="nav" id="site-nav">
     <div class="wrap">
-      <a class="brand" href="/"><img src="/assets/veyago-icon.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
+      <a class="brand" href="/"><img src="/assets/veyago-icon-44.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
       <nav class="nav-links">
         <a href="/apps/">Apps</a>
         <a href="/projects/">Projects</a>
         <a href="/journal/">Articles</a>
-        <a href="/services/">Services</a>
         <a href="/websites/">Websites</a>
+        <a href="/services/">Services</a>
         <div class="nav-item" id="company-nav">
           <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <div class="nav-dropdown">
@@ -110,8 +95,8 @@ function header() {
       <a href="/apps/">Apps</a>
       <a href="/projects/">Projects</a>
       <a href="/journal/">Articles</a>
-      <a href="/services/">Services</a>
       <a href="/websites/">Websites</a>
+      <a href="/services/">Services</a>
       <p class="nm-label">Company</p>
       <a class="nm-sub" href="/company/">About</a>
       <a class="nm-sub" href="/team/">Team</a>
@@ -128,13 +113,13 @@ function footer() {
       <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
         <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
-        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/services/">Services</a><a href="/websites/">Websites</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/services/">Services</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
         <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
-        <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15028535090">+1 (502) 853-5090</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
+        <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15189132531">+1 (518) 913 2531 (US)</a><a href="tel:+19432736579">+1 (943) 273 6579 (international)</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
       <div class="footer-base">
         <span>&copy; <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
-        <span>Incorporated April 2026 · Launching Q3 2026</span>
+        <span>Private apps and proper websites · New York</span>
       </div>
     </div>
   </footer>`;

@@ -58,3 +58,33 @@ test('localeUrl: English lives at the root, everything else under its code', () 
   assert.equal(localeUrl('/websites/', 'en'), 'https://www.veyago.cloud/websites/');
   assert.equal(localeUrl('/websites/', 'nl'), 'https://www.veyago.cloud/nl/websites/');
 });
+
+const { twinPaths, ensureSourceCluster } = require('./build-locales');
+
+test('a twin links to sibling twins, marks its language in the row, and reads euros first', () => {
+  const html = '<!DOCTYPE html>\n<html lang="en"><head><title>T</title><meta name="description" content="D">' +
+    '<link rel="canonical" href="https://www.veyago.cloud/websites/" /><meta property="og:image" content="https://www.veyago.cloud/assets/og-websites.png" />' +
+    '</head><body><nav class="lang-row"><a href="/websites/" hreflang="en" aria-current="page">English</a><a href="/nl/websites/" hreflang="nl">Nederlands</a></nav>' +
+    '<a href="/services/#quote">S</a><a href="/privacy/">P</a>' +
+    '<div class="tier"><p class="tier-price">$1,690<small>excl. tax</small></p><p class="tier-alt">or €1,790</p></div></body></html>';
+  const { html: out } = buildLocalePage(html, { strings: {}, attrs: {}, html: {}, meta: {} },
+    { src: 'websites/index.html', path: '/websites/', locale: 'nl', locales: ['nl'], assetExists: (p) => p === '/assets/og-websites-nl.png' });
+  const d = new JSDOM(out).window.document;
+  assert.equal(d.querySelector('a[href="/nl/services/#quote"]').textContent, 'S', 'a page with a twin links to the twin');
+  assert.equal(d.querySelector('a[href="/privacy/"]').textContent, 'P', 'a page without a twin keeps its English link');
+  assert.equal(d.querySelector('.lang-row a[hreflang="nl"]').getAttribute('aria-current'), 'page');
+  assert.equal(d.querySelector('.lang-row a[hreflang="en"]').getAttribute('aria-current'), null);
+  assert.equal(d.querySelector('meta[property="og:image"]').getAttribute('content'), 'https://www.veyago.cloud/assets/og-websites-nl.png');
+  assert.equal(d.querySelector('.tier-price').textContent, '€ 1.790excl. tax');
+  assert.equal(d.querySelector('.tier-alt').textContent, 'or $ 1.690');
+  assert.ok(twinPaths('nl').includes('/services/'));
+});
+
+test('the English source gets one hreflang cluster, and rebuilding does not duplicate it', () => {
+  const src = '<head>\n  <link rel="canonical" href="https://www.veyago.cloud/services/" />\n  <meta property="og:url" content="x" />\n</head>';
+  const once = ensureSourceCluster(src, { path: '/services/', locales: ['nl', 'de'] });
+  const twice = ensureSourceCluster(once, { path: '/services/', locales: ['nl', 'de'] });
+  assert.equal(once, twice);
+  assert.equal((once.match(/hreflang=/g) || []).length, 4);
+  assert.ok(once.includes('hreflang="x-default" href="https://www.veyago.cloud/services/"'));
+});

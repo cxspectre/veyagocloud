@@ -85,7 +85,7 @@ test('the sidebar lists every screen a user can navigate to', async () => {
   assert.deepEqual(allHrefs, [
     '/admin/', '/admin/journal', '/admin/wallpapers', '/admin/apps', '/admin/announcements',
     '/admin/publish',
-    '/admin/tasks', '/admin/team', '/admin/onboarding', '/admin/checklist',
+    '/admin/tasks', '/admin/leads', '/admin/team', '/admin/onboarding', '/admin/checklist',
     '/admin/finance'
   ]);
 });
@@ -239,6 +239,19 @@ test('an employee sees neither', async () => {
   const { window } = await mountAt('/admin/', { role: 'employee' });
   assert.equal(window.document.querySelector('.adm-nav a[href="/admin/publish"]').hidden, true);
   assert.equal(window.document.querySelector('.adm-nav a[href="/admin/finance"]').hidden, true);
+});
+
+/* Leads is manager-only for the same reason Finance is: it is other people's
+   contact details, and RLS only lets managers read the table anyway. */
+test('Leads is hidden from employees and assistants, and shown to managers', async () => {
+  for (const role of ['employee', 'assistant']) {
+    const { window } = await mountAt('/admin/', { role });
+    assert.equal(window.document.querySelector('.adm-nav a[href="/admin/leads"]').hidden, true, role);
+  }
+  const { window } = await mountAt('/admin/leads', { role: 'admin' });
+  const leads = window.document.querySelector('.adm-nav a[href="/admin/leads"]');
+  assert.equal(leads.hidden, false);
+  assert.ok(leads.classList.contains('active'), 'and it highlights itself');
 });
 
 test('a manager sees Publish too', async () => {

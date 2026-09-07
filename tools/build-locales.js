@@ -28,8 +28,21 @@ var SITE = 'https://www.veyago.cloud';
 /* Which pages get a static twin, and in which languages. Add a locale here
    once its dictionary covers the page (run with --check to see the gaps). */
 var PAGES = [
-  { src: 'websites/index.html', path: '/websites/', locales: ['nl', 'de'] }
+  { src: 'websites/index.html', path: '/websites/', locales: ['nl', 'de'] },
+  { src: 'services/index.html', path: '/services/', locales: ['nl', 'de'] },
+  { src: 'index.html', path: '/', locales: ['nl', 'de'] },
+  { src: 'company/index.html', path: '/company/', locales: ['nl', 'de'] },
+  { src: 'team/index.html', path: '/team/', locales: ['nl', 'de'] },
+  { src: 'approach/index.html', path: '/approach/', locales: ['nl', 'de'] }
 ];
+
+/* Which paths have a twin in a given locale - so a twin's internal links can
+   point at sibling twins instead of dropping the visitor back into English. */
+function twinPaths(locale) {
+  return PAGES.filter(function (p) { return p.locales.indexOf(locale) !== -1; }).map(function (p) { return p.path; });
+}
+
+var EUR_FIRST = { nl: true, de: true };
 
 var OG_LOCALE = { en: 'en_US', nl: 'nl_NL', de: 'de_DE', fr: 'fr_FR', es: 'es_ES' };
 
@@ -70,6 +83,48 @@ function buildLocalePage(html, dict, opts) {
   var doc = dom.window.document;
   var url = localeUrl(opts.path, opts.locale);
   var stats = applyDict(doc, dict, opts.path, { pageUrl: localeUrl(opts.path, 'en'), localeUrl: url });
+  var twins = twinPaths(opts.locale);
+  /* Internal links stay inside the twin cluster where a twin exists. */
+  doc.querySelectorAll('a[href^="/"]').forEach(function (a) {
+    var href = a.getAttribute('href');
+    var m = /^(\/[^#?]*)(.*)$/.exec(href);
+    if (!m || a.hasAttribute('hreflang')) return;
+    var pathOnly = m[1].replace(/index\.html$/, '');
+    if (!/\/$/.test(pathOnly)) pathOnly += '/';
+    if (twins.indexOf(pathOnly) !== -1) a.setAttribute('href', '/' + opts.locale + pathOnly + m[2]);
+  });
+  /* The crawlable language row marks the language it is now in. */
+  doc.querySelectorAll('.lang-row a').forEach(function (a) {
+    if (a.getAttribute('hreflang') === opts.locale) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+  /* A share card of its own, when one exists for this page and locale. */
+  var assetExists = opts.assetExists || function (p) { return fs.existsSync(path.join(ROOT, p)); };
+  var ogImg = doc.querySelector('meta[property="og:image"]');
+  if (ogImg) {
+    var base = (ogImg.getAttribute('content') || '').replace(/^https?:\/\/[^\/]+/, '');
+    var localised = base.replace(/\.png$/, '-' + opts.locale + '.png');
+    if (base !== localised && assetExists(localised)) {
+      ogImg.setAttribute('content', SITE + localised);
+      var tw = doc.querySelector('meta[name="twitter:image"]');
+      if (tw) tw.setAttribute('content', SITE + localised);
+    }
+  }
+  /* Euro markets read the euro price first; the dollar becomes the alt line,
+     both in the locale's own number format. */
+  if (EUR_FIRST[opts.locale]) {
+    doc.querySelectorAll('.tier').forEach(function (tier) {
+      var price = tier.querySelector('.tier-price');
+      var alt = tier.querySelector('.tier-alt');
+      if (!price || !alt) return;
+      var usd = /\$[\d,]+/.exec(price.innerHTML); var eur = /(?:€\s?\d[\d.,]*|\d[\d.,]*\s?€)/.exec(alt.textContent);
+      if (!usd || !eur) return;
+      var eurNum = eur[0].replace(/[€\s]/g, '').replace(',', '.');
+      var usdNum = usd[0].replace('$', '').replace(',', '.');
+      price.innerHTML = price.innerHTML.replace(usd[0], opts.locale === 'de' ? eurNum + ' €' : '€ ' + eurNum);
+      alt.textContent = alt.textContent.replace(eur[0], '$ ' + usdNum);
+    });
+  }
   doc.documentElement.setAttribute('lang', opts.locale);
   doc.documentElement.setAttribute('data-i18n-static', opts.locale);
   setLink(doc, 'link[rel="canonical"]', { rel: 'canonical', href: url });
@@ -89,10 +144,18 @@ function build(opts) {
   opts = opts || {};
   var failures = 0;
   PAGES.forEach(function (page) {
-    var html = fs.readFileSync(path.join(ROOT, page.src), 'utf8');
+    var srcFile = path.join(ROOT, page.src);
+    var html = fs.readFileSync(srcFile, 'utf8');
+    if (!opts.check) {
+      var withCluster = ensureSourceCluster(html, page);
+      if (withCluster !== html) { fs.writeFileSync(srcFile, withCluster); html = withCluster; console.log('  hreflang cluster written into ' + page.src); }
+    }
     page.locales.forEach(function (code) {
       var dict = loadDict(code, ROOT);
-      var result = buildLocalePage(html, dict, { src: page.src, path: page.path, locale: code, locales: page.locales });
+      var result = buildLocalePage(html, dict, {
+        src: page.src, path: page.path, locale: code, locales: page.locales,
+        assetExists: function (p) { return fs.existsSync(path.join(ROOT, p)); }
+      });
       var missed = result.stats.missed.filter(function (m, i, a) { return a.indexOf(m) === i; });
       var line = '  ' + code + ' ' + page.path + ': ' + result.stats.translated + ' strings, ' +
                  result.stats.attrs + ' attrs, meta ' + (result.stats.meta ? 'yes' : 'NO') +
@@ -112,7 +175,17 @@ function build(opts) {
   return failures;
 }
 
-module.exports = { buildLocalePage, PAGES, localeUrl };
+/* Keep the English source's hreflang cluster in step with PAGES. Idempotent:
+   replaces the block of rel=alternate links that follows the canonical. */
+function ensureSourceCluster(html, page) {
+  var links = ['en'].concat(page.locales).map(function (code) {
+    return '  <link rel="alternate" hreflang="' + code + '" href="' + localeUrl(page.path, code) + '" />';
+  }).concat(['  <link rel="alternate" hreflang="x-default" href="' + localeUrl(page.path, 'en') + '" />']).join('\n');
+  var stripped = html.replace(/(\n  <link rel="alternate" hreflang="[^"]+" href="[^"]+" \/>)+/g, '');
+  return stripped.replace(/(  <link rel="canonical" href="[^"]+" \/>)/, '$1\n' + links);
+}
+
+module.exports = { buildLocalePage, PAGES, localeUrl, twinPaths, ensureSourceCluster };
 
 if (require.main === module) {
   var args = process.argv.slice(2);

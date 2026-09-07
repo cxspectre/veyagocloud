@@ -9,6 +9,7 @@ var { renderBlocks } = require('./render-blocks');
 var { readingMinutes } = require('./reading-time');
 var { formatDate, absoluteUrl } = require('./format');
 var { newsletterSection } = require('./newsletter-embed');
+var { articleHeadExtra, indexHeadExtra } = require('./journal-schema');
 
 var JOURNAL_ACCENT = '#0071e3';
 var INDEX_TITLE = 'Articles';
@@ -75,7 +76,8 @@ function renderArticlePage(a) {
       description: articleSummary(a),
       canonical: canonical,
       ogType: 'article',
-      ogImage: a.cover_image_url ? absoluteUrl(a.cover_image_url) : DEFAULT_OG_IMAGE
+      ogImage: a.cover_image_url ? absoluteUrl(a.cover_image_url) : DEFAULT_OG_IMAGE,
+      extra: articleHeadExtra(a)
     },
     body: body,
     scripts: ['/assets/js/newsletter.js']
@@ -128,7 +130,8 @@ function renderJournalIndex(articles) {
       ogType: 'website',
       /* An empty index is a placeholder, not a page worth ranking: keep crawlers
          following the links but out of the index until the first article lands. */
-      robots: articles && articles.length ? 'index,follow' : 'noindex,follow'
+      robots: articles && articles.length ? 'index,follow' : 'noindex,follow',
+      extra: indexHeadExtra(articles)
     },
     body: body
   });
