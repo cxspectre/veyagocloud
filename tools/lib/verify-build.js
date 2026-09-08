@@ -304,6 +304,19 @@ function generatedAppSlugs(root) {
     });
 }
 
+/* Slugs under /journal/ that have a page. The whole directory is build-managed
+   (the build deletes and regenerates it), so anything with an index.html in it
+   is an article this build produced — no marker needed to tell it apart from
+   something hand-written. */
+function generatedArticleSlugs(root) {
+  var dir = path.join(root, 'journal');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter(function (entry) { return entry.isDirectory(); })
+    .map(function (entry) { return entry.name; })
+    .filter(function (name) { return fs.existsSync(path.join(dir, name, 'index.html')); });
+}
+
 function expectedSitemapUrls(site, articles, appPages) {
   var urls = [site + '/journal/'];
   articles.forEach(function (a) { if (a && a.slug) urls.push(site + '/journal/' + a.slug + '/'); });
@@ -364,9 +377,19 @@ function verifyBuild(options) {
 
   var site = expected.site || SITE;
   var minBytes = expected.minBytes == null ? MIN_PAGE_BYTES : expected.minBytes;
-  var articles = Array.isArray(expected.articles) ? expected.articles : [];
+  /* An absent list and an empty one mean different things. `npm run check` runs
+     with no expectations at all and is asking whether the tree on disk is sound,
+     so the published set is read off the tree. A build log reporting zero
+     articles supplies [], which still means "the sitemap should list none" —
+     that is the check that catches a short read from Supabase emptying the site,
+     and it must not be softened by whatever happens to be on disk. */
+  var articles = Array.isArray(expected.articles)
+    ? expected.articles
+    : generatedArticleSlugs(root).map(function (slug) { return { slug: slug }; });
   var wallpapers = Array.isArray(expected.wallpapers) ? expected.wallpapers : [];
-  var appPages = Array.isArray(expected.appPages) ? expected.appPages : [];
+  var appPages = Array.isArray(expected.appPages)
+    ? expected.appPages
+    : generatedAppSlugs(root).map(function (slug) { return { slug: slug }; });
 
   /* /journal is deleted before it is rebuilt — its index must come back even
      when nothing is published, or the site 404s a linked section. */
@@ -478,6 +501,7 @@ module.exports = {
   maskCodeRegions: maskCodeRegions,
   decodeEntities: decodeEntities,
   expectedSitemapUrls: expectedSitemapUrls,
+  generatedArticleSlugs: generatedArticleSlugs,
   MIN_PAGE_BYTES: MIN_PAGE_BYTES,
   SITE: SITE,
   GENERATED_APP_MARKER: GENERATED_APP_MARKER
