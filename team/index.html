@@ -290,6 +290,7 @@
         </div>
       </nav>
       <div class="nav-right">
+        <a class="nav-login" href="/login/">Log in</a>
         <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
@@ -316,6 +317,7 @@
       <a class="nm-sub" href="/company/">About</a>
       <a class="nm-sub" href="/team/">Team</a>
       <a class="nm-sub" href="/approach/">Approach</a>
+      <a class="nm-sub" href="/login/">Log in</a>
       <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
     </nav>
   </aside>
@@ -335,7 +337,10 @@
       <p class="eyebrow">The team</p>
       <h1 class="headline">The two people who build Veyago.</h1>
       <p class="definition"><strong>Veyago Inc. is two people:</strong> Cassian Drefke, founder and CEO, who designs and writes the software, and Wessel Gelderblom, vice president, who runs strategy and delivery. There is nobody else between you and the work.</p>
-      <p class="lead">A shared belief that apps should earn their place on your phone by being genuinely useful, private by default, and built to last.</p>
+      <div class="actions">
+        <a class="btn btn-blue" href="/company/">About the studio</a>
+        <a class="btn btn-line" href="/approach/">Our approach</a>
+      </div>
     </div>
   </section>
 
@@ -379,22 +384,18 @@
       <p class="eyebrow">How we work</p>
       <h2 class="section-headline">A studio, not a factory.</h2>
       <p class="lead">Small by design. We don't scale headcount ahead of quality - we'd rather build two products we're proud of than ten we're not. Outside of the core team, we work with a small number of trusted collaborators on specific projects and capabilities.</p>
-    </div>
-    <div class="cards two" style="margin-top: clamp(26px,4vw,44px);">
-      <div class="card reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-        </div>
-        <h3>Founder-led</h3>
-        <p>Every product decision flows from the people who'll live with it. No delegation of vision, no product managers between the idea and the build.</p>
-      </div>
-      <div class="card reveal">
-        <div class="ic ic-purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-        <h3>Selective on outside work</h3>
-        <p>We occasionally take on a small number of product and engineering projects for outside teams. Same standards, same team. <a class="link" href="/services/" style="font-size:inherit">See services</a></p>
-      </div>
+      <ul class="capabilities">
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <h3>Founder-led</h3>
+          <p>Every product decision flows from the people who'll live with it. No delegation of vision, no product managers between the idea and the build.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <h3>Selective on outside work</h3>
+          <p>We occasionally take on a small number of product and engineering projects for outside teams. Same standards, same team. <a class="link" href="/services/" style="font-size:inherit">See services</a></p>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -433,7 +434,7 @@
       </div>
     </div>
   </footer>
-  <script src="/assets/js/site-config.js?v=20260721"></script>
+  <script src="/assets/js/site-config.js?v=20260911"></script>
   <script src="/app.js" defer></script>
 </body>
 </html>

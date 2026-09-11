@@ -291,6 +291,7 @@
         </div>
       </nav>
       <div class="nav-right">
+        <a class="nav-login" href="/login/">Anmelden</a>
         <a class="nav-cta" href="mailto:hello@veyago.cloud">Kontakt</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Menü öffnen" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
@@ -317,6 +318,7 @@
       <a class="nm-sub" href="/de/company/">Über uns</a>
       <a class="nm-sub" href="/de/team/">Team</a>
       <a class="nm-sub" href="/de/approach/">Ansatz</a>
+      <a class="nm-sub" href="/login/">Anmelden</a>
       <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Kontakt</a>
     </nav>
   </aside>
@@ -336,7 +338,10 @@
       <p class="eyebrow">Das Team</p>
       <h1 class="headline">Die zwei Menschen, die Veyago bauen.</h1>
       <p class="definition"><strong>Veyago Inc. sind zwei Menschen:</strong> Cassian Drefke, Gründer und CEO, der die Software entwirft und schreibt, und Wessel Gelderblom, Vice President, der Strategie und Lieferung verantwortet. Zwischen dir und der Arbeit steht sonst niemand.</p>
-      <p class="lead">Eine gemeinsame Überzeugung: Apps müssen sich ihren Platz auf deinem Telefon verdienen, indem sie wirklich nützlich sind, von Haus aus privat und gebaut, um zu bleiben.</p>
+      <div class="actions">
+        <a class="btn btn-blue" href="/de/company/">Über das Studio</a>
+        <a class="btn btn-line" href="/de/approach/">Unser Ansatz</a>
+      </div>
     </div>
   </section>
 
@@ -380,22 +385,18 @@
       <p class="eyebrow">Wie wir arbeiten</p>
       <h2 class="section-headline">Ein Studio, keine Fabrik.</h2>
       <p class="lead">Klein mit Absicht. Wir bauen die Belegschaft nicht vor der Qualität aus - wir bauen lieber zwei Produkte, auf die wir stolz sind, als zehn, auf die wir es nicht sind. Außerhalb des Kernteams arbeiten wir mit einer kleinen Zahl vertrauter Mitwirkender an bestimmten Projekten und Fähigkeiten.</p>
-    </div>
-    <div class="cards two" style="margin-top: clamp(26px,4vw,44px);">
-      <div class="card reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
-        </div>
-        <h3>Vom Gründer geführt</h3>
-        <p>Jede Produktentscheidung kommt von den Menschen, die damit leben werden. Keine Delegation der Vision, keine Produktmanager zwischen Idee und Umsetzung.</p>
-      </div>
-      <div class="card reveal">
-        <div class="ic ic-purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        </div>
-        <h3>Wählerisch bei externer Arbeit</h3>
-        <p>Wir übernehmen gelegentlich eine kleine Zahl von Produkt- und Engineering-Projekten für externe Teams. Dieselben Ansprüche, dasselbe Team. <a class="link" href="/de/services/" style="font-size:inherit">Leistungen ansehen</a></p>
-      </div>
+      <ul class="capabilities">
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
+          <h3>Vom Gründer geführt</h3>
+          <p>Jede Produktentscheidung kommt von den Menschen, die damit leben werden. Keine Delegation der Vision, keine Produktmanager zwischen Idee und Umsetzung.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <h3>Wählerisch bei externer Arbeit</h3>
+          <p>Wir übernehmen gelegentlich eine kleine Zahl von Produkt- und Engineering-Projekten für externe Teams. Dieselben Ansprüche, dasselbe Team. <a class="link" href="/de/services/" style="font-size:inherit">Leistungen ansehen</a></p>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -434,7 +435,7 @@
       </div>
     </div>
   </footer>
-  <script src="/assets/js/site-config.js?v=20260721"></script>
+  <script src="/assets/js/site-config.js?v=20260911"></script>
   <script src="/app.js" defer=""></script>
 
 

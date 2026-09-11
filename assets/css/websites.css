@@ -10,11 +10,13 @@
 
 /* ── Package tiers ────────────────────────────────────────────────────────── */
 .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: var(--maxw-wide); margin: clamp(28px, 4vw, 44px) auto 0; padding-inline: var(--gutter); text-align: left; align-items: stretch; }
-.tier { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: clamp(22px, 2.6vw, 32px); position: relative; }
+.tier { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: clamp(22px, 2.6vw, 32px); padding-top: calc(clamp(22px, 2.6vw, 32px) + 22px); position: relative; }
 .tier.featured { background: #fff; border-color: rgba(0,113,227,.35); box-shadow: 0 18px 50px -24px rgba(0,113,227,.35); }
-.tier-flag { position: absolute; top: 18px; right: 18px; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--blue); background: rgba(0,113,227,.08); padding: 4px 9px; border-radius: 980px; }
+.tier-flag { position: absolute; top: 16px; left: clamp(22px, 2.6vw, 32px); right: auto; white-space: nowrap; font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--blue); background: rgba(0,113,227,.08); padding: 4px 9px; border-radius: 980px; }
 .tier h3 { font-size: 1.35rem; letter-spacing: -0.02em; margin: 0 0 4px; }
-.tier-for { font-size: .95rem; color: var(--muted); margin: 0 0 18px; min-height: 2.6em; }
+/* Reserves enough for the longest of the three descriptions, so the prices
+   below them line up across the table rather than stepping down by a line. */
+.tier-for { font-size: .95rem; color: var(--muted); margin: 0 0 18px; min-height: 4.5em; }
 .tier-price { font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.5rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1; color: var(--ink); }
 .tier-price small { font-size: .95rem; font-weight: 400; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
 .tier-alt { font-size: .9rem; color: var(--muted); margin: 6px 0 0; }
@@ -38,17 +40,15 @@
 .extras dd { color: var(--ink); font-weight: 600; text-align: right; white-space: nowrap; }
 
 /* ── FAQ ──────────────────────────────────────────────────────────────────── */
-.faq { max-width: 760px; margin: clamp(22px, 3vw, 36px) auto 0; padding-inline: var(--gutter); text-align: left; border-top: 1px solid var(--hair-soft); }
-.faq details { border-bottom: 1px solid var(--hair-soft); }
-.faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 0; font-size: 1.08rem; font-weight: 600; letter-spacing: -0.012em; color: var(--ink); }
-.faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: "+"; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--hair); display: grid; place-items: center; font-weight: 400; color: var(--blue); transition: transform .25s var(--ease); }
-.faq details[open] summary::after { content: "−"; }
-.faq details p { color: var(--muted); margin: 0 0 18px; max-width: 64ch; font-size: var(--fz-body); line-height: 1.55; }
-.faq summary:focus-visible { outline: 3px solid rgba(0,113,227,.5); outline-offset: 3px; border-radius: 6px; }
+/* The rows themselves are in styles.css (.faq), shared with the homepage.
+   All these two pages add is where the block sits: its own centred column,
+   outside the .wrap rather than inside one. */
+/* Only the block that sits outside a .wrap needs the column offset; a
+   .faq-inline is already inside one and would double-count the gutter. */
+.faq:not(.faq-inline) { max-width: 760px; margin: clamp(22px, 3vw, 36px) auto 0 var(--col-start); }
 
 /* ── Enquiry form ─────────────────────────────────────────────────────────── */
-.enq { max-width: 720px; margin: clamp(22px, 3vw, 36px) auto 0; text-align: left; }
+.enq { max-width: 720px; margin: clamp(22px, 3vw, 36px) auto 0 0; text-align: left; }
 .enq-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
 .enq-field { display: flex; flex-direction: column; gap: 6px; }
 .enq-field.wide { grid-column: 1 / -1; }
@@ -96,20 +96,9 @@ textarea.enq-input { min-height: 132px; resize: vertical; line-height: 1.5; }
    The apps pages show their screenshots in a phone; a page about websites
    shows them in a window. Same idea, same restraint: chrome enough to read as
    a browser, quiet enough that the site inside it is what you look at. */
-.work-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: var(--maxw-wide); margin: clamp(28px, 4vw, 44px) auto 0; padding-inline: var(--gutter); }
-.work-card { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: 14px 14px 0; transition: transform .5s var(--ease), box-shadow .5s var(--ease); }
-.work-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px -20px rgba(0,0,0,0.14); }
-.work-card:focus-visible { outline: 3px solid rgba(0,113,227,.5); outline-offset: 3px; }
-.work-frame { border-radius: 13px; overflow: hidden; background: #fff; border: 1px solid var(--hair-soft); box-shadow: 0 14px 34px -20px rgba(0,0,0,.4); }
-.work-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: #fbfbfd; border-bottom: 1px solid var(--hair-soft); }
-.work-bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--hair); flex-shrink: 0; }
-.work-host { margin-left: 10px; font-size: .72rem; color: var(--muted-2); letter-spacing: -0.004em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.work-frame img { display: block; width: 100%; height: auto; }
-.work-body { padding: 18px 8px 22px; }
-.work-body h3 { font-size: 1.1rem; letter-spacing: -0.018em; margin: 0 0 4px; }
-.work-body p { margin: 0; font-size: .93rem; color: var(--muted); line-height: 1.45; }
-.work-go { display: inline-flex; margin-top: 12px; font-size: var(--fz-link); color: var(--blue); }
-.work-card:hover .work-go { text-decoration: underline; text-underline-offset: 3px; }
+/* The cards themselves are in styles.css, shared with the homepage. All this
+   page adds is where the grid sits: its own centred column outside the .wrap. */
+.work-grid { max-width: var(--maxw-wide); margin-inline: auto; padding-inline: var(--gutter); }
 
 /* This page, on the same terms as the four above it. */
 .measured { max-width: var(--maxw-wide); margin: clamp(30px, 4vw, 46px) auto 0; padding-inline: var(--gutter); }
@@ -123,13 +112,9 @@ textarea.enq-input { min-height: 132px; resize: vertical; line-height: 1.5; }
 /* ── Who you'll work with - a footnote to the process, not its own section ── */
 .people { max-width: var(--maxw); margin: clamp(30px, 4vw, 46px) auto 0; padding-inline: var(--gutter); }
 .people-label { margin: 0 0 14px; font-size: .95rem; font-weight: 600; letter-spacing: -0.012em; color: var(--ink); }
-.people-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.person { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: center; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: 18px 20px; }
-.person picture { display: block; }
-.person-photo, .person-mono { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
-.person-mono { display: grid; place-items: center; background: #fff; border: 1px solid var(--hair); font-weight: 600; color: var(--ink); }
-.person h3 { font-size: 1.05rem; margin: 0 0 2px; letter-spacing: -0.012em; }
-.person p { margin: 0; font-size: .92rem; color: var(--muted); line-height: 1.45; }
+
+/* .person and .people-row are in styles.css too - the homepage introduces the
+   same two faces. Only the block's placement stays here. */
 
 /* ── Package radio group in the form ──────────────────────────────────── */
 .enq-radios { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -149,6 +134,6 @@ textarea.enq-input { min-height: 132px; resize: vertical; line-height: 1.5; }
   .measured-list { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 760px) {
-  .deal ul, .people-row { grid-template-columns: 1fr; }
-  .work-grid { grid-template-columns: 1fr; max-width: 560px; }
+  .deal ul { grid-template-columns: 1fr; }
+  .work-grid { max-width: 560px; }
 }

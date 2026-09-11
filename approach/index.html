@@ -222,6 +222,7 @@
         </div>
       </nav>
       <div class="nav-right">
+        <a class="nav-login" href="/login/">Log in</a>
         <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
@@ -248,6 +249,7 @@
       <a class="nm-sub" href="/company/">About</a>
       <a class="nm-sub" href="/team/">Team</a>
       <a class="nm-sub" href="/approach/">Approach</a>
+      <a class="nm-sub" href="/login/">Log in</a>
       <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
     </nav>
   </aside>
@@ -267,7 +269,10 @@
       <p class="eyebrow">Our approach</p>
       <h1 class="headline">Opinionated software. Honest about everything.</h1>
       <p class="definition"><strong>Veyago's approach is six commitments applied to every product:</strong> your data is yours, privacy-first by default, AI that is honest about what it does, no dark patterns, fair monetisation, and each product done properly. This page says what each one rules out.</p>
-      <p class="lead">We have a belief most software companies won't put in writing: ask the least of your users' data, mean every privacy claim you publish, and ship nothing that only works because it manipulates. This page explains exactly how we hold to that - across every product.</p>
+      <div class="actions">
+        <a class="btn btn-blue" href="/apps/">See our apps</a>
+        <a class="btn btn-line" href="/company/">About the studio</a>
+      </div>
       <div class="hero-chips">
         <span class="chip"><span class="chip-dot"></span>Your data is yours</span>
         <span class="chip"><span class="chip-dot"></span>Privacy-first by default</span>
@@ -283,50 +288,38 @@
     <div class="wrap">
       <p class="eyebrow">How we think</p>
       <h2 class="section-headline">Six things we don't compromise on.</h2>
-    </div>
-    <div class="principles">
-      <div class="principle reveal">
-        <div class="ic ic-green">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg>
-        </div>
-        <h3>Your data is yours</h3>
-        <p>We collect the least we need. We never sell it, rent it, or use it to build an advertising profile. Export or delete everything at any time - no dark patterns, no friction, no confirmation screens designed to confuse you.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v5c0 4-3 7.6-7 9-4-1.4-7-5-7-9V7l7-4z"/></svg>
-        </div>
-        <h3>Privacy-first by default</h3>
-        <p>Different products sit at different points on the privacy spectrum - and we're honest about where each one sits. Kept collects nothing and runs on-device. Veyago travel needs more. In every case: we never collect more than the task requires, and we tell you exactly what we read and why before we read it.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-orange">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"/><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"/></svg>
-        </div>
-        <h3>AI that's honest about what it does</h3>
-        <p>On-device wherever possible - health data, preference modelling, and local recommendations stay on your phone. Where cloud AI is genuinely necessary - Veyago travel uses GPT-4o via our own backend for itineraries, briefings, and Co-pilot responses - we proxy every call. We send destination context and anonymised preference signals. We never send your name, health data, or personal details to a third-party AI provider. We will never use an AI model that trains on your personal data without your explicit, informed opt-in.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M6.3 6.3l11.4 11.4"/></svg>
-        </div>
-        <h3>No dark patterns</h3>
-        <p>No manufactured urgency. No countdown timers on prices that don't expire. No guilt-trip cancel flows. No burying the unsubscribe. No notifications engineered for our engagement metrics rather than yours. If a design pattern only works because it exploits a cognitive bias or manufactures a feeling you didn't arrive with, we don't ship it.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-teal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v3M10.5 13.5h3"/></svg>
-        </div>
-        <h3>Fair monetisation</h3>
-        <p>Kept is free to download, with a single $29.99 Lifetime unlock that never renews. Veyago travel is free with an optional Premium subscription at €4.99/month or €29.99/year. The free tier is genuinely useful, not a crippled demo. No advertising business. No data sales. You pay for the software. You are never the product being sold.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <h3>Each product, done properly</h3>
-        <p>We keep a small catalogue and hold every product to the same question: would we want this on our own phone for five years? If not, we don't ship it. No features added to look impressive. No rushing to beta. When something leaves this studio it's finished, or it doesn't leave.</p>
-      </div>
+      <ul class="capabilities">
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 15v2"/></svg>
+          <h3>Your data is yours</h3>
+          <p>We collect the least we need. We never sell it, rent it, or use it to build an advertising profile. Export or delete everything at any time - no dark patterns, no friction, no confirmation screens designed to confuse you.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v5c0 4-3 7.6-7 9-4-1.4-7-5-7-9V7l7-4z"/></svg>
+          <h3>Privacy-first by default</h3>
+          <p>Different products sit at different points on the privacy spectrum - and we're honest about where each one sits. Kept collects nothing and runs on-device. Veyago travel needs more. In every case: we never collect more than the task requires, and we tell you exactly what we read and why before we read it.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"/><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"/></svg>
+          <h3>AI that's honest about what it does</h3>
+          <p>On-device wherever possible - health data, preference modelling, and local recommendations stay on your phone. Where cloud AI is genuinely necessary - Veyago travel uses GPT-4o via our own backend for itineraries, briefings, and Co-pilot responses - we proxy every call. We send destination context and anonymised preference signals. We never send your name, health data, or personal details to a third-party AI provider. We will never use an AI model that trains on your personal data without your explicit, informed opt-in.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M6.3 6.3l11.4 11.4"/></svg>
+          <h3>No dark patterns</h3>
+          <p>No manufactured urgency. No countdown timers on prices that don't expire. No guilt-trip cancel flows. No burying the unsubscribe. No notifications engineered for our engagement metrics rather than yours. If a design pattern only works because it exploits a cognitive bias or manufactures a feeling you didn't arrive with, we don't ship it.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v3M10.5 13.5h3"/></svg>
+          <h3>Fair monetisation</h3>
+          <p>Kept is free to download, with a single $29.99 Lifetime unlock that never renews. Veyago travel is free with an optional Premium subscription at €4.99/month or €29.99/year. The free tier is genuinely useful, not a crippled demo. No advertising business. No data sales. You pay for the software. You are never the product being sold.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          <h3>Each product, done properly</h3>
+          <p>We keep a small catalogue and hold every product to the same question: would we want this on our own phone for five years? If not, we don't ship it. No features added to look impressive. No rushing to beta. When something leaves this studio it's finished, or it doesn't leave.</p>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -387,6 +380,7 @@
 
   <section class="section">
     <div class="wrap">
+      <p class="eyebrow">How we build</p>
       <h2 class="section-headline">Your data is yours. We mean it.</h2>
       <p class="lead">Read each app's formal privacy policy for the full detail - or just take us at our word and try one.</p>
       <div class="actions">
@@ -419,7 +413,7 @@
       </div>
     </div>
   </footer>
-  <script src="/assets/js/site-config.js?v=20260721"></script>
+  <script src="/assets/js/site-config.js?v=20260911"></script>
   <script src="/app.js" defer></script>
 </body>
 </html>

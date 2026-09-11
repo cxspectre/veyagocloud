@@ -223,6 +223,7 @@
         </div>
       </nav>
       <div class="nav-right">
+        <a class="nav-login" href="/login/">Inloggen</a>
         <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Menu openen" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
@@ -249,6 +250,7 @@
       <a class="nm-sub" href="/nl/company/">Over</a>
       <a class="nm-sub" href="/nl/team/">Team</a>
       <a class="nm-sub" href="/nl/approach/">Aanpak</a>
+      <a class="nm-sub" href="/login/">Inloggen</a>
       <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
     </nav>
   </aside>
@@ -268,7 +270,10 @@
       <p class="eyebrow">Onze aanpak</p>
       <h1 class="headline">Software met een mening. Eerlijk over alles.</h1>
       <p class="definition"><strong>De aanpak van Veyago is zes beloftes die voor elk product gelden:</strong> je data is van jou, standaard privacy eerst, AI die eerlijk is over wat hij doet, geen dark patterns, eerlijke verdienmodellen, en elk product goed gedaan. Deze pagina zegt wat elk daarvan uitsluit.</p>
-      <p class="lead">We hebben een overtuiging die de meeste softwarebedrijven niet op papier durven te zetten: vraag zo min mogelijk van de data van je gebruikers, meen elke privacybelofte die je publiceert en breng niets uit dat alleen werkt omdat het manipuleert. Deze pagina legt precies uit hoe we ons daaraan houden - bij elk product.</p>
+      <div class="actions">
+        <a class="btn btn-blue" href="/apps/">Bekijk onze apps</a>
+        <a class="btn btn-line" href="/nl/company/">Over de studio</a>
+      </div>
       <div class="hero-chips">
         <span class="chip"><span class="chip-dot"></span>Je data is van jou</span>
         <span class="chip"><span class="chip-dot"></span>Standaard privacy eerst</span>
@@ -284,50 +289,38 @@
     <div class="wrap">
       <p class="eyebrow">Hoe we denken</p>
       <h2 class="section-headline">Zes dingen waarop we geen concessies doen.</h2>
-    </div>
-    <div class="principles">
-      <div class="principle reveal">
-        <div class="ic ic-green">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><path d="M12 15v2"></path></svg>
-        </div>
-        <h3>Je data is van jou</h3>
-        <p>We verzamelen het minimum dat we nodig hebben. We verkopen het nooit, verhuren het nooit en gebruiken het nooit om een advertentieprofiel op te bouwen. Exporteer of verwijder alles wanneer je wilt - geen dark patterns, geen frictie, geen bevestigingsschermen die zijn ontworpen om je in de war te brengen.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v5c0 4-3 7.6-7 9-4-1.4-7-5-7-9V7l7-4z"></path></svg>
-        </div>
-        <h3>Standaard privacy eerst</h3>
-        <p>Verschillende producten staan op verschillende punten van het privacyspectrum - en we zijn eerlijk over waar elk product staat. Kept verzamelt niets en draait op je apparaat. Veyago travel heeft meer nodig. In alle gevallen geldt: we verzamelen nooit meer dan de taak vereist, en we vertellen je precies wat we lezen en waarom voordat we het lezen.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-orange">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"></path><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"></path></svg>
-        </div>
-        <h3>AI die eerlijk is over wat hij doet</h3>
-        <p>Op je apparaat waar mogelijk - gezondheidsgegevens, voorkeursmodellering en lokale aanbevelingen blijven op je telefoon. Waar cloud-AI echt nodig is - Veyago travel gebruikt GPT-4o via onze eigen backend voor reisschema's, briefings en Co-pilot-antwoorden - sturen we elke aanroep via een proxy. We sturen bestemmingscontext en geanonimiseerde voorkeurssignalen mee. We sturen nooit je naam, gezondheidsgegevens of persoonlijke gegevens naar een externe AI-aanbieder. We gebruiken nooit een AI-model dat traint op je persoonlijke gegevens zonder jouw expliciete, weloverwogen opt-in.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M6.3 6.3l11.4 11.4"></path></svg>
-        </div>
-        <h3>Geen dark patterns</h3>
-        <p>Geen kunstmatige urgentie. Geen aftelklokken op prijzen die niet verlopen. Geen schuldopwekkende opzegflows. Geen verstopte afmeldknop. Geen meldingen die zijn ontworpen voor onze betrokkenheidscijfers in plaats van die van jou. Als een ontwerppatroon alleen werkt omdat het een cognitieve bias uitbuit of een gevoel oproept waar je niet mee binnenkwam, brengen we het niet uit.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-teal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path><path d="M12 12v3M10.5 13.5h3"></path></svg>
-        </div>
-        <h3>Eerlijke verdienmodellen</h3>
-        <p>Kept is gratis te downloaden, met één Lifetime-ontgrendeling van $ 29,99 die nooit verlengt. Veyago travel is gratis met een optioneel Premium-abonnement van € 4,99 per maand of € 29,99 per jaar. De gratis laag is echt bruikbaar, geen uitgeklede demo. Geen advertentiebedrijf. Geen dataverkoop. Je betaalt voor de software. Jij bent nooit het product.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        </div>
-        <h3>Elk product, goed gedaan</h3>
-        <p>We houden een kleine catalogus aan en toetsen elk product aan dezelfde vraag: zouden we dit vijf jaar lang op onze eigen telefoon willen? Zo niet, dan brengen we het niet uit. Geen functies toegevoegd om indruk te maken. Geen overhaaste beta. Wanneer er iets uit deze studio komt, is het af, of het komt er niet uit.</p>
-      </div>
+      <ul class="capabilities">
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><path d="M12 15v2"></path></svg>
+          <h3>Je data is van jou</h3>
+          <p>We verzamelen het minimum dat we nodig hebben. We verkopen het nooit, verhuren het nooit en gebruiken het nooit om een advertentieprofiel op te bouwen. Exporteer of verwijder alles wanneer je wilt - geen dark patterns, geen frictie, geen bevestigingsschermen die zijn ontworpen om je in de war te brengen.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v5c0 4-3 7.6-7 9-4-1.4-7-5-7-9V7l7-4z"></path></svg>
+          <h3>Standaard privacy eerst</h3>
+          <p>Verschillende producten staan op verschillende punten van het privacyspectrum - en we zijn eerlijk over waar elk product staat. Kept verzamelt niets en draait op je apparaat. Veyago travel heeft meer nodig. In alle gevallen geldt: we verzamelen nooit meer dan de taak vereist, en we vertellen je precies wat we lezen en waarom voordat we het lezen.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"></path><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"></path></svg>
+          <h3>AI die eerlijk is over wat hij doet</h3>
+          <p>Op je apparaat waar mogelijk - gezondheidsgegevens, voorkeursmodellering en lokale aanbevelingen blijven op je telefoon. Waar cloud-AI echt nodig is - Veyago travel gebruikt GPT-4o via onze eigen backend voor reisschema's, briefings en Co-pilot-antwoorden - sturen we elke aanroep via een proxy. We sturen bestemmingscontext en geanonimiseerde voorkeurssignalen mee. We sturen nooit je naam, gezondheidsgegevens of persoonlijke gegevens naar een externe AI-aanbieder. We gebruiken nooit een AI-model dat traint op je persoonlijke gegevens zonder jouw expliciete, weloverwogen opt-in.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M6.3 6.3l11.4 11.4"></path></svg>
+          <h3>Geen dark patterns</h3>
+          <p>Geen kunstmatige urgentie. Geen aftelklokken op prijzen die niet verlopen. Geen schuldopwekkende opzegflows. Geen verstopte afmeldknop. Geen meldingen die zijn ontworpen voor onze betrokkenheidscijfers in plaats van die van jou. Als een ontwerppatroon alleen werkt omdat het een cognitieve bias uitbuit of een gevoel oproept waar je niet mee binnenkwam, brengen we het niet uit.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path><path d="M12 12v3M10.5 13.5h3"></path></svg>
+          <h3>Eerlijke verdienmodellen</h3>
+          <p>Kept is gratis te downloaden, met één Lifetime-ontgrendeling van $ 29,99 die nooit verlengt. Veyago travel is gratis met een optioneel Premium-abonnement van € 4,99 per maand of € 29,99 per jaar. De gratis laag is echt bruikbaar, geen uitgeklede demo. Geen advertentiebedrijf. Geen dataverkoop. Je betaalt voor de software. Jij bent nooit het product.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <h3>Elk product, goed gedaan</h3>
+          <p>We houden een kleine catalogus aan en toetsen elk product aan dezelfde vraag: zouden we dit vijf jaar lang op onze eigen telefoon willen? Zo niet, dan brengen we het niet uit. Geen functies toegevoegd om indruk te maken. Geen overhaaste beta. Wanneer er iets uit deze studio komt, is het af, of het komt er niet uit.</p>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -388,6 +381,7 @@
 
   <section class="section">
     <div class="wrap">
+      <p class="eyebrow">Hoe we bouwen</p>
       <h2 class="section-headline">Je data is van jou. We menen het.</h2>
       <p class="lead">Lees het formele privacybeleid van elke app voor alle details - of geloof ons gewoon op ons woord en probeer er een.</p>
       <div class="actions">
@@ -420,7 +414,7 @@
       </div>
     </div>
   </footer>
-  <script src="/assets/js/site-config.js?v=20260721"></script>
+  <script src="/assets/js/site-config.js?v=20260911"></script>
   <script src="/app.js" defer=""></script>
 
 

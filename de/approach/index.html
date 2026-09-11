@@ -223,6 +223,7 @@
         </div>
       </nav>
       <div class="nav-right">
+        <a class="nav-login" href="/login/">Anmelden</a>
         <a class="nav-cta" href="mailto:hello@veyago.cloud">Kontakt</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Menü öffnen" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
@@ -249,6 +250,7 @@
       <a class="nm-sub" href="/de/company/">Über uns</a>
       <a class="nm-sub" href="/de/team/">Team</a>
       <a class="nm-sub" href="/de/approach/">Ansatz</a>
+      <a class="nm-sub" href="/login/">Anmelden</a>
       <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Kontakt</a>
     </nav>
   </aside>
@@ -268,7 +270,10 @@
       <p class="eyebrow">Unser Ansatz</p>
       <h1 class="headline">Software mit Haltung. Ehrlich in allem.</h1>
       <p class="definition"><strong>Veyagos Ansatz sind sechs Zusagen, die für jedes Produkt gelten:</strong> deine Daten gehören dir, Datenschutz von Haus aus, KI, die ehrlich ist über das, was sie tut, keine Dark Patterns, faire Monetarisierung und jedes Produkt richtig gemacht. Diese Seite sagt, was jede Zusage ausschließt.</p>
-      <p class="lead">Wir haben eine Überzeugung, die die meisten Softwareunternehmen nicht schriftlich festhalten würden: Frag so wenig wie möglich von den Daten deiner Nutzer ab, meine jede Datenschutzaussage, die du veröffentlichst, ernst, und liefere nichts aus, das nur funktioniert, weil es manipuliert. Diese Seite erklärt genau, wie wir uns daran halten - über jedes Produkt hinweg.</p>
+      <div class="actions">
+        <a class="btn btn-blue" href="/apps/">Sieh dir unsere Apps an</a>
+        <a class="btn btn-line" href="/de/company/">Über das Studio</a>
+      </div>
       <div class="hero-chips">
         <span class="chip"><span class="chip-dot"></span>Deine Daten gehören dir</span>
         <span class="chip"><span class="chip-dot"></span>Datenschutz von Grund auf</span>
@@ -284,50 +289,38 @@
     <div class="wrap">
       <p class="eyebrow">Wie wir denken</p>
       <h2 class="section-headline">Sechs Dinge, bei denen wir keine Kompromisse machen.</h2>
-    </div>
-    <div class="principles">
-      <div class="principle reveal">
-        <div class="ic ic-green">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><path d="M12 15v2"></path></svg>
-        </div>
-        <h3>Deine Daten gehören dir</h3>
-        <p>Wir erheben so wenig wie nötig. Wir verkaufen es nie, vermieten es nicht und nutzen es nicht, um ein Werbeprofil aufzubauen. Exportiere oder lösche alles jederzeit - keine Dark Patterns, keine Reibung, keine Bestätigungsbildschirme, die dich verwirren sollen.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v5c0 4-3 7.6-7 9-4-1.4-7-5-7-9V7l7-4z"></path></svg>
-        </div>
-        <h3>Datenschutz von Grund auf</h3>
-        <p>Verschiedene Produkte stehen an unterschiedlichen Punkten des Datenschutzspektrums - und wir sind ehrlich darüber, wo jedes einzelne steht. Kept erhebt nichts und läuft auf dem Gerät. Veyago travel braucht mehr. In jedem Fall gilt: Wir erheben nie mehr, als die Aufgabe erfordert, und wir sagen dir genau, was wir lesen und warum, bevor wir es lesen.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-orange">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"></path><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"></path></svg>
-        </div>
-        <h3>KI, die ehrlich ist über das, was sie tut</h3>
-        <p>Auf dem Gerät, wo immer möglich - Gesundheitsdaten, Präferenzmodellierung und lokale Empfehlungen bleiben auf deinem Telefon. Wo Cloud-KI wirklich nötig ist - Veyago travel nutzt GPT-4o über unser eigenes Backend für Reisepläne, Briefings und Co-pilot-Antworten - leiten wir jeden Aufruf über einen Proxy. Wir senden Zielkontext und anonymisierte Präferenzsignale. Wir senden niemals deinen Namen, deine Gesundheitsdaten oder persönliche Angaben an einen Drittanbieter-KI-Dienst. Wir werden niemals ein KI-Modell verwenden, das mit deinen persönlichen Daten trainiert, ohne dass du ausdrücklich und informiert zustimmst.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M6.3 6.3l11.4 11.4"></path></svg>
-        </div>
-        <h3>Keine Dark Patterns</h3>
-        <p>Keine künstlich erzeugte Dringlichkeit. Keine Countdown-Timer auf Preisen, die gar nicht ablaufen. Keine Kündigungswege, die ein schlechtes Gewissen machen. Kein Verstecken der Abmeldung. Keine Benachrichtigungen, die auf unsere Engagement-Kennzahlen statt auf deine ausgelegt sind. Wenn ein Design-Muster nur funktioniert, weil es eine kognitive Verzerrung ausnutzt oder ein Gefühl erzeugt, mit dem du nicht gekommen bist, liefern wir es nicht aus.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-teal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path><path d="M12 12v3M10.5 13.5h3"></path></svg>
-        </div>
-        <h3>Faire Monetarisierung</h3>
-        <p>Kept ist kostenlos zu laden, mit einer einzigen Lifetime-Freischaltung für 29,99 $, die sich nie verlängert. Veyago travel ist kostenlos mit optionalem Premium-Abo für 4,99 € im Monat oder 29,99 € im Jahr. Die Gratis-Stufe ist wirklich brauchbar, keine beschnittene Demo. Kein Werbegeschäft. Kein Datenverkauf. Du bezahlst für die Software. Du bist nie das Produkt.</p>
-      </div>
-      <div class="principle reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        </div>
-        <h3>Jedes Produkt, richtig gemacht</h3>
-        <p>Wir halten einen kleinen Katalog und messen jedes Produkt an derselben Frage: Würden wir das fünf Jahre lang auf unserem eigenen Telefon haben wollen? Wenn nicht, liefern wir es nicht aus. Keine Funktionen, die nur hinzugefügt werden, um zu beeindrucken. Kein Hetzen zur Beta. Wenn etwas dieses Studio verlässt, ist es fertig, oder es verlässt es nicht.</p>
-      </div>
+      <ul class="capabilities">
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path><path d="M12 15v2"></path></svg>
+          <h3>Deine Daten gehören dir</h3>
+          <p>Wir erheben so wenig wie nötig. Wir verkaufen es nie, vermieten es nicht und nutzen es nicht, um ein Werbeprofil aufzubauen. Exportiere oder lösche alles jederzeit - keine Dark Patterns, keine Reibung, keine Bestätigungsbildschirme, die dich verwirren sollen.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 4v5c0 4-3 7.6-7 9-4-1.4-7-5-7-9V7l7-4z"></path></svg>
+          <h3>Datenschutz von Grund auf</h3>
+          <p>Verschiedene Produkte stehen an unterschiedlichen Punkten des Datenschutzspektrums - und wir sind ehrlich darüber, wo jedes einzelne steht. Kept erhebt nichts und läuft auf dem Gerät. Veyago travel braucht mehr. In jedem Fall gilt: Wir erheben nie mehr, als die Aufgabe erfordert, und wir sagen dir genau, was wir lesen und warum, bevor wir es lesen.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v4M12 16v4M4 12h4M16 12h4"></path><path d="M9 9l1.5 1.5M13.5 13.5L15 15M15 9l-1.5 1.5M10.5 13.5L9 15"></path></svg>
+          <h3>KI, die ehrlich ist über das, was sie tut</h3>
+          <p>Auf dem Gerät, wo immer möglich - Gesundheitsdaten, Präferenzmodellierung und lokale Empfehlungen bleiben auf deinem Telefon. Wo Cloud-KI wirklich nötig ist - Veyago travel nutzt GPT-4o über unser eigenes Backend für Reisepläne, Briefings und Co-pilot-Antworten - leiten wir jeden Aufruf über einen Proxy. Wir senden Zielkontext und anonymisierte Präferenzsignale. Wir senden niemals deinen Namen, deine Gesundheitsdaten oder persönliche Angaben an einen Drittanbieter-KI-Dienst. Wir werden niemals ein KI-Modell verwenden, das mit deinen persönlichen Daten trainiert, ohne dass du ausdrücklich und informiert zustimmst.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M6.3 6.3l11.4 11.4"></path></svg>
+          <h3>Keine Dark Patterns</h3>
+          <p>Keine künstlich erzeugte Dringlichkeit. Keine Countdown-Timer auf Preisen, die gar nicht ablaufen. Keine Kündigungswege, die ein schlechtes Gewissen machen. Kein Verstecken der Abmeldung. Keine Benachrichtigungen, die auf unsere Engagement-Kennzahlen statt auf deine ausgelegt sind. Wenn ein Design-Muster nur funktioniert, weil es eine kognitive Verzerrung ausnutzt oder ein Gefühl erzeugt, mit dem du nicht gekommen bist, liefern wir es nicht aus.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"></path><path d="M12 12v3M10.5 13.5h3"></path></svg>
+          <h3>Faire Monetarisierung</h3>
+          <p>Kept ist kostenlos zu laden, mit einer einzigen Lifetime-Freischaltung für 29,99 $, die sich nie verlängert. Veyago travel ist kostenlos mit optionalem Premium-Abo für 4,99 € im Monat oder 29,99 € im Jahr. Die Gratis-Stufe ist wirklich brauchbar, keine beschnittene Demo. Kein Werbegeschäft. Kein Datenverkauf. Du bezahlst für die Software. Du bist nie das Produkt.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <h3>Jedes Produkt, richtig gemacht</h3>
+          <p>Wir halten einen kleinen Katalog und messen jedes Produkt an derselben Frage: Würden wir das fünf Jahre lang auf unserem eigenen Telefon haben wollen? Wenn nicht, liefern wir es nicht aus. Keine Funktionen, die nur hinzugefügt werden, um zu beeindrucken. Kein Hetzen zur Beta. Wenn etwas dieses Studio verlässt, ist es fertig, oder es verlässt es nicht.</p>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -388,6 +381,7 @@
 
   <section class="section">
     <div class="wrap">
+      <p class="eyebrow">Wie wir bauen</p>
       <h2 class="section-headline">Deine Daten gehören dir. Und das meinen wir ernst.</h2>
       <p class="lead">Lies die formelle Datenschutzerklärung jeder App für alle Details - oder nimm uns einfach beim Wort und probier eine aus.</p>
       <div class="actions">
@@ -420,7 +414,7 @@
       </div>
     </div>
   </footer>
-  <script src="/assets/js/site-config.js?v=20260721"></script>
+  <script src="/assets/js/site-config.js?v=20260911"></script>
   <script src="/app.js" defer=""></script>
 
 

@@ -141,6 +141,7 @@ function articleCard(a) {
             <p class="eyebrow">${esc(metaLine(a, minutes))}</p>
             <h3 class="jc-title">${esc(a.title)}</h3>
             ${summary ? '<p class="jc-dek">' + esc(summary) + '</p>' : ''}
+            <span class="jc-read">Read the article ›</span>
           </div>
         </a>`;
 }

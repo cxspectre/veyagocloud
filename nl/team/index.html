@@ -291,6 +291,7 @@
         </div>
       </nav>
       <div class="nav-right">
+        <a class="nav-login" href="/login/">Inloggen</a>
         <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Menu openen" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
@@ -317,6 +318,7 @@
       <a class="nm-sub" href="/nl/company/">Over</a>
       <a class="nm-sub" href="/nl/team/">Team</a>
       <a class="nm-sub" href="/nl/approach/">Aanpak</a>
+      <a class="nm-sub" href="/login/">Inloggen</a>
       <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
     </nav>
   </aside>
@@ -336,7 +338,10 @@
       <p class="eyebrow">Het team</p>
       <h1 class="headline">De twee mensen die Veyago bouwen.</h1>
       <p class="definition"><strong>Veyago Inc. bestaat uit twee mensen:</strong> Cassian Drefke, oprichter en CEO, die de software ontwerpt en schrijft, en Wessel Gelderblom, vice-president, die strategie en oplevering doet. Er zit niemand anders tussen jou en het werk.</p>
-      <p class="lead">Een gedeelde overtuiging: apps moeten hun plek op je telefoon verdienen door echt nuttig te zijn, standaard privé, en gebouwd om te blijven.</p>
+      <div class="actions">
+        <a class="btn btn-blue" href="/nl/company/">Over de studio</a>
+        <a class="btn btn-line" href="/nl/approach/">Onze aanpak</a>
+      </div>
     </div>
   </section>
 
@@ -380,22 +385,18 @@
       <p class="eyebrow">Hoe we werken</p>
       <h2 class="section-headline">Een studio, geen fabriek.</h2>
       <p class="lead">Klein van opzet. We schalen het personeelsbestand niet op vóór de kwaliteit - we bouwen liever twee producten waar we trots op zijn dan tien waar we dat niet op zijn. Buiten het kernteam werken we met een klein aantal vertrouwde medewerkers aan specifieke projecten en capaciteiten.</p>
-    </div>
-    <div class="cards two" style="margin-top: clamp(26px,4vw,44px);">
-      <div class="card reveal">
-        <div class="ic ic-blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
-        </div>
-        <h3>Geleid door de oprichter</h3>
-        <p>Elke productbeslissing komt voort uit de mensen die ermee zullen leven. Geen visie die wordt gedelegeerd, geen productmanagers tussen het idee en de bouw.</p>
-      </div>
-      <div class="card reveal">
-        <div class="ic ic-purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-        </div>
-        <h3>Selectief in extern werk</h3>
-        <p>We nemen af en toe een klein aantal product- en engineeringprojecten aan voor externe teams. Dezelfde standaarden, hetzelfde team. <a class="link" href="/nl/services/" style="font-size:inherit">Bekijk diensten</a></p>
-      </div>
+      <ul class="capabilities">
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path></svg>
+          <h3>Geleid door de oprichter</h3>
+          <p>Elke productbeslissing komt voort uit de mensen die ermee zullen leven. Geen visie die wordt gedelegeerd, geen productmanagers tussen het idee en de bouw.</p>
+        </li>
+        <li class="reveal">
+          <svg class="cap-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <h3>Selectief in extern werk</h3>
+          <p>We nemen af en toe een klein aantal product- en engineeringprojecten aan voor externe teams. Dezelfde standaarden, hetzelfde team. <a class="link" href="/nl/services/" style="font-size:inherit">Bekijk diensten</a></p>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -434,7 +435,7 @@
       </div>
     </div>
   </footer>
-  <script src="/assets/js/site-config.js?v=20260721"></script>
+  <script src="/assets/js/site-config.js?v=20260911"></script>
   <script src="/app.js" defer=""></script>
 
 

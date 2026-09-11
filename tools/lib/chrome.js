@@ -13,7 +13,7 @@ var SITE = 'https://www.veyago.cloud';
 var DEFAULT_OG_IMAGE = SITE + '/assets/og.png';
 
 /* Cache-busted like the hand-authored pages — bump both together when the file changes. */
-var SITE_CONFIG_SRC = '/assets/js/site-config.js?v=20260721';
+var SITE_CONFIG_SRC = '/assets/js/site-config.js?v=20260911';
 
 
 /* The <head> inner markup. Mirrors the hand-authored pages + tools/build-essays.js. */
@@ -81,6 +81,7 @@ function header() {
         </div>
       </nav>
       <div class="nav-right">
+        <a class="nav-login" href="/login/">Log in</a>
         <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
@@ -106,6 +107,7 @@ function header() {
       <a class="nm-sub" href="/company/">About</a>
       <a class="nm-sub" href="/team/">Team</a>
       <a class="nm-sub" href="/approach/">Approach</a>
+      <a class="nm-sub" href="/login/">Log in</a>
       <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
     </nav>
   </aside>`;

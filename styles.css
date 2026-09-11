@@ -23,6 +23,10 @@
   --maxw-wide: 1120px;
   --gutter:    clamp(22px, 5vw, 24px);
   --radius:    22px;
+  --nav-h:     56px;     /* the fixed header; everything that has to clear it keys off this */
+  /* Where a .wrap's text starts. A block that sits outside a .wrap has to begin
+     here too, or it reads as indented from the headline above it. */
+  --col-start: max(var(--gutter), calc((100% - var(--maxw)) / 2 + var(--gutter)));
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --ease: cubic-bezier(0.28, 0.11, 0.32, 1);
@@ -61,7 +65,7 @@ button { font-family: inherit; }
 .wrap { width: 100%; max-width: var(--maxw); margin-inline: auto; padding-inline: var(--gutter); }
 .wrap.wide { max-width: var(--maxw-wide); }
 
-:where(section, [id]) { scroll-margin-top: 64px; }
+:where(section, [id]) { scroll-margin-top: calc(var(--nav-h) + 16px); }
 
 /* ---------- Type ---------- */
 h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-spacing: -0.025em; text-wrap: balance; }
@@ -100,7 +104,7 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 .nav.scrolled { background: rgba(255,255,255,0.88); border-bottom-color: rgba(0,0,0,0.08); }
 
 /* Wrap: logo left, links + actions right */
-.nav .wrap { display: flex; align-items: center; height: 48px; max-width: var(--maxw-wide); flex-shrink: 0; }
+.nav .wrap { display: flex; align-items: center; height: var(--nav-h); max-width: var(--maxw-wide); flex-shrink: 0; }
 .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 1.1rem; letter-spacing: -0.022em; color: var(--ink); flex-shrink: 0; }
 .brand img { width: 22px; height: 22px; border-radius: 6px; }
 
@@ -130,6 +134,11 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 
 /* Right side: contact pill + hamburger */
 .nav-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: auto; }
+/* Client sign-in. A text link, not a second pill: the header already carries
+   one primary action (Contact, or Get a quote on the sales pages). */
+.nav-login { font-size: 0.8125rem; color: var(--ink); opacity: .76; white-space: nowrap; transition: opacity .18s; }
+.nav-login:hover { opacity: 1; }
+@media (max-width: 460px) { .nav-login { display: none; } }
 .nav-cta { background: var(--blue-2) !important; color: #fff !important; opacity: 1 !important; padding: 6px 15px; border-radius: 980px; font-size: 0.8rem !important; font-weight: 500 !important; transition: background .18s var(--ease), transform .18s var(--ease) !important; white-space: nowrap; }
 .nav-cta:hover { background: var(--blue-press) !important; }
 .nav-cta:active { transform: scale(0.97); }
@@ -147,7 +156,7 @@ h1, h2, h3, h4 { color: var(--ink); font-weight: 600; line-height: 1.06; letter-
 .nav-drawer { position: fixed; top: 0; right: 0; z-index: 201; display: flex; flex-direction: column; width: min(82vw, 340px); height: 100dvh; padding: 0 26px calc(30px + env(safe-area-inset-bottom)); background: rgba(251,251,253,0.9); backdrop-filter: saturate(180%) blur(22px); -webkit-backdrop-filter: saturate(180%) blur(22px); border-left: 1px solid rgba(0,0,0,0.08); box-shadow: -26px 0 64px -22px rgba(0,0,0,0.3); transform: translateX(100%); visibility: hidden; transition: transform .44s cubic-bezier(.32,.72,0,1), visibility .44s; overflow-y: auto; overscroll-behavior: contain; }
 .nav-drawer.open { transform: translateX(0); visibility: visible; }
 
-.nav-drawer-top { display: flex; justify-content: flex-end; align-items: center; height: 48px; margin-right: calc(var(--gutter) - 26px); }
+.nav-drawer-top { display: flex; justify-content: flex-end; align-items: center; height: var(--nav-h); margin-right: calc(var(--gutter) - 26px); }
 .nav-drawer-close { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: none; background: none; color: var(--ink); border-radius: 9px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .18s var(--ease); }
 .nav-drawer-close:hover { background: rgba(0,0,0,0.06); }
 .nav-drawer-close:active { background: rgba(0,0,0,0.10); }
@@ -218,6 +227,7 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .section.soft { background: var(--bg-soft); }
 .section.gray { background: var(--bg-card); }
 .section .eyebrow { margin-bottom: 6px; }
+.hero .eyebrow { margin-bottom: clamp(10px, 1.4vw, 16px); }
 .section .section-headline, .section .headline { margin: 0; max-width: 20ch; }
 .section .subhead { margin: 12px 0 0; max-width: 34ch; }
 .section .lead { margin: 12px 0 0; max-width: 60ch; }
@@ -267,7 +277,7 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .devices .device:nth-child(2) { margin-bottom: clamp(16px, 3vw, 34px); }
 
 /* ---------- Two-up tiles (Apple paired) ---------- */
-.tiles2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: var(--maxw-wide); margin: clamp(28px, 4vw, 44px) auto 0; padding-inline: var(--gutter); }
+.tiles2 { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(18px, 2.4vw, 28px); max-width: var(--maxw-wide); margin: clamp(28px, 4vw, 44px) auto 0; padding-inline: var(--gutter); }
 .tile { background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: clamp(34px, 4vw, 52px) clamp(28px, 3vw, 44px) 0; text-align: center; overflow: hidden; display: flex; flex-direction: column; min-height: 460px; transition: transform .5s var(--ease), box-shadow .5s var(--ease); }
 .tile:hover { transform: translateY(-6px); box-shadow: 0 20px 60px -20px rgba(0,0,0,0.14); }
 .tile .eyebrow { margin-bottom: 6px; }
@@ -278,10 +288,21 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .tile .tile-media img.shot { width: clamp(180px, 22vw, 230px); }
 .tile .tile-media .art { width: 100%; max-width: 340px; }
 
-/* Compact 'Our Apps' tiles (home) - a tidy device peek, matched heights */
-.tiles2 .tile { min-height: 0; }
+/* Compact 'Our Apps' tiles (home) - a tidy device peek, matched heights.
+   Left-aligned like every other section on the page, and carrying the same
+   device treatment as /apps/: Kept's shot has the bezel baked into the PNG
+   (.framed), Veyago's is a bare screenshot that .device bezels. Rounding a
+   raw <img> instead, as this once did, gave one a frame inside a frame and
+   the other no frame at all. */
+.tiles2 .tile { min-height: 0; text-align: left; }
+.tiles2 .tile .tile-headline { margin: 0; }
+.tiles2 .tile .subhead { margin: 10px 0 0; max-width: 32ch; }
+.tiles2 .tile .actions { justify-content: flex-start; }
 .tiles2 .tile-media { margin-top: auto; padding-top: clamp(22px, 3vw, 30px); height: clamp(236px, 26vw, 272px); overflow: hidden; align-items: flex-start; }
-.tiles2 .tile-media img.shot { width: clamp(200px, 21vw, 226px); border-radius: 30px; }
+.tiles2 .tile-media .device { width: clamp(196px, 21vw, 224px); }
+/* The tile is already the thing that lifts on hover; a phone lifting inside it
+   is two motions for one gesture. */
+.tiles2 .tile-media .device:hover { transform: none; }
 .tiles2 .tile-media .art { width: 100%; max-width: 300px; align-self: center; }
 
 /* ---------- Card grid (features / values / services) ---------- */
@@ -293,6 +314,99 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .card .ic svg { width: 24px; height: 24px; }
 .card h3 { font-size: 1.3rem; letter-spacing: -0.018em; margin-bottom: 8px; }
 .card p { font-size: var(--fz-body); color: var(--muted); line-height: 1.5; }
+
+/* ---------- Capability index ---------- */
+/* Four disciplines as a 2x2 index: a rule and a counter over each, the name
+   set large enough to carry the section on its own. Deliberately NOT the ruled
+   list the FAQ uses - two identical lists on one page read as one thing, and
+   the grid breaks a run of three stacked text blocks. The numbers come from a
+   CSS counter rather than the markup: presentation, and nothing to translate. */
+.capabilities { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(26px, 3.2vw, 40px) clamp(32px, 4.5vw, 68px); margin: clamp(26px, 3.2vw, 40px) 0 0; padding: 0; max-width: 880px; }
+.capabilities > li { border-top: 1px solid var(--hair); padding-top: 15px; }
+/* A drawn line, not a filled tile: the gradient chips these replaced were the
+   only saturated colour on the page. Blue at 1.5px reads as an accent. */
+.capabilities .cap-ic { display: block; width: 27px; height: 27px; color: var(--blue); margin-bottom: 13px; }
+.capabilities h3 { font-size: clamp(1.25rem, 1.05rem + .55vw, 1.5rem); font-weight: 600; letter-spacing: -0.022em; line-height: 1.18; margin: 0; color: var(--ink); text-wrap: pretty; }
+.capabilities p { margin: 9px 0 0; color: var(--muted); font-size: var(--fz-body); line-height: 1.55; max-width: 40ch; }
+/* Three across when there are three, so the last isn't orphaned on its own row. */
+.capabilities.three { grid-template-columns: repeat(3, 1fr); max-width: none; }
+
+@media (max-width: 860px) {
+  .capabilities.three { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 700px) {
+  .capabilities, .capabilities.three { grid-template-columns: 1fr; gap: 22px; }
+}
+
+/* ---------- Who you'll work with ---------- */
+/* A named face and what they actually do. Shared by the homepage's studio
+   section and /websites/; only where the block sits differs between them. */
+.people-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.people-label { margin: 0 0 14px; font-size: .95rem; font-weight: 600; letter-spacing: -0.012em; color: var(--ink); }
+.person { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: center; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: 18px 20px; }
+.person picture { display: block; }
+.person-photo, .person-mono { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+.person-mono { display: grid; place-items: center; background: #fff; border: 1px solid var(--hair); font-weight: 600; color: var(--ink); }
+.person h3 { font-size: 1.05rem; margin: 0 0 2px; letter-spacing: -0.012em; }
+.person p { margin: 0; font-size: .92rem; color: var(--muted); line-height: 1.45; }
+
+/* ---------- Work cards ---------- */
+/* A site we built, in a browser chrome so it reads as a live page rather than
+   a screenshot. Shared by the homepage and /websites/. */
+.work-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(18px, 2.4vw, 28px); margin-top: clamp(30px, 4vw, 46px); }
+.work-card { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid rgba(0,0,0,0.06); border-radius: var(--radius); padding: 18px 18px 0; transition: transform .5s var(--ease), box-shadow .5s var(--ease); }
+.work-card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px -20px rgba(0,0,0,0.14); }
+.work-card:focus-visible { outline: 3px solid rgba(0,113,227,.5); outline-offset: 3px; }
+.work-frame { border-radius: 13px; overflow: hidden; background: #fff; border: 1px solid var(--hair-soft); box-shadow: 0 14px 34px -20px rgba(0,0,0,.4); }
+.work-bar { display: flex; align-items: center; gap: 6px; padding: 9px 12px; background: #fbfbfd; border-bottom: 1px solid var(--hair-soft); }
+.work-bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--hair); flex-shrink: 0; }
+.work-host { margin-left: 10px; font-size: .72rem; color: var(--muted-2); letter-spacing: -0.004em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.work-frame img { display: block; width: 100%; height: auto; }
+.work-body { padding: 21px 8px 26px; }
+.work-body h3 { font-size: 1.1rem; letter-spacing: -0.018em; margin: 0 0 4px; }
+.work-body p { margin: 0; font-size: .93rem; color: var(--muted); line-height: 1.45; }
+.work-go { display: inline-flex; margin-top: 14px; font-size: var(--fz-link); color: var(--blue); }
+.work-card:hover .work-go { text-decoration: underline; text-underline-offset: 3px; }
+
+.work-grid + .actions { margin-top: clamp(24px, 3.2vw, 34px); }
+.people-row { margin-top: clamp(22px, 3vw, 30px); }
+
+@media (max-width: 760px) {
+  .people-row, .work-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- Section with a sticky header ---------- */
+/* The title block holds its place on the left while that section's content
+   scrolls past on the right, then releases at the section's end. Applied to
+   the sections with enough body to be worth scrolling past - not to every one,
+   since a page of identical split sections is the monotony this was meant to
+   break. align-self:start is load-bearing: a stretched grid item fills the row
+   and has nowhere to stick to. */
+.split-head > .wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(26px, 4.5vw, 68px);
+  align-items: start;
+}
+/* Clears the fixed header, plus the launch bar when one is showing. */
+.split-head .sh-head { position: sticky; top: calc(var(--lb-h, 0px) + var(--nav-h) + clamp(18px, 3vw, 34px)); align-self: start; }
+.split-head .sh-body { min-width: 0; }
+.split-head .sh-head .section-headline { max-width: 14ch; }
+.split-head .sh-head .subhead { max-width: 30ch; }
+.split-head .sh-body > :first-child { margin-top: 0; }
+/* In a column roughly half the page, these read better stacked than columned. */
+.split-head .capabilities { grid-template-columns: 1fr; max-width: none; }
+.split-head .values-strip { flex-direction: column; gap: 13px; max-width: none; }
+.split-head .faq-inline { max-width: none; }
+
+/* One column below the split's useful width - and nothing to stick to, since
+   the header is no longer beside anything. */
+@media (max-width: 860px) {
+  .split-head > .wrap { grid-template-columns: 1fr; gap: clamp(16px, 3vw, 24px); }
+  .split-head .sh-head { position: static; }
+  .split-head .sh-head .section-headline { max-width: 20ch; }
+  .split-head .sh-head .subhead { max-width: 34ch; }
+}
 
 /* ---------- App grid ---------- */
 .app-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: var(--maxw-wide); margin: 0 auto; padding-inline: var(--gutter); }
@@ -313,7 +427,7 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .step p { color: var(--muted); max-width: 30ch; margin: 0; }
 
 /* vertical process */
-.proc { max-width: 760px; margin: clamp(22px,3vw,38px) auto 0; text-align: left; display: grid; gap: clamp(16px, 2vw, 26px); }
+.proc { max-width: 760px; margin: clamp(22px,3vw,38px) auto 0 0; text-align: left; display: grid; gap: clamp(16px, 2vw, 26px); }
 .proc-step { display: grid; grid-template-columns: 52px 1fr; gap: 22px; align-items: start; }
 .proc-step .pn { width: 52px; height: 52px; border-radius: 50%; background: #fff; border: 1px solid var(--hair); display: grid; place-items: center; font-weight: 600; font-size: 1.15rem; color: var(--ink); }
 .proc-step h3, .proc-step h4 { font-size: 1.3rem; margin-bottom: 6px; }
@@ -444,6 +558,20 @@ html.menu-open body { position: fixed; left: 0; right: 0; width: 100%; overflow:
 .section.dark .btn-blue { background: #f5f5f7; color: #1d1d1f; }
 .section.dark .btn-blue:hover { background: #ffffff; }
 .section.dark .btn-line { color: #2997ff; border-color: rgba(41,151,255,.4); }
+/* A data table on a dark band. table.data is written for light backgrounds -
+   its cells use --ink, which is near-black and scored 1.25:1 against #000,
+   effectively invisible. These are the same tokens the other dark rules use. */
+.section.dark table.data caption { color: rgba(245,245,247,.6); }
+.section.dark table.data thead th { color: #f5f5f7; border-bottom-color: rgba(255,255,255,.22); }
+.section.dark table.data tbody th { color: #f5f5f7; }
+.section.dark table.data td { color: rgba(245,245,247,.85); }
+.section.dark table.data th, .section.dark table.data td { border-bottom-color: rgba(255,255,255,.14); }
+
+/* The capability index on a dark band: same geometry, inverted ink. */
+.section.dark .capabilities { text-align: left; margin-inline: auto; }
+.section.dark .capabilities > li { border-top-color: rgba(255,255,255,.14); }
+.section.dark .capabilities p { color: rgba(245,245,247,.65); }
+.section.dark .capabilities .cap-ic { color: #2997ff; }
 
 /* ---------- Split hero (text + device side-by-side) ---------- */
 .hero.split { padding-bottom: clamp(36px, 5vw, 56px); }
@@ -824,7 +952,10 @@ body.lb-anim { transition: padding-top .45s var(--ease); }
 
 /* Project entries - alternating editorial feature rows with a working-paper tile */
 .proj-features { display: grid; gap: clamp(58px, 8vw, 104px); max-width: var(--maxw-wide); margin: clamp(38px, 5vw, 58px) auto 0; padding-inline: var(--gutter); }
-.proj-feature { display: grid; grid-template-columns: 1.12fr 1fr; gap: clamp(34px, 5vw, 74px); align-items: center; }
+/* start, not center: the paper tile is much shorter than the question and
+   findings beside it, so centring left a void above and below it - and the
+   flip alternation put that void on a different side each time. */
+.proj-feature { display: grid; grid-template-columns: 1.12fr 1fr; gap: clamp(34px, 5vw, 74px); align-items: start; }
 .proj-feature.flip .paper-tile { order: -1; }
 .pf-body { text-align: left; }
 .pf-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -909,7 +1040,7 @@ a.paper-tile:hover .pt-read { text-decoration: underline; }
   letter-spacing: -0.014em; margin: 0 0 clamp(36px, 4.5vw, 52px); padding-bottom: clamp(36px, 4.5vw, 52px);
   border-bottom: 1px solid var(--hair);
 }
-.paper-body h2 { font-size: 1.5rem; letter-spacing: -0.022em; line-height: 1.16; margin: clamp(42px, 5vw, 60px) 0 14px; scroll-margin-top: calc(var(--lb-h, 0px) + 66px); }
+.paper-body h2 { font-size: 1.5rem; letter-spacing: -0.022em; line-height: 1.16; margin: clamp(42px, 5vw, 60px) 0 14px; scroll-margin-top: calc(var(--lb-h, 0px) + var(--nav-h) + 18px); }
 .paper-body h2 .sec-n { color: var(--st, var(--blue)); font-weight: 600; }
 .paper-body h3 { font-size: 1.15rem; letter-spacing: -0.015em; color: var(--ink); margin: 34px 0 8px; }
 .paper-body p { font-size: var(--fz-lead); color: var(--text); line-height: 1.66; margin: 0 0 18px; }
@@ -976,8 +1107,16 @@ a.paper-tile:hover .pt-read { text-decoration: underline; }
 .paper-rule { border: 0; height: 1px; background: var(--hair); margin: clamp(34px, 4.5vw, 52px) 0; }
 
 /* ---- Shared index header (journal + wallpapers) ---- */
-.ji-head { max-width: var(--maxw); margin: 0 auto clamp(34px, 4.5vw, 56px); }
-.ji-head h1 { font-size: clamp(2.2rem, 1.4rem + 3vw, 3.1rem); letter-spacing: -0.032em; line-height: 1.04; margin: 6px 0 0; }
+/* Neither index has a .hero or a breadcrumb trail above it, so nothing was
+   clearing the fixed header: the eyebrow sat about ten pixels under the nav
+   while every other page on the site opens with real air. */
+.journal-index, .wallpapers-index { padding-top: clamp(28px, 4.5vh, 54px); }
+.ji-head { position: relative; max-width: var(--maxw); margin: 0 auto clamp(34px, 4.5vw, 56px); padding-top: 26px; }
+/* The same mark an article masthead carries, so the index reads as their index
+   rather than as a grid that happens to sit at this URL. */
+.ji-head::before { content: ""; position: absolute; top: 0; left: 0; width: 46px; height: 4px; border-radius: 2px; background: var(--blue-2); }
+/* The site's h1 size, like every other page - it was two steps smaller. */
+.ji-head h1 { font-size: var(--fz-hero); letter-spacing: -0.03em; line-height: 1.04; margin: 8px 0 0; }
 .lede { font-size: var(--fz-lead); color: var(--muted); margin: 14px 0 0; max-width: 56ch; line-height: 1.5; }
 .ji-empty { color: var(--muted); font-size: var(--fz-lead); margin: 8px 0 0; }
 
@@ -990,6 +1129,8 @@ a.paper-tile:hover .pt-read { text-decoration: underline; }
 .journal-card .jc-body .eyebrow { margin: 0 0 8px; }
 .jc-title { font-size: 1.3rem; letter-spacing: -0.018em; line-height: 1.18; margin: 0; color: var(--ink); }
 .jc-dek { font-size: var(--fz-body); color: var(--muted); line-height: 1.5; margin: 8px 0 0; }
+.jc-read { display: inline-flex; margin-top: 14px; font-size: var(--fz-link); color: var(--blue); }
+.journal-card:hover .jc-read { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---- Wallpapers grid ---- */
 .wp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: clamp(18px, 2.4vw, 28px); }
@@ -1048,11 +1189,11 @@ a.paper-tile:hover .pt-read { text-decoration: underline; }
    Search and AI engines read a real <table> and a real <ol>; the card grids
    they replaced looked the same and said nothing.
    --------------------------------------------------------------------------- */
-/* The trail sits above <main> and therefore under the fixed 48px header, so it
+/* The trail sits above <main> and therefore under the fixed header, so it
    clears the header itself and the first section below it gives back the space
    it would otherwise have used to do the same job. */
-.crumbs { max-width: var(--maxw-wide); margin: 0 auto; padding: 64px var(--gutter) 0; font-size: .88rem; color: var(--muted); }
-.crumbs + main .hero { padding-top: clamp(20px, 3vh, 36px); }
+.crumbs { max-width: var(--maxw-wide); margin: 0 auto; padding: calc(var(--nav-h) + 16px) var(--gutter) 0; font-size: .88rem; color: var(--muted); }
+.crumbs + main .hero { padding-top: clamp(64px, 8.5vh, 104px); }
 .crumbs + main.policy { padding-top: 22px; }
 .crumbs ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 0; }
 .crumbs li { display: flex; align-items: center; gap: 8px; }
@@ -1110,3 +1251,25 @@ ol.steps > li, ol.proc > li { margin: 0; }
 .answer-first p { margin: 0; font-size: 1.06rem; line-height: 1.55; color: var(--ink); }
 .answer-first p + p { margin-top: 10px; }
 .paper-body .table-wrap { margin: clamp(22px, 3vw, 34px) 0; padding-inline: 0; }
+
+/* Question-and-answer rows. Every answer stays in the DOM - a crawler and the
+   FAQPage schema still read all of them - while a reader sees a list of
+   questions and opens the one they came for. Only the rows live here; where
+   the block sits is the caller's business (.faq-inline below sits inside a
+   .wrap, /websites/ centres its own column in websites.css). */
+.faq { border-top: 1px solid var(--hair-soft); text-align: left; }
+.faq details { border-bottom: 1px solid var(--hair-soft); }
+.faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 0; font-size: 1.08rem; font-weight: 600; letter-spacing: -0.012em; color: var(--ink); }
+.faq summary::-webkit-details-marker { display: none; }
+/* The marker is two drawn bars rather than a "+" glyph: 45deg then lands on a
+   true cross, instead of on whatever axis the font centres its plus about. */
+.faq summary::after { content: ""; flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--hair); background: linear-gradient(var(--blue), var(--blue)) center/9px 1.5px no-repeat, linear-gradient(var(--blue), var(--blue)) center/1.5px 9px no-repeat; transition: transform .25s var(--ease); }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p { color: var(--muted); margin: 0 0 18px; max-width: 64ch; font-size: var(--fz-body); line-height: 1.55; }
+.faq summary:focus-visible { outline: 3px solid rgba(0,113,227,.5); outline-offset: 3px; border-radius: 6px; }
+/* A question that is also a heading reads as the row, not as an h3. */
+.faq summary h3 { font: inherit; color: inherit; letter-spacing: inherit; line-height: 1.35; margin: 0; text-wrap: pretty; }
+/* The block inside a .wrap, lined up with the section's eyebrow and headline. */
+.faq-inline { max-width: 760px; margin-top: clamp(18px, 2.4vw, 28px); }
+@media (prefers-reduced-motion: reduce) { .faq summary::after { transition: none; } }
+
