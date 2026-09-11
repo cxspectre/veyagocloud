@@ -11,6 +11,14 @@
      image          { url, alt, caption }      → <figure class="paper-figure">
      quote          { text, attribution }      → <blockquote class="pull-quote">
      divider        {}                          → <hr class="paper-rule">
+     answer         { html }                    → the 40-60 word direct answer that
+                                                  opens the piece, marked so the
+                                                  BlogPosting's speakable selector
+                                                  and a featured snippet can find it
+     table          { caption, columns, rows }  → <table class="data"> in a scroll
+                                                  box; the only comparison format
+                                                  a snippet or an answer engine can
+                                                  actually lift
 */
 'use strict';
 
@@ -60,6 +68,35 @@ function renderBlock(b, toc) {
     case 'text':
       // The one place raw HTML enters the page — sanitise on the way in (spec §4).
       return sanitizeHtml(b.html);
+
+    case 'answer': {
+      // Same sanitiser, different wrapper: <p> comes back from sanitiseHtml, so
+      // the class goes on a container rather than on the paragraph itself.
+      var inner = sanitizeHtml(b.html);
+      if (!inner) return '';
+      return '<div class="answer-first">' + inner + '</div>';
+    }
+
+    case 'table': {
+      if (!Array.isArray(b.rows) || !b.rows.length) return '';
+      var cap = b.caption ? '\n              <caption>' + esc(b.caption) + '</caption>' : '';
+      var head = Array.isArray(b.columns) && b.columns.length
+        ? '\n              <thead>\n                <tr>' +
+          b.columns.map(function (c) { return '<th scope="col">' + esc(c) + '</th>'; }).join('') +
+          '</tr>\n              </thead>'
+        : '';
+      // First cell of each row is the row's header: that is what makes a table
+      // readable by a screen reader and parseable as a comparison.
+      var rows = b.rows.map(function (r) {
+        return '\n                  <tr>' + r.map(function (cell, i) {
+          return i === 0
+            ? '<th scope="row">' + esc(cell) + '</th>'
+            : '<td>' + esc(cell) + '</td>';
+        }).join('') + '</tr>';
+      }).join('');
+      return '<div class="table-wrap">\n            <table class="data">' + cap + head +
+        '\n              <tbody>' + rows + '\n              </tbody>\n            </table>\n          </div>';
+    }
 
     case 'image': {
       if (!b.url) return '';

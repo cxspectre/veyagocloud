@@ -11,8 +11,9 @@
 'use strict';
 
 var { SITE, DEFAULT_OG_IMAGE } = require('./chrome');
+var entity = require('./entity');
 var { isoDate, absoluteUrl } = require('./format');
-var { countWords, stripTags } = require('./reading-time');
+var { blockWords } = require('./reading-time');
 
 var ORG_ID = SITE + '/#organization';
 var JOURNAL_URL = SITE + '/journal/';
@@ -24,15 +25,7 @@ function summary(a) { return a.excerpt || a.dek || ''; }
 /* The words a reader actually reads — the same accounting reading time uses, so
    the two numbers can never disagree on the page. */
 function wordCount(blocks) {
-  return (blocks || []).reduce(function (n, b) {
-    if (!b || !b.type) return n;
-    if (b.type === 'text') return n + countWords(stripTags(b.html));
-    if (b.type === 'heading') return n + countWords(b.text);
-    if (b.type === 'quote') return n + countWords(b.text) + countWords(b.attribution);
-    if (b.type === 'section_marker') return n + countWords(b.text);
-    if (b.type === 'image') return n + countWords(b.caption);
-    return n;
-  }, 0);
+  return blockWords(blocks);
 }
 
 /* A crawler reads the raw bytes, not the parsed string: an unescaped "</script>"
@@ -55,37 +48,73 @@ function breadcrumb(trail) {
 function blogPosting(a) {
   var url = articleUrl(a);
   var published = isoDate(a.published_at);
-  return {
+  var post = {
     '@type': 'BlogPosting',
     '@id': url + '#article',
     headline: a.title,
     description: summary(a),
     url: url,
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
-    image: a.cover_image_url ? absoluteUrl(a.cover_image_url) : DEFAULT_OG_IMAGE,
+    image: absoluteUrl(a.share_image || a.cover_image_url) || DEFAULT_OG_IMAGE,
     inLanguage: 'en',
     isAccessibleForFree: true,
     wordCount: wordCount(a.body),
     datePublished: published,
     dateModified: isoDate(a.updated_at) || published,
-    author: { '@type': 'Organization', '@id': ORG_ID, name: 'Veyago Inc.', url: SITE + '/' },
+    author: entity.authorRef(),
     publisher: { '@id': ORG_ID },
-    isPartOf: { '@type': 'Blog', '@id': JOURNAL_URL + '#blog' }
+    isPartOf: { '@id': JOURNAL_URL + '#blog' },
+    /* Answer engines lift the first 40-60 words of an article far more often
+       than any other passage, so the draft names it explicitly. */
+    speakable: { '@type': 'SpeakableSpecification', cssSelector: ['.paper-title', '.answer-first'] }
   };
+  if (a.keywords) post.keywords = a.keywords;
+  if (a.about) post.about = a.about;
+  if (Array.isArray(a.citation) && a.citation.length) post.citation = a.citation;
+  return post;
 }
 
-/* One article page's graph: the post itself plus where it sits in the site. */
+/* A procedure inside an article, when the draft declares one. Google no longer
+   draws HowTo rich results, but the markup still tells an answer engine which
+   paragraphs are the ordered steps of a task. */
+function howTo(a) {
+  if (!a.howto || !Array.isArray(a.howto.step) || !a.howto.step.length) return null;
+  var url = articleUrl(a);
+  var node = {
+    '@type': 'HowTo',
+    '@id': url + '#howto',
+    name: a.howto.name,
+    description: a.howto.description || '',
+    isPartOf: { '@id': url + '#article' },
+    step: a.howto.step.map(function (st, i) {
+      return {
+        '@type': 'HowToStep',
+        position: i + 1,
+        name: st.name,
+        text: st.text,
+        url: url + (st.anchor ? '#' + st.anchor : '#howto')
+      };
+    })
+  };
+  if (a.howto.totalTime) node.totalTime = a.howto.totalTime;
+  if (a.howto.tool) node.tool = a.howto.tool.map(function (t) { return { '@type': 'HowToTool', name: t }; });
+  return node;
+}
+
+/* One article page's graph: the post itself, the founder who wrote it, any
+   procedure it contains, and where it sits in the site. */
 function articleJsonLd(a) {
   return serialise({
     '@context': 'https://schema.org',
     '@graph': [
       blogPosting(a),
+      entity.founder(),
       breadcrumb([
         { name: 'Home', url: SITE + '/' },
         { name: 'Articles', url: JOURNAL_URL },
         { name: a.title }
       ])
-    ]
+    ].concat(howTo(a) || [])
   });
 }
 
@@ -98,7 +127,7 @@ function indexJsonLd(articles) {
         '@type': 'Blog',
         '@id': JOURNAL_URL + '#blog',
         name: 'Field notes',
-        description: 'Build logs, research notes, and the occasional opinion from the studio.',
+        description: 'Field notes from the studio on fast, private software: why builder sites are slow, what a fixed-price website really includes, and how we build.',
         url: JOURNAL_URL,
         inLanguage: 'en',
         publisher: { '@id': ORG_ID },
@@ -117,9 +146,11 @@ function indexJsonLd(articles) {
 function articleHeadExtra(a) {
   var published = isoDate(a.published_at);
   return [
-    '<meta name="author" content="Veyago Inc." />',
+    '<meta name="author" content="Cassian Drefke" />',
+    '<link rel="alternate" type="application/rss+xml" title="Veyago field notes" href="' + SITE + '/feed.xml" />',
     '<meta property="article:published_time" content="' + published + '" />',
     '<meta property="article:modified_time" content="' + (isoDate(a.updated_at) || published) + '" />',
+    '<meta property="article:author" content="' + SITE + '/team/#cassian-drefke" />',
     '<meta property="article:publisher" content="' + SITE + '/" />',
     '<script type="application/ld+json">\n  ' + articleJsonLd(a).replace(/\n/g, '\n  ') + '\n  </script>'
   ].join('\n  ');
@@ -127,7 +158,8 @@ function articleHeadExtra(a) {
 
 /* Extra <head> markup for the index. */
 function indexHeadExtra(articles) {
-  return '<script type="application/ld+json">\n  ' +
+  return '<link rel="alternate" type="application/rss+xml" title="Veyago field notes" href="' + SITE + '/feed.xml" />\n  ' +
+    '<script type="application/ld+json">\n  ' +
     indexJsonLd(articles).replace(/\n/g, '\n  ') + '\n  </script>';
 }
 

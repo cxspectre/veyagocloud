@@ -791,7 +791,10 @@ body.lb-anim { transition: padding-top .45s var(--ease); }
 .chip-graduated  { background: rgba(30,150,80,0.12);  color: #1c7a44; }
 
 /* Pipeline visualization - numbered nodes on a quiet, flowing track */
-.pipeline { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: clamp(36px, 4.5vw, 56px); }
+/* The rail is decorative and sits beside the list, because only <li> may be a
+   child of <ol>; the wrapper is what it positions against. */
+.pipeline-wrap { position: relative; margin-top: clamp(36px, 4.5vw, 56px); }
+.pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; list-style: none; margin: 0; padding: 0; }
 .pl-line { position: absolute; top: 21px; left: 12.5%; right: 12.5%; height: 1.5px; background: var(--hair); border-radius: 2px; overflow: hidden; }
 .pl-flow { position: absolute; inset: 0 auto 0 0; width: 32%; background: linear-gradient(90deg, transparent, rgba(0,113,227,.65), transparent); transform: translateX(-130%); animation: plFlow 4.4s var(--ease) infinite; }
 @keyframes plFlow { to { transform: translateX(360%); } }
@@ -808,7 +811,8 @@ body.lb-anim { transition: padding-top .45s var(--ease); }
 .pl-none { font-size: 0.85rem; color: var(--muted); margin: 16px auto 0; max-width: 21ch; }
 
 @media (max-width: 880px) {
-  .pipeline { grid-template-columns: 1fr; gap: 0; margin-top: 34px; }
+  .pipeline-wrap { margin-top: 34px; }
+  .pipeline { grid-template-columns: 1fr; gap: 0; }
   .pl-line { display: none; }
   .pl-stage { text-align: left; padding: 0 0 30px 62px; }
   .pl-stage::before { content: ""; position: absolute; left: 21px; top: 8px; bottom: -8px; width: 1.5px; background: var(--hair); }
@@ -1037,3 +1041,72 @@ a.paper-tile:hover .pt-read { text-decoration: underline; }
 /* A monogram where there is no portrait yet, same geometry as the photo */
 .tc-photo.tc-mono { display: grid; place-items: center; background: #fff; border: 1px solid var(--hair); color: var(--ink); font-weight: 600; font-size: 2.4rem; letter-spacing: -0.02em; }
 .team-grid { align-items: start; }
+
+/* ---------------------------------------------------------------------------
+   Answer-shaped page furniture
+   Breadcrumbs, comparison tables, definition ledes and ordered process lists.
+   Search and AI engines read a real <table> and a real <ol>; the card grids
+   they replaced looked the same and said nothing.
+   --------------------------------------------------------------------------- */
+/* The trail sits above <main> and therefore under the fixed 48px header, so it
+   clears the header itself and the first section below it gives back the space
+   it would otherwise have used to do the same job. */
+.crumbs { max-width: var(--maxw-wide); margin: 0 auto; padding: 64px var(--gutter) 0; font-size: .88rem; color: var(--muted); }
+.crumbs + main .hero { padding-top: clamp(20px, 3vh, 36px); }
+.crumbs + main.policy { padding-top: 22px; }
+.crumbs ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 0; }
+.crumbs li { display: flex; align-items: center; gap: 8px; }
+.crumbs li + li::before { content: "›"; color: var(--hair); }
+.crumbs a { color: var(--muted); text-decoration: none; }
+.crumbs a:hover { color: var(--blue); text-decoration: underline; }
+.crumbs [aria-current="page"] { color: var(--ink); }
+
+/* A definition sentence: the first thing on an entity page, and the sentence an
+   answer engine is most likely to lift verbatim. */
+.definition { max-width: 68ch; margin-top: clamp(14px, 2vw, 22px); font-size: clamp(1.05rem, 1rem + .35vw, 1.22rem); line-height: 1.5; color: var(--ink); }
+.hero .definition, .section.hero .definition { margin-inline: auto; }
+.definition strong { font-weight: 600; }
+
+/* Comparison / pricing tables. Scroll inside their own box on a phone so the
+   page body never scrolls sideways. */
+.table-wrap { max-width: var(--maxw-wide); margin: clamp(24px, 3.2vw, 40px) auto 0; padding-inline: var(--gutter); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.data { width: 100%; border-collapse: collapse; text-align: left; font-size: .97rem; min-width: 540px; }
+table.data caption { caption-side: top; text-align: left; color: var(--muted); font-size: .9rem; padding-bottom: 12px; }
+table.data th, table.data td { padding: 13px 16px 13px 0; border-bottom: 1px solid var(--hair-soft); vertical-align: top; }
+table.data thead th { color: var(--ink); font-weight: 600; border-bottom: 1px solid var(--hair); white-space: nowrap; }
+table.data tbody th { font-weight: 600; color: var(--ink); }
+table.data td { color: var(--text); }
+table.data .num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.data tbody tr:last-child th, table.data tbody tr:last-child td { border-bottom: 0; }
+
+/* Ordered versions of the two step layouts: same geometry, real list semantics. */
+ol.steps, ol.proc { list-style: none; padding: 0; }
+ol.steps > li, ol.proc > li { margin: 0; }
+
+/* Author box at the foot of an article or paper. */
+.byline { display: flex; align-items: center; gap: 12px; margin: 6px 0 0; font-size: .95rem; color: var(--muted); }
+.byline img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+.byline a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.byline a:hover { color: var(--blue); text-decoration: underline; }
+.author-box { display: grid; grid-template-columns: 64px 1fr; gap: 18px; align-items: start; margin: clamp(30px, 4vw, 46px) 0 0; padding: clamp(20px, 2.4vw, 28px); background: var(--bg-card); border: 1px solid var(--hair-soft); border-radius: var(--radius); }
+.author-box img, .author-box .person-mono { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; }
+.author-box h2, .author-box h3 { font-size: 1.05rem; margin: 0 0 4px; }
+.author-box p { color: var(--muted); font-size: .95rem; margin: 0; max-width: 60ch; }
+.author-box .ab-role { display: block; font-size: .82rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+
+/* "Last updated" line on a page that is not an article. */
+.page-updated { font-size: .88rem; color: var(--muted); margin: 0; }
+
+@media (max-width: 700px) {
+  .author-box { grid-template-columns: 1fr; }
+  .author-box img, .author-box .person-mono { width: 56px; height: 56px; }
+}
+.tc-knows { font-size: .92rem; color: var(--muted); }
+.tc-knows strong { color: var(--ink); font-weight: 600; }
+
+/* The 40-60 word direct answer that opens an article: the passage a featured
+   snippet or an AI answer is most likely to lift, so it is set apart and named. */
+.answer-first { margin: 0 0 6px; padding: 18px 22px; background: var(--bg-card); border-left: 3px solid var(--blue); border-radius: 0 var(--radius) var(--radius) 0; }
+.answer-first p { margin: 0; font-size: 1.06rem; line-height: 1.55; color: var(--ink); }
+.answer-first p + p { margin-top: 10px; }
+.paper-body .table-wrap { margin: clamp(22px, 3vw, 34px) 0; padding-inline: 0; }

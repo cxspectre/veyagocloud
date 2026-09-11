@@ -8,7 +8,7 @@ var { esc, attr } = require('./escape');
 var { page, SITE } = require('./chrome');
 var { newsletterSection } = require('./newsletter-embed');
 
-var INDEX_LEDE = 'Free to download — made for the brand and for your home screen. Nothing tracked, nothing sold.';
+var INDEX_LEDE = 'Free wallpapers for iPhone and desktop, made for the brand and for your home screen. No account, nothing tracked, nothing sold - just download them.';
 
 function variantButton(v) {
   if (!v || !v.url) return '';
@@ -58,9 +58,12 @@ function renderWallpapersIndex(wallpapers) {
   return page({
     lang: 'en',
     head: {
-      title: 'Wallpapers | Veyago',
+      title: 'Free wallpapers for iPhone and desktop | Veyago',
       description: INDEX_LEDE,
       canonical: SITE + '/wallpapers/',
+      /* Same rule as /journal/: while there is nothing to download this page is a
+         placeholder, so crawlers follow its links but keep it out of the index. */
+      robots: (wallpapers && wallpapers.length) ? 'index,follow' : 'noindex,follow',
       ogType: 'website'
     },
     body: body,

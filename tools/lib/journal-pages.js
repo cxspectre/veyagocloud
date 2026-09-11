@@ -7,13 +7,13 @@ var { esc, attr } = require('./escape');
 var { page, SITE, DEFAULT_OG_IMAGE } = require('./chrome');
 var { renderBlocks } = require('./render-blocks');
 var { readingMinutes } = require('./reading-time');
-var { formatDate, absoluteUrl } = require('./format');
+var { formatDate, isoDate, absoluteUrl } = require('./format');
 var { newsletterSection } = require('./newsletter-embed');
 var { articleHeadExtra, indexHeadExtra } = require('./journal-schema');
 
 var JOURNAL_ACCENT = '#0071e3';
 var INDEX_TITLE = 'Articles';
-var INDEX_LEDE = 'Build logs, research notes, and the occasional opinion from the studio.';
+var INDEX_LEDE = 'Field notes from the studio on fast, private software: why builder sites are slow, what a fixed-price website really includes, and how we build.';
 
 /* Description used for list cards + social preview. */
 function articleSummary(a) {
@@ -26,8 +26,39 @@ function metaLine(a, minutes) {
   return [date, read].filter(Boolean).join(' · ');
 }
 
-/* One article page → full HTML document string. */
-function renderArticlePage(a) {
+/* The masthead line on an article page. A plain-text date tells a crawler
+   nothing; <time datetime> and a linked author do, and the visible byline is
+   what a quality rater looks for first. */
+function bylineBlock(a, minutes) {
+  var published = isoDate(a.published_at);
+  var updated = isoDate(a.updated_at);
+  var parts = ['<time datetime="' + attr(published) + '">' + esc(formatDate(a.published_at)) + '</time>'];
+  if (updated && updated !== published) {
+    parts.push('updated <time datetime="' + attr(updated) + '">' + esc(formatDate(a.updated_at)) + '</time>');
+  }
+  if (minutes) parts.push(esc(minutes + ' min read'));
+  return '<p class="byline">' +
+    '<img src="/assets/cassian-drefke-240w.webp" alt="" width="34" height="34" loading="lazy" decoding="async" />' +
+    '<span>By <a href="/team/#cassian-drefke" rel="author">Cassian Drefke</a>, Founder &amp; CEO · ' +
+    parts.join(' · ') + '</span></p>';
+}
+
+/* Closing author box: who wrote this, why they would know, and where to go next. */
+function authorBox() {
+  return `<aside class="author-box">
+          <img src="/assets/cassian-drefke-240w.webp" alt="Cassian Drefke" width="64" height="64" loading="lazy" decoding="async" />
+          <div>
+            <span class="ab-role">Written by</span>
+            <h2><a href="/team/#cassian-drefke" rel="author">Cassian Drefke</a> — Founder &amp; CEO, Veyago Inc.</h2>
+            <p>Cassian founded Veyago in New York in April 2026. He designs and builds the studio's iOS apps and every client website it ships, which is where the numbers in these notes come from. Write to <a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a> and he answers within one working day.</p>
+          </div>
+        </aside>`;
+}
+
+/* One article page → full HTML document string. `next` is the article a reader
+   should go to from here; without it every article was a dead end that only
+   pointed back at the index, which is both a worse read and a worse crawl. */
+function renderArticlePage(a, next) {
   var rendered = renderBlocks(a.body || []);
   var minutes = a.reading_minutes || readingMinutes(a.body || []);
   var canonical = SITE + '/journal/' + a.slug + '/';
@@ -54,15 +85,17 @@ function renderArticlePage(a) {
           <p class="paper-kicker"><a href="/journal/">&larr; Articles</a></p>
           <h1 class="paper-title">${esc(a.title)}</h1>
           ${dek}
-          <p class="paper-meta">${esc(metaLine(a, minutes))}</p>
+          ${bylineBlock(a, minutes)}
         </div>
         ${cover}<div class="paper-body">
         ${rendered.html}
         </div>
+        ${authorBox()}
         ${newsletterSection({ id: 'article', heading: 'Want the next field note?' })}
         <footer class="paper-foot">
           <div class="pf-nav">
             <a class="pf-back" href="/journal/">&larr; All articles</a>
+            ${readNext(next)}
           </div>
         </footer>
       </div>
@@ -76,12 +109,23 @@ function renderArticlePage(a) {
       description: articleSummary(a),
       canonical: canonical,
       ogType: 'article',
-      ogImage: a.cover_image_url ? absoluteUrl(a.cover_image_url) : DEFAULT_OG_IMAGE,
+      /* share_image is the card built for the link preview; cover_image_url is
+         artwork shown on the page itself. They are different jobs. */
+      ogImage: absoluteUrl(a.share_image || a.cover_image_url) || DEFAULT_OG_IMAGE,
+      ogImageAlt: a.title + ' — a field note from Veyago',
       extra: articleHeadExtra(a)
     },
     body: body,
     scripts: ['/assets/js/newsletter.js']
   });
+}
+
+/* The "read next" link in an article's footer, matching the research papers'. */
+function readNext(next) {
+  if (!next || !next.slug) return '';
+  return '<a class="pf-next" href="/journal/' + attr(next.slug) + '/">' +
+    '<span class="pf-next-k">Read next</span>' +
+    '<span class="pf-next-t">' + esc(next.title) + ' &rarr;</span></a>';
 }
 
 /* One list card for the index. */
@@ -124,7 +168,8 @@ function renderJournalIndex(articles) {
   return page({
     lang: 'en',
     head: {
-      title: 'Articles | Veyago',
+      title: 'Field notes on private software and fast sites | Veyago',
+      ogImageAlt: 'Veyago field notes — writing from an independent New York studio',
       description: INDEX_LEDE,
       canonical: SITE + '/journal/',
       ogType: 'website',

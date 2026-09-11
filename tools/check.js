@@ -16,6 +16,15 @@
  *   4. generated tree     `node tools/verify-cli.js --root .`: the Supabase export
  *                         on disk (journal, wallpapers, apps, sitemap) is sound.
  *                         Its tree-only mode needs no network and no secrets.
+ *   5. entity graph       every page's Organization and WebSite nodes are the ones
+ *                         in tools/lib/entity.js, byte for byte
+ *                         (tools/sync-entities.js --check). One entity, one
+ *                         description, one set of contact details.
+ *   6. on-page signals    tools/check-pages.js: titles under 60, descriptions
+ *                         110-160 and unique, one H1, no H3 shipped twice, a
+ *                         canonical, breadcrumbs that agree with their schema,
+ *                         and structured data that parses with no @id declared
+ *                         twice. Everything an SEO audit flagged once.
  *
  * Exit 0 when everything passes, 1 otherwise, with a summary at the end. A check
  * that throws counts as a failure: an unusable gate never waves a change through.
@@ -196,6 +205,38 @@ function checkGeneratedFresh() {
   };
 }
 
+/* The Organization and WebSite nodes are repeated on every page; this is what
+   stops the copies drifting apart again. */
+function checkEntities() {
+  var sync = require('./sync-entities');
+  var drifted = sync.pages().reduce(function (acc, rel) {
+    var result = sync.syncPage(fs.readFileSync(path.join(ROOT, rel), 'utf8'));
+    return result.changed.length ? acc.concat(rel + ' — ' + result.changed.join(', ')) : acc;
+  }, []);
+  return {
+    ok: !drifted.length,
+    lines: drifted.length
+      ? drifted.concat(['', 'Run `npm run sync:entities` to rewrite them from tools/lib/entity.js.'])
+      : ['every page carries the same Organization and WebSite nodes']
+  };
+}
+
+/* Title length, description length, heading structure, canonical, breadcrumbs
+   and structured data — checked on every page rather than spot-audited. */
+function checkPageSignals() {
+  var pages = require('./check-pages');
+  var seen = { titles: {}, descriptions: {} };
+  var lines = [];
+  var files = pages.pages();
+  files.forEach(function (file) {
+    pages.checkPage(file, seen).forEach(function (p) { lines.push(file + ': ' + p); });
+  });
+  return {
+    ok: !lines.length,
+    lines: lines.length ? lines : [files.length + ' pages, every signal within bounds']
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -203,7 +244,9 @@ var CHECKS = [
   { name: 'external requests — public pages, styles and scripts', run: checkExternalRequests },
   { name: 'locale coverage — tools/build-locales.js --check', run: checkLocaleCoverage },
   { name: 'generated files are fresh — essays and locale twins', run: checkGeneratedFresh },
-  { name: 'generated tree is sound — tools/verify-cli.js', run: checkGeneratedTree }
+  { name: 'generated tree is sound — tools/verify-cli.js', run: checkGeneratedTree },
+  { name: 'entity graph matches tools/lib/entity.js', run: checkEntities },
+  { name: 'on-page signals — titles, descriptions, headings, schema', run: checkPageSignals }
 ];
 
 function runCheck(check) {

@@ -22,6 +22,7 @@ var { readingMinutes } = require('./lib/reading-time');
 var { isoDate } = require('./lib/format');
 var { slugify } = require('./lib/slugify');
 var { applySitemap } = require('./lib/sitemap');
+var { renderFeed, articleItems } = require('./lib/feed');
 
 var ROOT = path.resolve(__dirname, '..');
 
@@ -242,17 +243,44 @@ function cleanGeneratedApps() {
 
 function sitemapEntries(articles, wallpapers, appPages) {
   var entries = [];
-  var latestArticle = articles.map(function (a) { return isoDate(a.published_at); }).filter(Boolean).sort().pop();
-  entries.push({ loc: SITE + '/journal/', lastmod: latestArticle || '', priority: '0.8' });
-  articles.forEach(function (a) {
-    entries.push({ loc: SITE + '/journal/' + a.slug + '/', lastmod: isoDate(a.published_at), priority: '0.6' });
-  });
-  var latestWp = wallpapers.map(function (w) { return isoDate(w.published_at); }).filter(Boolean).sort().pop();
-  entries.push({ loc: SITE + '/wallpapers/', lastmod: latestWp || '', priority: '0.7' });
+  /* An index with nothing on it renders noindex, so it stays out of the sitemap
+     too: a sitemap that lists a page robots are told to skip is a contradiction
+     Search Console reports back as an error. An article's lastmod tracks its last
+     edit, not its publication, so a corrected piece gets recrawled. */
+  if (articles.length) {
+    var latestArticle = articles
+      .map(function (a) { return isoDate(a.updated_at) || isoDate(a.published_at); })
+      .filter(Boolean).sort().pop();
+    entries.push({ loc: SITE + '/journal/', lastmod: latestArticle || '', priority: '0.8' });
+    articles.forEach(function (a) {
+      entries.push({
+        loc: SITE + '/journal/' + a.slug + '/',
+        lastmod: isoDate(a.updated_at) || isoDate(a.published_at),
+        priority: '0.6'
+      });
+    });
+  }
+  if (wallpapers.length) {
+    var latestWp = wallpapers.map(function (w) { return isoDate(w.published_at); }).filter(Boolean).sort().pop();
+    entries.push({ loc: SITE + '/wallpapers/', lastmod: latestWp || '', priority: '0.7' });
+  }
   (appPages || []).forEach(function (a) {
     entries.push({ loc: SITE + '/apps/' + a.slug + '/', lastmod: isoDate(a.updated_at || a.created_at), priority: '0.6' });
   });
   return entries;
+}
+
+/* The feed covers the journal and the research papers. The papers are built by
+   tools/build-essays.js, so their entries are read from there rather than
+   duplicated here — one title, one date, one place to change either. */
+function updateFeed(articles) {
+  var research = [];
+  try {
+    research = require('./build-essays').feedItems();
+  } catch (err) {
+    console.warn('  ! could not read the research papers for the feed (' + err.message + ')');
+  }
+  fs.writeFileSync(path.join(ROOT, 'feed.xml'), renderFeed(articleItems(articles).concat(research)));
 }
 
 function updateSitemap(articles, wallpapers, appPages) {
@@ -295,10 +323,16 @@ async function main() {
   for (var ai = 0; ai < articles.length; ai++) {
     var la = await localiseArticle(articles[ai]);
     if (la.reading_minutes == null) la.reading_minutes = readingMinutes(la.body || []);
-    writePage('journal/' + la.slug, renderArticlePage(la));
-    console.log('  built /journal/' + la.slug + '/  (' + la.title + ')');
     localArticles.push(la);
   }
+
+  /* Written in a second pass so each page can name the next article; the list
+     wraps, so the oldest points back at the newest rather than nowhere. */
+  localArticles.forEach(function (la, i) {
+    var next = localArticles[(i + 1) % localArticles.length];
+    writePage('journal/' + la.slug, renderArticlePage(la, localArticles.length > 1 ? next : null));
+    console.log('  built /journal/' + la.slug + '/  (' + la.title + ')');
+  });
   writePage('journal', renderJournalIndex(localArticles));
   console.log('  built /journal/  (' + localArticles.length + ' card(s))');
 
@@ -329,6 +363,8 @@ async function main() {
     builtApps.push(localApp);
   }
 
+  updateFeed(localArticles);
+  console.log('  wrote feed.xml (' + localArticles.length + ' article(s) + research)');
   updateSitemap(articles, wallpapers, builtApps);
   console.log('  updated sitemap.xml');
 

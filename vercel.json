@@ -102,6 +102,28 @@
           "value": "public, max-age=86400, stale-while-revalidate=604800"
         }
       ]
+    },
+    {
+      "source": "/feed.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/rss+xml; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/(sitemap.xml|robots.txt|llms.txt)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, stale-while-revalidate=86400"
+        }
+      ]
     }
   ],
   "redirects": [
@@ -143,6 +165,141 @@
       "source": "/angebot",
       "destination": "/de/websites/#quote",
       "permanent": false
+    },
+    {
+      "source": "/contact",
+      "destination": "/support/",
+      "permanent": true
+    },
+    {
+      "source": "/about",
+      "destination": "/company/",
+      "permanent": true
+    },
+    {
+      "source": "/blog",
+      "destination": "/journal/",
+      "permanent": true
+    },
+    {
+      "source": "/articles",
+      "destination": "/journal/",
+      "permanent": true
+    },
+    {
+      "source": "/faq",
+      "destination": "/websites/#faq",
+      "permanent": true
+    },
+    {
+      "source": "/pricing",
+      "destination": "/websites/#packages",
+      "permanent": true
+    },
+    {
+      "source": "/packages",
+      "destination": "/websites/#packages",
+      "permanent": true
+    },
+    {
+      "source": "/rss",
+      "destination": "/feed.xml",
+      "permanent": true
+    },
+    {
+      "source": "/rss.xml",
+      "destination": "/feed.xml",
+      "permanent": true
+    },
+    {
+      "source": "/feed",
+      "destination": "/feed.xml",
+      "permanent": true
+    },
+    {
+      "source": "/contact/",
+      "destination": "/support/",
+      "permanent": true
+    },
+    {
+      "source": "/about/",
+      "destination": "/company/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/",
+      "destination": "/journal/",
+      "permanent": true
+    },
+    {
+      "source": "/articles/",
+      "destination": "/journal/",
+      "permanent": true
+    },
+    {
+      "source": "/faq/",
+      "destination": "/websites/#faq",
+      "permanent": true
+    },
+    {
+      "source": "/pricing/",
+      "destination": "/websites/#packages",
+      "permanent": true
+    },
+    {
+      "source": "/packages/",
+      "destination": "/websites/#packages",
+      "permanent": true
+    },
+    {
+      "source": "/rss/",
+      "destination": "/feed.xml",
+      "permanent": true
+    },
+    {
+      "source": "/feed/",
+      "destination": "/feed.xml",
+      "permanent": true
+    },
+    {
+      "source": "/quote/",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept-language",
+          "value": "(?i)^nl.*"
+        }
+      ],
+      "destination": "/nl/websites/#quote",
+      "permanent": false
+    },
+    {
+      "source": "/quote/",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept-language",
+          "value": "(?i)^de.*"
+        }
+      ],
+      "destination": "/de/websites/#quote",
+      "permanent": false
+    },
+    {
+      "source": "/quote/",
+      "destination": "/websites/#quote",
+      "permanent": false
+    },
+    {
+      "source": "/offerte/",
+      "destination": "/nl/websites/#quote",
+      "permanent": false
+    },
+    {
+      "source": "/angebot/",
+      "destination": "/de/websites/#quote",
+      "permanent": false
     }
-  ]
+  ],
+  "trailingSlash": true
 }

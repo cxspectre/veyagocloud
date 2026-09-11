@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Articles | Veyago</title>
-  <meta name="description" content="Build logs, research notes, and the occasional opinion from the studio." />
+  <title>Field notes on private software and fast sites | Veyago</title>
+  <meta name="description" content="Field notes from the studio on fast, private software: why builder sites are slow, what a fixed-price website really includes, and how we build." />
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="/styles.css" />
   <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
-  <meta property="og:title" content="Articles | Veyago" />
-  <meta property="og:description" content="Build logs, research notes, and the occasional opinion from the studio." />
+  <meta property="og:title" content="Field notes on private software and fast sites | Veyago" />
+  <meta property="og:description" content="Field notes from the studio on fast, private software: why builder sites are slow, what a fixed-price website really includes, and how we build." />
   <meta property="og:image" content="https://www.veyago.cloud/assets/og.png" />
+  <meta property="og:image:alt" content="Veyago field notes — writing from an independent New York studio" />
   <meta property="og:type" content="website" />
   <link rel="canonical" href="https://www.veyago.cloud/journal/" />
   <meta name="robots" content="index,follow" />
@@ -20,9 +21,11 @@
   <meta property="og:site_name" content="Veyago" />
   <meta property="og:locale" content="en_US" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Articles | Veyago" />
-  <meta name="twitter:description" content="Build logs, research notes, and the occasional opinion from the studio." />
+  <meta name="twitter:title" content="Field notes on private software and fast sites | Veyago" />
+  <meta name="twitter:description" content="Field notes from the studio on fast, private software: why builder sites are slow, what a fixed-price website really includes, and how we build." />
   <meta name="twitter:image" content="https://www.veyago.cloud/assets/og.png" />
+  <meta name="twitter:image:alt" content="Veyago field notes — writing from an independent New York studio" />
+  <link rel="alternate" type="application/rss+xml" title="Veyago field notes" href="https://www.veyago.cloud/feed.xml" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -31,7 +34,7 @@
         "@type": "Blog",
         "@id": "https://www.veyago.cloud/journal/#blog",
         "name": "Field notes",
-        "description": "Build logs, research notes, and the occasional opinion from the studio.",
+        "description": "Field notes from the studio on fast, private software: why builder sites are slow, what a fixed-price website really includes, and how we build.",
         "url": "https://www.veyago.cloud/journal/",
         "inLanguage": "en",
         "publisher": {
@@ -40,123 +43,223 @@
         "blogPost": [
           {
             "@type": "BlogPosting",
-            "@id": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/#article",
-            "headline": "You built it with Lovable or an AI prompt. Here's how to take it to production.",
-            "description": "What Lovable, v0, Bolt and a ChatGPT prompt get right, the ways those sites usually fail a month later, and what taking one to production involves.",
-            "url": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/",
-            "mainEntityOfPage": {
-              "@type": "WebPage",
-              "@id": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/"
-            },
-            "image": "https://www.veyago.cloud/assets/og.png",
-            "inLanguage": "en",
-            "isAccessibleForFree": true,
-            "wordCount": 1080,
-            "datePublished": "2026-09-03",
-            "dateModified": "2026-09-07",
-            "author": {
-              "@type": "Organization",
-              "@id": "https://www.veyago.cloud/#organization",
-              "name": "Veyago Inc.",
-              "url": "https://www.veyago.cloud/"
-            },
-            "publisher": {
-              "@id": "https://www.veyago.cloud/#organization"
-            },
-            "isPartOf": {
-              "@type": "Blog",
-              "@id": "https://www.veyago.cloud/journal/#blog"
-            }
-          },
-          {
-            "@type": "BlogPosting",
-            "@id": "https://www.veyago.cloud/journal/what-a-699-website-includes/#article",
-            "headline": "What a $699 website includes, line by line.",
-            "description": "Our three website packages, line by line: what each item means, why it is in or out, what you bring, and what happens if the scope changes.",
-            "url": "https://www.veyago.cloud/journal/what-a-699-website-includes/",
-            "mainEntityOfPage": {
-              "@type": "WebPage",
-              "@id": "https://www.veyago.cloud/journal/what-a-699-website-includes/"
-            },
-            "image": "https://www.veyago.cloud/assets/og.png",
-            "inLanguage": "en",
-            "isAccessibleForFree": true,
-            "wordCount": 1168,
-            "datePublished": "2026-09-03",
-            "dateModified": "2026-09-07",
-            "author": {
-              "@type": "Organization",
-              "@id": "https://www.veyago.cloud/#organization",
-              "name": "Veyago Inc.",
-              "url": "https://www.veyago.cloud/"
-            },
-            "publisher": {
-              "@id": "https://www.veyago.cloud/#organization"
-            },
-            "isPartOf": {
-              "@type": "Blog",
-              "@id": "https://www.veyago.cloud/journal/#blog"
-            }
-          },
-          {
-            "@type": "BlogPosting",
             "@id": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#article",
-            "headline": "Why your Wix site is slow, and what a rebuild actually changes.",
-            "description": "Where the weight in a Wix or Squarespace site comes from, why it hurts on phones and in search, and how to check your own site in ten minutes.",
+            "headline": "Why your Wix site is slow (and how to fix it)",
+            "description": "A Wix or Squarespace site is slow because the builder ships one runtime for every feature, whether your page uses them or not. Here is where the weight is.",
             "url": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/",
             "mainEntityOfPage": {
               "@type": "WebPage",
               "@id": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/"
             },
-            "image": "https://www.veyago.cloud/assets/og.png",
+            "image": "https://www.veyago.cloud/assets/og-article-wix.png",
             "inLanguage": "en",
             "isAccessibleForFree": true,
-            "wordCount": 1204,
+            "wordCount": 1307,
             "datePublished": "2026-09-03",
             "dateModified": "2026-09-07",
             "author": {
-              "@type": "Organization",
-              "@id": "https://www.veyago.cloud/#organization",
-              "name": "Veyago Inc.",
-              "url": "https://www.veyago.cloud/"
+              "@id": "https://www.veyago.cloud/team/#cassian-drefke"
             },
             "publisher": {
               "@id": "https://www.veyago.cloud/#organization"
             },
             "isPartOf": {
-              "@type": "Blog",
               "@id": "https://www.veyago.cloud/journal/#blog"
-            }
+            },
+            "speakable": {
+              "@type": "SpeakableSpecification",
+              "cssSelector": [
+                ".paper-title",
+                ".answer-first"
+              ]
+            },
+            "keywords": "wix site slow, squarespace slow, website speed, page weight, core web vitals, website rebuild",
+            "about": [
+              {
+                "@type": "Thing",
+                "name": "Website performance"
+              },
+              {
+                "@type": "Thing",
+                "name": "Core Web Vitals"
+              }
+            ],
+            "citation": [
+              {
+                "@type": "WebPage",
+                "name": "HTTP Archive — Page Weight report",
+                "url": "https://httparchive.org/reports/page-weight"
+              },
+              {
+                "@type": "WebPage",
+                "name": "web.dev — Largest Contentful Paint (LCP)",
+                "url": "https://web.dev/articles/lcp"
+              },
+              {
+                "@type": "WebPage",
+                "name": "Google Search Central — Understanding page experience",
+                "url": "https://developers.google.com/search/docs/appearance/page-experience"
+              },
+              {
+                "@type": "WebPage",
+                "name": "PageSpeed Insights",
+                "url": "https://pagespeed.web.dev/"
+              },
+              {
+                "@type": "WebPage",
+                "name": "Chrome DevTools — Inspect network activity",
+                "url": "https://developer.chrome.com/docs/devtools/network"
+              }
+            ]
+          },
+          {
+            "@type": "BlogPosting",
+            "@id": "https://www.veyago.cloud/journal/what-a-699-website-includes/#article",
+            "headline": "What a $699 website includes, line by line.",
+            "description": "A $699 Veyago website is one page of up to five sections, live in 7 to 10 working days, with hosting in your own account and the code yours. Line by line.",
+            "url": "https://www.veyago.cloud/journal/what-a-699-website-includes/",
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": "https://www.veyago.cloud/journal/what-a-699-website-includes/"
+            },
+            "image": "https://www.veyago.cloud/assets/og-article-699.png",
+            "inLanguage": "en",
+            "isAccessibleForFree": true,
+            "wordCount": 1410,
+            "datePublished": "2026-09-03",
+            "dateModified": "2026-09-07",
+            "author": {
+              "@id": "https://www.veyago.cloud/team/#cassian-drefke"
+            },
+            "publisher": {
+              "@id": "https://www.veyago.cloud/#organization"
+            },
+            "isPartOf": {
+              "@id": "https://www.veyago.cloud/journal/#blog"
+            },
+            "speakable": {
+              "@type": "SpeakableSpecification",
+              "cssSelector": [
+                ".paper-title",
+                ".answer-first"
+              ]
+            },
+            "keywords": "small business website cost, fixed price website, what a website includes, website packages",
+            "about": [
+              {
+                "@type": "Thing",
+                "name": "Website pricing"
+              },
+              {
+                "@type": "Thing",
+                "name": "Small business websites"
+              }
+            ]
+          },
+          {
+            "@type": "BlogPosting",
+            "@id": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/#article",
+            "headline": "From an AI prototype to a production website",
+            "description": "An AI-built site fails in production for four predictable reasons: no real SEO, no structure, no owner of the code, and no plan for the month after launch.",
+            "url": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/",
+            "mainEntityOfPage": {
+              "@type": "WebPage",
+              "@id": "https://www.veyago.cloud/journal/from-ai-prototype-to-production/"
+            },
+            "image": "https://www.veyago.cloud/assets/og-article-ai-prototype.png",
+            "inLanguage": "en",
+            "isAccessibleForFree": true,
+            "wordCount": 1171,
+            "datePublished": "2026-09-03",
+            "dateModified": "2026-09-07",
+            "author": {
+              "@id": "https://www.veyago.cloud/team/#cassian-drefke"
+            },
+            "publisher": {
+              "@id": "https://www.veyago.cloud/#organization"
+            },
+            "isPartOf": {
+              "@id": "https://www.veyago.cloud/journal/#blog"
+            },
+            "speakable": {
+              "@type": "SpeakableSpecification",
+              "cssSelector": [
+                ".paper-title",
+                ".answer-first"
+              ]
+            },
+            "keywords": "lovable website, v0 prototype, ai generated website, take prototype to production, ai site seo",
+            "about": [
+              {
+                "@type": "Thing",
+                "name": "AI website builders"
+              },
+              {
+                "@type": "Thing",
+                "name": "Production readiness"
+              }
+            ],
+            "citation": [
+              {
+                "@type": "WebPage",
+                "name": "Google Search Central — Search Console",
+                "url": "https://search.google.com/search-console/about"
+              },
+              {
+                "@type": "WebPage",
+                "name": "Google Search Central — Structured data general guidelines",
+                "url": "https://developers.google.com/search/docs/appearance/structured-data/sd-policies"
+              },
+              {
+                "@type": "WebPage",
+                "name": "web.dev — Largest Contentful Paint (LCP)",
+                "url": "https://web.dev/articles/lcp"
+              }
+            ]
           },
           {
             "@type": "BlogPosting",
             "@id": "https://www.veyago.cloud/journal/on-your-side-of-line/#article",
-            "headline": "On your side of line",
+            "headline": "On your side of the line",
             "description": "Most software gets smarter by taking your life to a server. I'm building the opposite, and 2026 is the year that bet finally makes sense.",
             "url": "https://www.veyago.cloud/journal/on-your-side-of-line/",
             "mainEntityOfPage": {
               "@type": "WebPage",
               "@id": "https://www.veyago.cloud/journal/on-your-side-of-line/"
             },
-            "image": "https://www.veyago.cloud/assets/og.png",
+            "image": "https://www.veyago.cloud/assets/og-article-side-of-line.png",
             "inLanguage": "en",
             "isAccessibleForFree": true,
-            "wordCount": 1357,
+            "wordCount": 1411,
             "datePublished": "2026-06-29",
             "dateModified": "2026-08-06",
             "author": {
-              "@type": "Organization",
-              "@id": "https://www.veyago.cloud/#organization",
-              "name": "Veyago Inc.",
-              "url": "https://www.veyago.cloud/"
+              "@id": "https://www.veyago.cloud/team/#cassian-drefke"
             },
             "publisher": {
               "@id": "https://www.veyago.cloud/#organization"
             },
             "isPartOf": {
-              "@type": "Blog",
               "@id": "https://www.veyago.cloud/journal/#blog"
-            }
+            },
+            "speakable": {
+              "@type": "SpeakableSpecification",
+              "cssSelector": [
+                ".paper-title",
+                ".answer-first"
+              ]
+            },
+            "keywords": "on-device ai, privacy first software, local first, veyago os",
+            "about": [
+              {
+                "@type": "Thing",
+                "name": "On-device artificial intelligence"
+              },
+              {
+                "@type": "Thing",
+                "name": "Privacy by design"
+              }
+            ]
           }
         ]
       },
@@ -236,38 +339,38 @@
         <header class="ji-head">
           <p class="eyebrow">Articles</p>
           <h1>Field notes</h1>
-          <p class="lede">Build logs, research notes, and the occasional opinion from the studio.</p>
+          <p class="lede">Field notes from the studio on fast, private software: why builder sites are slow, what a fixed-price website really includes, and how we build.</p>
         </header>
         <div class="journal-grid">
-        <a class="card journal-card" href="/journal/from-ai-prototype-to-production/">
+        <a class="card journal-card" href="/journal/why-your-wix-site-is-slow/">
           
           <div class="jc-body">
-            <p class="eyebrow">September 3, 2026 · 5 min read</p>
-            <h3 class="jc-title">You built it with Lovable or an AI prompt. Here's how to take it to production.</h3>
-            <p class="jc-dek">What Lovable, v0, Bolt and a ChatGPT prompt get right, the ways those sites usually fail a month later, and what taking one to production involves.</p>
+            <p class="eyebrow">September 3, 2026 · 7 min read</p>
+            <h3 class="jc-title">Why your Wix site is slow (and how to fix it)</h3>
+            <p class="jc-dek">A Wix or Squarespace site is slow because the builder ships one runtime for every feature, whether your page uses them or not. Here is where the weight is.</p>
           </div>
         </a>
         <a class="card journal-card" href="/journal/what-a-699-website-includes/">
           
           <div class="jc-body">
-            <p class="eyebrow">September 3, 2026 · 6 min read</p>
+            <p class="eyebrow">September 3, 2026 · 7 min read</p>
             <h3 class="jc-title">What a $699 website includes, line by line.</h3>
-            <p class="jc-dek">Our three website packages, line by line: what each item means, why it is in or out, what you bring, and what happens if the scope changes.</p>
+            <p class="jc-dek">A $699 Veyago website is one page of up to five sections, live in 7 to 10 working days, with hosting in your own account and the code yours. Line by line.</p>
           </div>
         </a>
-        <a class="card journal-card" href="/journal/why-your-wix-site-is-slow/">
+        <a class="card journal-card" href="/journal/from-ai-prototype-to-production/">
           
           <div class="jc-body">
             <p class="eyebrow">September 3, 2026 · 6 min read</p>
-            <h3 class="jc-title">Why your Wix site is slow, and what a rebuild actually changes.</h3>
-            <p class="jc-dek">Where the weight in a Wix or Squarespace site comes from, why it hurts on phones and in search, and how to check your own site in ten minutes.</p>
+            <h3 class="jc-title">From an AI prototype to a production website</h3>
+            <p class="jc-dek">An AI-built site fails in production for four predictable reasons: no real SEO, no structure, no owner of the code, and no plan for the month after launch.</p>
           </div>
         </a>
         <a class="card journal-card" href="/journal/on-your-side-of-line/">
           
           <div class="jc-body">
             <p class="eyebrow">June 29, 2026 · 7 min read</p>
-            <h3 class="jc-title">On your side of line</h3>
+            <h3 class="jc-title">On your side of the line</h3>
             <p class="jc-dek">Most software gets smarter by taking your life to a server. I'm building the opposite, and 2026 is the year that bet finally makes sense.</p>
           </div>
         </a>

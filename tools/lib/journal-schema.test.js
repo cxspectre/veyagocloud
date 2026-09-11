@@ -32,10 +32,40 @@ test('an article declares BlogPosting with the fields Google reads', function ()
   assert.equal(n.mainEntityOfPage['@id'], n.url);
 });
 
-test('author and publisher point at the one Organization node the rest of the site uses', function () {
+test('the author is the named founder and the publisher is the Organization', function () {
   var n = node(articleJsonLd(ARTICLE), 'BlogPosting');
-  assert.equal(n.author['@id'], 'https://www.veyago.cloud/#organization');
+  assert.equal(n.author['@id'], 'https://www.veyago.cloud/team/#cassian-drefke');
   assert.equal(n.publisher['@id'], 'https://www.veyago.cloud/#organization');
+});
+
+test('the Person the byline references is declared in the same graph', function () {
+  var person = node(articleJsonLd(ARTICLE), 'Person');
+  assert.equal(person['@id'], 'https://www.veyago.cloud/team/#cassian-drefke');
+  assert.equal(person.name, 'Cassian Drefke');
+  assert.equal(person.jobTitle, 'Founder & CEO');
+});
+
+test('an article with no howto declares no HowTo node', function () {
+  assert.equal(node(articleJsonLd(ARTICLE), 'HowTo'), undefined);
+});
+
+test('an article that declares howto steps gets a numbered HowTo beside the post', function () {
+  var a = Object.assign({}, ARTICLE, {
+    howto: {
+      name: 'How to check your own site',
+      description: 'Two measurements, ten minutes.',
+      step: [
+        { name: 'Run PageSpeed Insights', text: 'Paste your address into pagespeed.web.dev.', anchor: 'check' },
+        { name: 'Read the mobile score', text: 'Switch to the Mobile tab and read Largest Contentful Paint.' }
+      ]
+    }
+  });
+  var h = node(articleJsonLd(a), 'HowTo');
+  assert.equal(h.name, 'How to check your own site');
+  assert.equal(h.step.length, 2);
+  assert.equal(h.step[0].position, 1);
+  assert.equal(h.step[0].url, 'https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#check');
+  assert.equal(h.step[1].url, 'https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#howto');
 });
 
 test('wordCount counts the body, not the markup', function () {
@@ -91,7 +121,8 @@ test('a "</script>" in a title cannot close the script element early', function 
 test('the head extra carries the JSON-LD and the article Open Graph dates', function () {
   var head = articleHeadExtra(ARTICLE);
   assert.ok(head.indexOf('application/ld+json') !== -1);
-  assert.ok(head.indexOf('<meta name="author" content="Veyago Inc." />') !== -1);
+  assert.ok(head.indexOf('<meta name="author" content="Cassian Drefke" />') !== -1);
+  assert.ok(head.indexOf('rel="alternate" type="application/rss+xml"') !== -1);
   assert.ok(head.indexOf('article:published_time" content="2026-09-03"') !== -1);
   assert.ok(head.indexOf('article:modified_time" content="2026-09-05"') !== -1);
 });

@@ -1,0 +1,498 @@
+{
+  "articles": [
+    {
+      "slug": "why-your-wix-site-is-slow",
+      "title": "Why your Wix site is slow (and how to fix it)",
+      "dek": "Where the weight in a builder site comes from, why it costs you on phones and in search, and the two checks that tell you where you stand.",
+      "excerpt": "A Wix or Squarespace site is slow because the builder ships one runtime for every feature, whether your page uses them or not. Here is where the weight is.",
+      "status": "published",
+      "published_at": "2026-09-03T09:00:00Z",
+      "updated_at": "2026-09-07T09:00:00Z",
+      "body": [
+        {
+          "type": "section_marker",
+          "text": "Websites"
+        },
+        {
+          "type": "answer",
+          "html": "<p>A Wix or Squarespace site is slow because a builder ships one runtime that covers every feature it offers, whether your page uses them or not. A brochure page ends up carrying several megabytes and a hundred-plus requests. A rebuild fixes the weight and the markup; it does not fix your photographs or your copy.</p>"
+        },
+        {
+          "type": "text",
+          "html": "<p>You built the site yourself, or someone built it for you in an afternoon, and for a while it did the job. Then you opened it on your phone in a car park and watched it load. The text jumped about. The menu arrived late. Somewhere in that wait, a customer decided to ring someone else.</p><p>This is not a Wix problem in particular. Squarespace, GoDaddy's builder and most of their cousins produce sites of the same shape, and the shape is what makes them slow. The causes have names, and a rebuild changes some of them and keeps others. This is what we tell people who ask.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Where the weight comes from."
+        },
+        {
+          "type": "text",
+          "html": "<p>A web page is a pile of files your visitor's phone has to download and work through before it can show anything. The slowness you feel is mostly the size of that pile and the order it arrives in. On a builder site the pile is large for four reasons.</p><ul><li><strong>The builder's own runtime.</strong> A builder site is not really a page. It is a small application that draws the page after it loads, and that application ships on every visit whether your page needs it or not. It is often the single largest thing your visitor downloads, and it has to run before your content appears.</li><li><strong>Images that were never resized.</strong> Builders let you drop in a photo straight from your camera roll. Many will then serve a version far larger than the space it fills, so a phone downloads a poster to show a thumbnail.</li><li><strong>Third-party widgets.</strong> The booking button, the chat bubble, the Instagram feed, the review carousel, the map. Each one loads code from someone else's server, and each one is allowed to slow your page down as much as it likes.</li><li><strong>Template styling for everything you did not use.</strong> The template carries the styling for every layout the designer offered, including the twenty you never picked. Your visitor downloads all of it.</li></ul><p>None of these are mistakes on your part. They are the cost of a tool that has to work for everyone, on every page, without anyone looking at the code.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Why it hurts more on phones."
+        },
+        {
+          "type": "text",
+          "html": "<p>Most of your visitors are on phones, and a phone is a hard place to be a heavy page. The connection is slower and less steady than the office wifi you tested on. The processor is weaker, so a script that runs in a blink on your laptop takes a real fraction of a second on a three-year-old handset. And the screen is small, so a layout that shuffles while it loads is not a flicker. It is the button moving away from someone's thumb.</p><p>Google measures the things you feel. Its Core Web Vitals come down to three plain questions: how long until the main content appears, how quickly the page responds when someone taps, and how much the layout jumps about while it loads. Google uses them as one ranking signal among many, and it looks at the mobile version of your site rather than the desktop one. A slow page is not the only reason a site ranks poorly, but it is the reason you can measure yourself, today, without a consultant.</p>"
+        },
+        {
+          "type": "quote",
+          "text": "The slowness is not a mood. It is a pile of files, and every one of them has a name."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "What hand-written HTML means."
+        },
+        {
+          "type": "text",
+          "html": "<p>When we say we build sites in hand-written HTML and CSS, we mean the page is written directly, as a document, rather than generated by an application at the moment someone visits. HTML is the structure: this is a heading, this is a paragraph, this is a link. CSS is the appearance. Browsers have read both for thirty years and are very good at it.</p><p>For a non-technical reader, the practical difference is this. There is no runtime to download before anything shows. There is no styling for features you did not use. Every image is sized for the space it fills. The page arrives as a page, and the browser starts drawing it as soon as the first bytes land. The result is a site that is usually a fraction of the size, costs almost nothing to host, and still works in five years because there is nothing underneath it to go out of date.</p><p>It also means the site is a folder of files you own. You can move it to any host, hand it to another developer, or keep a copy on a USB stick. Nothing about it is rented.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "What a rebuild keeps."
+        },
+        {
+          "type": "text",
+          "html": "<p>People worry that a rebuild means starting again, and a builder's cancellation page will happily encourage that worry. It does not have to be that way. A careful rebuild keeps:</p><ul><li><strong>Your content.</strong> The words, the photos, the services, the prices. We carry them across and tidy them. We do not throw them away.</li><li><strong>Your addresses.</strong> Every page on the old site has a URL, and some of those are known to Google and linked from elsewhere. We keep the ones that make sense. For the ones that change, we set up permanent redirects so the old address lands on the new page. That is how rankings survive a move.</li><li><strong>Your domain and your email.</strong> The domain comes with you. Nothing about your email changes.</li><li><strong>Whatever is working.</strong> If a page is bringing in enquiries, we do not redesign it for the sake of it.</li></ul><p>What changes is underneath: the structure, the weight, the titles and descriptions that search engines read, how images are delivered, and where the site is hosted. From the outside it should feel like the same business with the fog lifted.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "How to check your own site."
+        },
+        {
+          "type": "text",
+          "html": "<p>You do not need us to find out whether any of this applies to you. Two checks take about ten minutes and cost nothing.</p><ol><li><strong>Run PageSpeed Insights.</strong> Google offers it free at <a href=\"https://pagespeed.web.dev/\">pagespeed.web.dev</a>. Paste your address and look at the mobile result first. You get a performance score and, underneath, a list of the biggest opportunities. If that list is led by unused JavaScript, unused CSS and images that could be smaller, you are looking at the four causes above.</li><li><strong>Look at the page weight yourself.</strong> In Chrome, open your site, right-click the page and choose Inspect, then pick <a href=\"https://developer.chrome.com/docs/devtools/network\">the Network tab</a> and reload. The bar at the bottom shows how many requests the page made and how much data it transferred. Sort by size and see what is at the top. A brochure site that transfers several megabytes, or makes well over a hundred requests, is carrying weight it does not need.</li></ol><p>The same <a href=\"https://developer.chrome.com/docs/lighthouse/overview\">Lighthouse</a> audit that powers PageSpeed Insights is built into Chrome's developer tools, so you can rerun it on any page whenever you like. Write the scores down now, so you have a before.</p>"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "text",
+          "html": "<p>If the numbers look fine, they probably are, and you do not need a rebuild. If they do not, and you would like a second opinion, <a href=\"https://www.veyago.cloud/websites/#quote\" target=\"_blank\" rel=\"noopener noreferrer\">send us the address of your current site</a> and we will tell you honestly what it would take and what it would cost. If the answer is to leave it alone, that is what we will say.</p>"
+        },
+        {
+          "type": "text",
+          "html": "<p><strong>Sources.</strong> Page weight across the web is tracked by the <a href=\"https://httparchive.org/reports/page-weight\">HTTP Archive page weight report</a>. The loading metric the checks above report is defined in <a href=\"https://web.dev/articles/lcp\">web.dev’s Largest Contentful Paint article</a>, and Google explains how page experience feeds ranking in <a href=\"https://developers.google.com/search/docs/appearance/page-experience\">its own Search Central documentation</a>.</p>"
+        }
+      ],
+      "keywords": "wix site slow, squarespace slow, website speed, page weight, core web vitals, website rebuild",
+      "about": [
+        {
+          "@type": "Thing",
+          "name": "Website performance"
+        },
+        {
+          "@type": "Thing",
+          "name": "Core Web Vitals"
+        }
+      ],
+      "citation": [
+        {
+          "@type": "WebPage",
+          "name": "HTTP Archive — Page Weight report",
+          "url": "https://httparchive.org/reports/page-weight"
+        },
+        {
+          "@type": "WebPage",
+          "name": "web.dev — Largest Contentful Paint (LCP)",
+          "url": "https://web.dev/articles/lcp"
+        },
+        {
+          "@type": "WebPage",
+          "name": "Google Search Central — Understanding page experience",
+          "url": "https://developers.google.com/search/docs/appearance/page-experience"
+        },
+        {
+          "@type": "WebPage",
+          "name": "PageSpeed Insights",
+          "url": "https://pagespeed.web.dev/"
+        },
+        {
+          "@type": "WebPage",
+          "name": "Chrome DevTools — Inspect network activity",
+          "url": "https://developer.chrome.com/docs/devtools/network"
+        }
+      ],
+      "howto": {
+        "name": "How to check whether your own website is slow",
+        "description": "Two free checks, about ten minutes, no consultant: run PageSpeed Insights on the mobile result, then read the page weight in your own browser.",
+        "totalTime": "PT10M",
+        "tool": [
+          "A web browser",
+          "PageSpeed Insights (free)",
+          "Chrome DevTools (built in)"
+        ],
+        "step": [
+          {
+            "name": "Run PageSpeed Insights on the mobile result",
+            "anchor": "how-to-check-your-own-site",
+            "text": "Paste your address into pagespeed.web.dev and read the mobile result first. You get a performance score and a list of the biggest opportunities underneath it. A list led by unused JavaScript, unused CSS and oversized images is the builder runtime showing through."
+          },
+          {
+            "name": "Read the page weight in your own browser",
+            "anchor": "how-to-check-your-own-site",
+            "text": "Open your site in Chrome, right-click and choose Inspect, pick the Network tab and reload. The bar at the bottom shows how many requests the page made and how much data it transferred. Sort by size to see what is at the top."
+          },
+          {
+            "name": "Write the numbers down before you change anything",
+            "anchor": "how-to-check-your-own-site",
+            "text": "Record the mobile performance score, the Largest Contentful Paint time, the transferred weight and the request count. Without a before, no rebuild can prove it changed anything."
+          }
+        ]
+      },
+      "share_image": "/assets/og-article-wix.png"
+    },
+    {
+      "slug": "what-a-699-website-includes",
+      "title": "What a $699 website includes, line by line.",
+      "dek": "The three packages, what every line means, what you need to bring, and what happens when the scope moves.",
+      "excerpt": "A $699 Veyago website is one page of up to five sections, live in 7 to 10 working days, with hosting in your own account and the code yours. Line by line.",
+      "status": "published",
+      "published_at": "2026-09-03T09:00:00Z",
+      "updated_at": "2026-09-07T09:00:00Z",
+      "body": [
+        {
+          "type": "section_marker",
+          "text": "Websites"
+        },
+        {
+          "type": "answer",
+          "html": "<p>A $699 Veyago website is one page of up to five sections, hand-written, with a contact form, the SEO basics done properly, hosting set up in your own account and one round of revisions. It is typically live 7 to 10 working days after your content arrives, and you own the code, the repository and the domain.</p>"
+        },
+        {
+          "type": "text",
+          "html": "<p>A price on a website is only useful if you know what it buys. Most quotes keep that in a PDF, or save it for a call. Ours is short enough to put on a page, so here it is, line by line, with the reasoning next to each line.</p><p>Every price below is fixed and excludes tax. What both of those mean in practice is at the end.</p>"
+        },
+        {
+          "type": "table",
+          "caption": "The three packages at a glance. Every price excludes tax and is fixed in writing before work starts.",
+          "columns": [
+            "Package",
+            "Price",
+            "What it covers",
+            "Timeline",
+            "Revisions"
+          ],
+          "rows": [
+            [
+              "Launch",
+              "$699 / €750",
+              "One page, up to five sections, contact form, SEO basics, hosting in your account",
+              "7 to 10 working days",
+              "1 round"
+            ],
+            [
+              "Business",
+              "$1,690 / €1,790",
+              "Up to six pages, per-page SEO, Google Business Profile and Search Console, optional blog",
+              "2 to 4 weeks",
+              "2 rounds"
+            ],
+            [
+              "Back office",
+              "from $3,900 / €4,100",
+              "Everything in Business plus a login area: dashboard, CRM, invoicing or an internal tool",
+              "4 to 8 weeks",
+              "Scoped per project"
+            ]
+          ]
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Launch. A landing page, $699 or €750."
+        },
+        {
+          "type": "text",
+          "html": "<p>One page, up to five sections: typically a hero (who you are and what you do, in a line), what you do, proof or services, about, and contact. Five is about what a single page can hold before it stops being a landing page and starts being a website folded up small.</p><ul><li><strong>A contact form or a booking link.</strong> The form delivers to your inbox. If you already take bookings somewhere, we link to that rather than build a second system.</li><li><strong>Mobile-first, fast, hand-written HTML and CSS.</strong> No builder runtime, no template. The page is written for your five sections and nothing else, which is why it loads the way it does.</li><li><strong>SEO basics done properly.</strong> A title and description written for the search you want to win, an Open Graph image so the link looks right when it is shared, structured data so search engines know you are a business and where, a sitemap, and Google Search Console set up so you can see how people find you.</li><li><strong>Hosting in your own account.</strong> We set the site up on a free static host, Vercel or Cloudflare, under an account in your name, and connect your domain. There is no hosting bill from us and no host to migrate away from later.</li><li><strong>One round of revisions.</strong> You see the finished page, you send one list of changes, we make them.</li><li><strong>Typically live in seven to ten working days</strong> once we have the content.</li></ul><p>Why one round? Because a page this size does not need three, and pricing in rounds nobody uses makes the number go up for everyone.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Business. A multi-page site, $1,690 or €1,790."
+        },
+        {
+          "type": "text",
+          "html": "<p>Everything above, across up to six pages: usually home, services or products, about, a page or two that support those, and contact.</p><ul><li><strong>On-page SEO per page.</strong> Each page gets its own title, description and structured data, written for the search it should answer rather than copied from the home page.</li><li><strong>Google Business Profile and Search Console set up.</strong> The map listing and the search dashboard, both in your account.</li><li><strong>An optional news or blog section.</strong> If you are going to publish, we build the place for it. If you are not, we say so rather than sell it to you.</li><li><strong>Two rounds of revisions.</strong></li><li><strong>Typically two to four weeks.</strong></li></ul><p>Six pages covers most small businesses. It is enough for a page per service, which is what search tends to reward, and small enough that you can still hold the whole site in your head.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Back office. Site plus the tools behind it, from $3,900 or €4,100."
+        },
+        {
+          "type": "text",
+          "html": "<p>Everything in Business, plus a login area. That might be a client dashboard, a CRM that fits how you actually sell, invoicing, or an internal tool your team uses every day. It is built on Supabase, the platform we run our own studio on.</p><p>This tier says \"from\" because no two back offices are the same. We scope it with you, quote the whole number in writing, and then that number is fixed. Typically four to eight weeks.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "What costs extra, on any tier."
+        },
+        {
+          "type": "text",
+          "html": "<ul><li><strong>Copywriting, from $120 or €130 per page.</strong> If you bring the words, this is zero. If you would rather we wrote them from a conversation with you, this is what it costs.</li><li><strong>Extra pages, $140 or €150 each.</strong> Beyond the five sections or six pages.</li><li><strong>A care plan, $49 or €49 a month.</strong> Updates, uptime monitoring, backups, and small changes when you need them. It is optional, you can stop it whenever you like, and the site does not depend on it.</li><li><strong>Rush delivery, plus 25 percent.</strong> If the date is fixed and close, we reorder our week around it.</li></ul><p>Rebuilds of an existing Wix, Squarespace, Lovable or AI-built site are priced as whichever tier they land in. Moving your content across and setting up redirects from the old addresses is included, not extra.</p><p>Two things are out. We do not design logos or brands. If you need one, we will point you to people who do it well. And nothing here is rented: you own the code, the repository and the domain, and you can leave at any time with all of it.</p>"
+        },
+        {
+          "type": "quote",
+          "text": "Nothing is rented. You own the code, the repository and the domain, and you can leave at any time."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "What you bring."
+        },
+        {
+          "type": "text",
+          "html": "<p>A fixed price depends on both of us knowing what the job is. From your side we need:</p><ul><li><strong>The content.</strong> Your words, or a conversation we can write them from (that is the copywriting line above).</li><li><strong>Photos.</strong> Real photographs of your business, your work and your people beat stock every time. Phone photos in good light are fine.</li><li><strong>A logo, if you have one.</strong> If you do not, plain text set well beats a rushed one.</li><li><strong>Access to your domain.</strong> Usually a login to wherever you bought it, so the new site can be connected.</li><li><strong>The address of your old site,</strong> if there is one, so we can carry the content and the URLs across.</li></ul><p>The clock starts when the content is in. The most common delay on any website is waiting for words, so we say that out loud at the start rather than discover it in week three.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Excluding tax, fixed price, and when scope changes."
+        },
+        {
+          "type": "text",
+          "html": "<p><strong>Excluding tax</strong> means the price on the page is before any sales tax or VAT that applies to you. We are a New York company. Whether tax is added depends on where you are and the rules that apply there, and it shows as its own line on the invoice. The number above it does not move.</p><p><strong>Fixed price</strong> means we write down what is included, we agree it, and that is the invoice. There are no hours to overrun, and we do not charge for changing your mind about a colour.</p><p><strong>Scope changes</strong> are handled the same way. If, halfway through, you would like a seventh page or a booking system you had not mentioned, we tell you what it costs (usually one of the lines above), you say yes or no, and we carry on. Nothing is added to the bill without a yes. If the answer is no, the original scope and the original number stand.</p>"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "text",
+          "html": "<p>If you are not sure which tier your business lands in, <a href=\"https://www.veyago.cloud/websites/#quote\" target=\"_blank\" rel=\"noopener noreferrer\">send us the address of your current site</a>, or a line about what you do if there is no site yet, and we will tell you honestly what it would take. If a landing page is enough, we will say so.</p>"
+        },
+        {
+          "type": "table",
+          "caption": "What costs extra, on any package.",
+          "columns": [
+            "Extra",
+            "When it applies",
+            "Price"
+          ],
+          "rows": [
+            [
+              "Copywriting",
+              "We write the page from a conversation rather than your words",
+              "from $120 / €130 per page"
+            ],
+            [
+              "Extra pages",
+              "Beyond the five sections or six pages",
+              "$140 / €150 each"
+            ],
+            [
+              "Care plan",
+              "Updates, uptime monitoring, backups and small changes",
+              "$49 / €49 per month"
+            ],
+            [
+              "Rush delivery",
+              "A fixed date we have to reorder the week around",
+              "+25%"
+            ],
+            [
+              "Logo and brand design",
+              "Not something we do — we refer it out",
+              "Referred out"
+            ]
+          ]
+        }
+      ],
+      "keywords": "small business website cost, fixed price website, what a website includes, website packages",
+      "about": [
+        {
+          "@type": "Thing",
+          "name": "Website pricing"
+        },
+        {
+          "@type": "Thing",
+          "name": "Small business websites"
+        }
+      ],
+      "share_image": "/assets/og-article-699.png"
+    },
+    {
+      "slug": "from-ai-prototype-to-production",
+      "title": "From an AI prototype to a production website",
+      "dek": "What Lovable, v0, Bolt and a ChatGPT prompt get right, how those sites usually fail a month later, and what taking one to production actually involves.",
+      "excerpt": "An AI-built site fails in production for four predictable reasons: no real SEO, no structure, no owner of the code, and no plan for the month after launch.",
+      "status": "published",
+      "published_at": "2026-09-03T09:00:00Z",
+      "updated_at": "2026-09-07T09:00:00Z",
+      "body": [
+        {
+          "type": "section_marker",
+          "text": "Websites"
+        },
+        {
+          "type": "answer",
+          "html": "<p>An AI-built site usually fails in production for four predictable reasons: no real SEO beyond a page title, no structure a search engine can read, no clear owner of the code or the hosting, and nothing in place for the month after launch. Taking one to production means fixing those four, not throwing the prototype away.</p>"
+        },
+        {
+          "type": "text",
+          "html": "<p>You typed a description of your business into Lovable, v0, Bolt or ChatGPT, and something came back that looked like a website. It had a hero, a grid of features, a contact form and colours you did not have to choose. You put it live the same evening.</p><p>A month on, it feels slower than it did, nobody can find it on Google, changing the phone number takes an hour, and the copy says things about your business that are not quite true. This is the state a lot of sites are in when someone writes to us, and it is worth saying plainly: the tool did not fail. It did the thing it is for. It is just not the thing you need next.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "What those tools do well."
+        },
+        {
+          "type": "text",
+          "html": "<p>Credit where it is due.</p><ul><li>They get you from nothing to something in an hour, which is more than most agencies manage in a fortnight of discovery calls.</li><li>They are good at layout. The hero, the three-column grid, the pricing table. The shape of a modern site is a solved problem, and they solve it.</li><li>They make it cheap to find out what you actually want. Looking at a wrong draft is the fastest route to a right brief.</li></ul><p>If the site is a way to find out whether anyone cares, they are exactly the right tool. The trouble starts when the test succeeds and the prototype quietly becomes the front door of the business.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "Where they usually stop."
+        },
+        {
+          "type": "text",
+          "html": "<p>The failure modes are consistent enough to list.</p><ul><li><strong>No real SEO.</strong> The page has a title, and sometimes a description, but they are generic. There is no structured data, often no sitemap, and nobody has told Google the site exists. Not being indexed at all is one of the first things we check for, and it is common.</li><li><strong>Generic copy.</strong> The words were generated from a sentence about you. They read like every other generated site, and they make claims, \"trusted by thousands\", \"industry-leading\", that are not yours and may not be true.</li><li><strong>Forms that go nowhere.</strong> The contact form was drawn, not wired. Submissions vanish, or land in a service on a free plan that has since expired. Enquiries can go missing for months this way without anyone noticing.</li><li><strong>Framework weight for a brochure.</strong> The tool built a full React application to show five paragraphs and a phone number. The visitor downloads a runtime to read a menu. It is the same slowness a Wix site has, arrived at from the other direction.</li><li><strong>Nobody owns the hosting or the domain.</strong> The site lives on the tool's subdomain, or on an account created with a login nobody wrote down. When the tool changes its pricing, or you want to leave, you find out what you actually own.</li><li><strong>Security basics missing.</strong> No security headers, sometimes an API key sitting in the page source, occasionally a database the whole internet can read because the default was open and nobody closed it.</li></ul><p>Some of these are minor. Two of them, lost enquiries and open databases, are the kind of thing you would want to know about today.</p>"
+        },
+        {
+          "type": "quote",
+          "text": "The tool did not fail. It did what it is for. It is just not the thing you need next."
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "What taking it the rest of the way involves."
+        },
+        {
+          "type": "text",
+          "html": "<p>\"The rest of the way\" is deliberate. We do not throw the prototype out. It is the best brief you could have given us.</p><ul><li><strong>Keep what works.</strong> The structure you settled on, the sections you kept, the tone you liked. Those decisions are made, and they are yours.</li><li><strong>Rebuild the structure underneath.</strong> For a brochure site that means plain, hand-written HTML and CSS: no framework, no runtime, a page that arrives as a page. If the site genuinely needs interaction, a configurator or a customer portal, we reach for React. The tool follows the job.</li><li><strong>Real content.</strong> We replace the generated copy with what you actually do, in your words or ours, and we take out every claim that is not true.</li><li><strong>Forms that deliver.</strong> A contact form that lands in your inbox, with a copy kept somewhere you can find it, and a test we do together on launch day.</li><li><strong>Headers and security.</strong> Proper security headers, no secrets in the page, and if there is a database, rules that mean only the right people can read it.</li><li><strong>SEO that exists.</strong> Titles and descriptions per page, structured data, a sitemap, Search Console in your account, and redirects from whatever the old addresses were.</li><li><strong>Your own accounts.</strong> Hosting on a free static host in your name, your domain pointed at it, and the code in a repository you own. If we disappeared tomorrow, the site would not.</li><li><strong>Analytics-free by default.</strong> We do not add tracking unless you ask for it. Most small businesses need the Search Console numbers and their inbox, not a dashboard nobody opens. If you do want analytics, we will pick something that respects your visitors and say so on your privacy page.</li></ul><p>The result should feel like the site you already have, finished. Same shape, same sections, but fast, findable, honest, and yours.</p>"
+        },
+        {
+          "type": "heading",
+          "level": 2,
+          "text": "How to tell if your site is actually fine."
+        },
+        {
+          "type": "text",
+          "html": "<p>Not every prototype needs this, and we would rather say so than sell you a rebuild. Run through these, honestly.</p><ol><li>Search Google for your business name in quotes, and for your street address. Does your site appear? If not, it is not indexed, and that is the first thing to fix.</li><li>Fill in your own contact form from your phone. Did the message arrive? Where?</li><li>Open the site on a phone, away from wifi. Count the seconds before you can read it.</li><li>Read the copy aloud. Is every sentence true of your business?</li><li>Find the login for the hosting and for the domain. Can you? Are they in your name?</li><li>Paste your address into PageSpeed Insights, which Google offers free, and look at the mobile score.</li></ol><p>If the answers are yes, it arrived, quickly, yes, yes, and green, your site is fine. Keep it and spend the money on something else. If two or three of them are no, you have a working prototype and a very good brief, which is a better place to start than most people get.</p>"
+        },
+        {
+          "type": "divider"
+        },
+        {
+          "type": "text",
+          "html": "<p><a href=\"https://www.veyago.cloud/websites/#quote\" target=\"_blank\" rel=\"noopener noreferrer\">Send us the address of your current site</a> and we will tell you honestly what it would take to finish it, or that it does not need finishing. Either answer is free.</p>"
+        },
+        {
+          "type": "text",
+          "html": "<p><strong>Sources.</strong> The search set-up described above is Google’s own: <a href=\"https://search.google.com/search-console/about\">Search Console</a> for indexing and coverage, and <a href=\"https://developers.google.com/search/docs/appearance/structured-data/sd-policies\">the structured data guidelines</a> for the markup. The loading metric is defined in <a href=\"https://web.dev/articles/lcp\">web.dev’s Largest Contentful Paint article</a>.</p>"
+        }
+      ],
+      "keywords": "lovable website, v0 prototype, ai generated website, take prototype to production, ai site seo",
+      "about": [
+        {
+          "@type": "Thing",
+          "name": "AI website builders"
+        },
+        {
+          "@type": "Thing",
+          "name": "Production readiness"
+        }
+      ],
+      "citation": [
+        {
+          "@type": "WebPage",
+          "name": "Google Search Central — Search Console",
+          "url": "https://search.google.com/search-console/about"
+        },
+        {
+          "@type": "WebPage",
+          "name": "Google Search Central — Structured data general guidelines",
+          "url": "https://developers.google.com/search/docs/appearance/structured-data/sd-policies"
+        },
+        {
+          "@type": "WebPage",
+          "name": "web.dev — Largest Contentful Paint (LCP)",
+          "url": "https://web.dev/articles/lcp"
+        }
+      ],
+      "share_image": "/assets/og-article-ai-prototype.png"
+    },
+    {
+      "slug": "on-your-side-of-line",
+      "title": "On your side of the line",
+      "dek": "Most software gets smarter by taking your life to a server. I am building the opposite, and 2026 is the year that bet finally makes sense.",
+      "excerpt": "Most software gets smarter by taking your life to a server. I'm building the opposite, and 2026 is the year that bet finally makes sense.",
+      "status": "published",
+      "published_at": "2026-06-29T09:00:00Z",
+      "updated_at": "2026-08-06T09:00:00Z",
+      "body": [
+        {
+          "type": "answer",
+          "html": "<p>For fifteen years software has got smarter by sending your life to a server. The alternative is now buildable: phones run capable models locally, so an app can learn from everything you give it without any of it leaving the device. That is the line, and Veyago is built on your side of it.</p>"
+        },
+        {
+          "type": "text",
+          "html": "<p>This spring, Google quietly changed one sentence.</p><p>In Chrome's settings, the description of its on-device AI used to promise that the model ran directly on your machine without sending your data to Google's servers. Then that sentence disappeared. When people noticed, Google said the architecture had not changed, that the data still stayed on the device. Maybe that is true. I have no reason to think anyone was lying. But that is exactly the problem, and it is the reason I am building what I'm building.</p><p>The trust lived in a sentence. And a sentence can be edited overnight.</p>"
+        },
+        {
+          "type": "section_marker",
+          "text": "The Deal"
+        },
+        {
+          "type": "text",
+          "html": "<p>For about fifteen years we have all been living inside the same arrangement, whether or not anyone ever spelled it out for us. The deal is this: give us your life, and we will make the software smart. Every photo, every location, every message, every late-night search becomes fuel for a model running on someone else's machine. In return the product gets better. It finishes your sentences, finds your face in a crowd, knows the route home before you ask.</p><p>It is a good deal in the way that good deals usually are, which is that you do not feel the cost until much later. Because the same data that makes the software smart also makes the advertising smart, the profiling smart, the version of you that gets sold smart. And the only thing standing between you and the worst version of that arrangement is a promise, written on a settings page or buried in a privacy policy, both of which can be rewritten while you sleep. As Chrome just reminded everyone.</p><p>I do not think the people who built that world are villains. I think they made a reasonable engineering choice at a time when the intelligence genuinely had to live in a data center, and then they built a business on top of that necessity and stopped questioning it. The necessity is what I want to talk about, because the necessity is gone.</p>"
+        },
+        {
+          "type": "section_marker",
+          "text": "The Line"
+        },
+        {
+          "type": "text",
+          "html": "<p>Here is the bet I am making instead. Software can get smarter by keeping your data, not by taking it. The compounding can happen on your side of the line.</p><p>Picture an actual line drawn between your device and everyone else's servers. Almost all of modern software is designed to move the valuable thing, your life, across that line, because that is where the intelligence sits. I want to build software where the intelligence sits on your side, so the valuable thing never has to cross at all. The more of your life it holds, the more useful it becomes, and none of that has to leave your phone to make it work.</p><p>The important word in there is not privacy. Privacy is the word every company uses, including the ones whose entire business is the opposite. \"We respect your privacy\" is printed on the side of the machine that sells you. So I want to be precise about what I actually mean, because the precise version is the only one that is worth anything.</p><p>I do not mean \"we promise not to look.\" I mean \"the architecture means we cannot.\" When the model runs on your device and your data has no reason to leave it, privacy stops being a promise and becomes a property of how the thing is built. That is a different kind of claim entirely. A promise asks for your trust. A structure lets you check. You should not have to believe me. You should be able to verify me, and if one day my apps start quietly shipping your life across that line, you should be able to catch me doing it.</p><p>That is the whole difference between what Chrome had to say this spring and what I want to be able to say. They had a sentence. I want a structure.</p>"
+        },
+        {
+          "type": "section_marker",
+          "text": "Why Now"
+        },
+        {
+          "type": "text",
+          "html": "<p>For years this was a lovely idea you could not actually ship. The intelligence lived in the cloud because that was the only place big enough to hold it. Anyone promising on-device intelligence in 2022 was mostly promising a slideshow.</p><p>That broke this year, and it broke fast. In a single stretch of weeks this spring, the missing pieces all arrived at once. NVIDIA shipped consumer hardware built for running serious models locally. Microsoft launched an always-on personal agent and put models that run directly inside the operating system on the machine in front of you. The open-source world shipped a capable local agent you can run on your own laptop. Apple, meanwhile, has staked its entire AI strategy on small, private, on-device models rather than the race for the biggest one. And the silicon underneath all of it, the neural chips that make local intelligence possible, now ships even in inexpensive phones rather than only the flagships.</p><p>What that means is simple and, to me, enormous. The thing that was idealism in 2023 is an engineering choice in 2026. You can now run real intelligence on the device you already own. So the old necessity, the reason your life had to travel to a server to become useful, is no longer a law of physics. It is a business model. And business models can be refused.</p>"
+        },
+        {
+          "type": "section_marker",
+          "text": "What I am Building"
+        },
+        {
+          "type": "text",
+          "html": "<p>I run a small studio called Veyago. It is one person, for now, and a short list of apps held to a single standard rather than a sprawl of whatever the market rewards this quarter.</p><p>Kept is already out. It keeps the boring, important parts of your life in order, your documents and renewals and the dates that cost you money when you forget them, and it does that on your phone and nowhere else. A travel app is in the works, and it is the bigger bet, the one I will be writing about a lot here as it comes together.</p><p>Underneath all of it I am building a layer I call Veyago OS. It is a private intelligence spine that lives on your device and belongs to you, and every app I make is built to run on it. The idea is that my apps are not four separate programs reporting back to four separate servers. They are windows onto the same private intelligence, one that gets more useful the more of your life you let it hold, with the compounding staying entirely on your side of the line.</p>"
+        },
+        {
+          "type": "section_marker",
+          "text": "The Honest Part"
+        },
+        {
+          "type": "text",
+          "html": "<p>I have to be straight about something, because the whole thing collapses the moment I am not.</p><p>This is hard, and I am early, and the idea contains its own trap. The instant you say \"one backbone that holds everything across all your apps,\" you have described, structurally, the exact surveillance pattern I started this essay complaining about. A single thing that knows your whole life is the dream of every data broker on earth. The only thing that separates what I am building from that is the architecture, on-device first, owned by you, shared between one app and another only when you explicitly say so. If I ever ship the connectedness without the ownership, I will have built Google with nicer fonts, and you should say so loudly.</p><p>So I am not going to stand here and tell you I have already arrived. I have not. I am telling you the standard I am building toward and asking you to hold me to it, in public, while I build it. That is the honest version of a manifesto. Not \"look what we made,\" but \"here is the line we have drawn, and here is how you will know if we cross it.\"</p><p>Most of the industry is betting that your life is worth more to them on their servers than it is to you on your device. I am betting the other way, that the most valuable place for everything that makes software personal is the one place it never has to leave.</p><p>On your side of the line. That is the company. That is the whole idea.</p><p>I will be writing here as I build it, including, especially, the parts that break.</p>"
+        }
+      ],
+      "keywords": "on-device ai, privacy first software, local first, veyago os",
+      "about": [
+        {
+          "@type": "Thing",
+          "name": "On-device artificial intelligence"
+        },
+        {
+          "@type": "Thing",
+          "name": "Privacy by design"
+        }
+      ],
+      "share_image": "/assets/og-article-side-of-line.png"
+    }
+  ],
+  "wallpapers": []
+}

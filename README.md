@@ -17,6 +17,8 @@ Veyago travel app) with the privacy policies.
 | `nl/`, `de/` | Generated locale twins of `websites/` — never edit by hand, run `npm run build:locales` |
 | `projects/<slug>/` | Generated research papers — edit `data/research/<slug>.md`, run `npm run build:essays` |
 | `tools/` | Build scripts and the `npm run check` gate, with their tests (see **Scripts and checks**) |
+| `tools/lib/entity.js` | The site-wide entity graph — the `Organization`, `WebSite` and `Person` JSON-LD nodes every page repeats. Change a company fact here, then `npm run sync:entities` |
+| `feed.xml` | Generated RSS for the journal and the research papers — written by `npm run build`, never by hand |
 | `docs/seo-keywords.md` | What the Position Tracking campaign should measure, and which page answers each query |
 | `.github/workflows/` | `check.yml` (tests + checks on every PR), `publish.yml` (Supabase → static export), `drift.yml` |
 
@@ -78,8 +80,11 @@ only and nothing here is shipped to the browser.
 | `npm run build:locales` | Writes the static `/nl/` and `/de/` twins of the pages listed in `tools/build-locales.js` (`PAGES`) from `i18n/<code>.js` | After editing `websites/index.html` or a dictionary; `npm run build:locales -- --check` only reports untranslated strings |
 | `npm run sitemap:lastmod` | Refreshes `<lastmod>` on the hand-written `sitemap.xml` entries from git history | Before committing a change to a hand-written page |
 | `npm run shots:work` | Retakes the portfolio screenshots on `/websites/` (`tools/capture-work-shots.js`) into `assets/work-*.webp`, driving a local Chromium; needs `cwebp` | When a site in the Recent work grid has been redesigned, or a new one joins it |
+| `npm run sync:entities` | Writes the canonical `Organization` and `WebSite` JSON-LD nodes from `tools/lib/entity.js` into every hand-authored page | After editing `tools/lib/entity.js` — `npm run check` fails if any page has drifted |
+| `npm run build:og` | Draws the missing share cards in `assets/og-*.png` from the template in `tools/build-og-images.js`, driving a local Chromium; `-- --force` redraws them all | When a page gets a headline worth its own link preview |
+| `npm run journal:fixture` | Rebuilds `data/journal/published.json` from the committed `/journal/` pages, so the journal can be rebuilt without Supabase; `-- --verify` proves the round trip is lossless | Before editing an article offline — see **Editing an article without Supabase** |
 | `npm test` | Unit tests (`node --test`) for the builders, sanitiser, verifier, admin and public scripts | Before every commit |
-| `npm run check` | The pre-merge gate (`tools/check.js`): no third-party requests on the public site, full locale coverage, generated essays and twins fresh, generated tree sound | Before opening a PR — `check.yml` runs `npm test` and `npm run check` on every PR and push to `main` |
+| `npm run check` | The pre-merge gate (`tools/check.js`), six checks: no third-party requests on the public site, full locale coverage, generated essays and twins fresh, generated tree sound, one entity graph across every page, and the on-page signals below | Before opening a PR — `check.yml` runs `npm test` and `npm run check` on every PR and push to `main` |
 
 `npm run check` names the file and the command that fixes it (for example
 `STALE  nl/websites/index.html — … regenerate with npm run build:locales`). The external-request
@@ -87,6 +92,40 @@ scan takes its allowlist from the public Content-Security-Policy in `vercel.json
 third-party host must be a deliberate change there first — see
 [`docs/security-headers.md`](docs/security-headers.md). Plain `<a href>` links are navigations,
 not requests, and are never flagged.
+
+### On-page signals (`tools/check-pages.js`)
+
+Every rule in this check is something a search audit flagged once and should never come back:
+
+- a `<title>` at most 60 rendered characters, unique across the site
+- a meta description between 110 and 160 characters, unique across the site
+- exactly one `<h1>`, and no `<h3>` shipped twice inside `<main>`
+- an absolute canonical (a `noindex` page is exempt, and must not claim one)
+- a visible breadcrumb trail and a `BreadcrumbList` with the same number of steps
+- structured data that parses, with no `@id` declared twice on a page
+- every `FAQPage` question and answer present on the page word for word, which is
+  what Google requires before it will use them
+- no `<li>` outside a list
+
+Pages that are generated get their metadata from the builder rather than the file, so a
+failure there is fixed in `tools/lib/journal-pages.js`, `tools/lib/wallpaper-pages.js` or
+`tools/build-essays.js`, then rebuilt.
+
+### Editing an article without Supabase
+
+`npm run build` needs Supabase credentials, and rebuilding `/journal/` from a partial fixture
+would silently drop the articles it does not contain. `npm run journal:fixture` reads the
+committed pages back into the block shape the builder expects:
+
+```bash
+npm run journal:fixture -- --verify     # prove the round trip is lossless first
+npm run journal:fixture                 # write data/journal/published.json
+# edit the fixture, then:
+node tools/build.js --fixture data/journal/published.json
+```
+
+The fixture is a convenience, not a second source of truth: an edit made this way still has to
+go back into Supabase (or into `data/journal/drafts/`) or the next `npm run build` overwrites it.
 
 ## App Store privacy URL
 

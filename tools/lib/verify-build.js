@@ -317,11 +317,40 @@ function generatedArticleSlugs(root) {
     .filter(function (name) { return fs.existsSync(path.join(dir, name, 'index.html')); });
 }
 
-function expectedSitemapUrls(site, articles, appPages) {
-  var urls = [site + '/journal/'];
-  articles.forEach(function (a) { if (a && a.slug) urls.push(site + '/journal/' + a.slug + '/'); });
-  urls.push(site + '/wallpapers/');
+/* An index with nothing on it renders noindex (tools/lib/journal-pages.js and
+   tools/lib/wallpaper-pages.js both do this), and a sitemap that lists a page
+   robots are told to skip is a contradiction Search Console reports as an error.
+   So an empty index is expected to be ABSENT from the sitemap, and a non-empty
+   one is expected to be present — both directions are checked. */
+/* Tree-only mode has no build log to read, so "did anything get published?" is
+   answered by the index itself: the empty state is the one thing the renderer
+   marks explicitly (.ji-empty), and it is the same marker that flips the page to
+   noindex. Reading that rather than counting cards keeps this in step with the
+   renderer whatever a card is called. */
+var EMPTY_INDEX = /class="ji-empty"/;
+
+function publishedWallpapers(root) {
+  var file = path.join(root, 'wallpapers', 'index.html');
+  if (!fs.existsSync(file)) return [];
+  return EMPTY_INDEX.test(fs.readFileSync(file, 'utf8')) ? [] : [{}];
+}
+
+function expectedSitemapUrls(site, articles, appPages, wallpapers) {
+  var urls = [];
+  if (articles.length) {
+    urls.push(site + '/journal/');
+    articles.forEach(function (a) { if (a && a.slug) urls.push(site + '/journal/' + a.slug + '/'); });
+  }
+  if (wallpapers && wallpapers.length) urls.push(site + '/wallpapers/');
   appPages.forEach(function (a) { if (a && a.slug) urls.push(site + '/apps/' + a.slug + '/'); });
+  return urls;
+}
+
+/* The mirror of the rule above: a URL that must NOT be in the build block. */
+function forbiddenSitemapUrls(site, articles, wallpapers) {
+  var urls = [];
+  if (!articles.length) urls.push(site + '/journal/');
+  if (!wallpapers || !wallpapers.length) urls.push(site + '/wallpapers/');
   return urls;
 }
 
@@ -386,7 +415,7 @@ function verifyBuild(options) {
   var articles = Array.isArray(expected.articles)
     ? expected.articles
     : generatedArticleSlugs(root).map(function (slug) { return { slug: slug }; });
-  var wallpapers = Array.isArray(expected.wallpapers) ? expected.wallpapers : [];
+  var wallpapers = Array.isArray(expected.wallpapers) ? expected.wallpapers : publishedWallpapers(root);
   var appPages = Array.isArray(expected.appPages)
     ? expected.appPages
     : generatedAppSlugs(root).map(function (slug) { return { slug: slug }; });
@@ -436,7 +465,10 @@ function verifyBuild(options) {
     var sitemap = readTextFile(sitemapFile);
     if (!sitemap.ok) problems.push('sitemap.xml could not be read: ' + sitemap.error.message);
     else {
-      checkSitemapCoverage(sitemap.text, expectedSitemapUrls(site, articles, appPages))
+      checkSitemapCoverage(sitemap.text, expectedSitemapUrls(site, articles, appPages, wallpapers))
+        .concat(forbiddenSitemapUrls(site, articles, wallpapers)
+          .filter(function (url) { return sitemap.text.indexOf('<loc>' + url + '</loc>') !== -1; })
+          .map(function (url) { return 'sitemap.xml: lists "' + url + '", which renders noindex while it is empty'; }))
         .forEach(function (p) { problems.push(p); });
     }
   }
@@ -501,6 +533,7 @@ module.exports = {
   maskCodeRegions: maskCodeRegions,
   decodeEntities: decodeEntities,
   expectedSitemapUrls: expectedSitemapUrls,
+  forbiddenSitemapUrls: forbiddenSitemapUrls,
   generatedArticleSlugs: generatedArticleSlugs,
   MIN_PAGE_BYTES: MIN_PAGE_BYTES,
   SITE: SITE,

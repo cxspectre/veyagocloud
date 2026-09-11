@@ -26,6 +26,9 @@ function headTags(opts) {
   var ogDescription = opts.ogDescription || description;
   var ogImage = opts.ogImage || DEFAULT_OG_IMAGE;
   var ogType = opts.ogType || 'website';
+  /* A share card carries the headline as an image; without alt text it is silent
+     to a screen reader and to anything reading the card rather than the page. */
+  var ogImageAlt = opts.ogImageAlt || (title.replace(/ \| Veyago$/, '') + ' — Veyago');
   var robots = opts.robots || 'index,follow';
   var extra = opts.extra || '';
   return [
@@ -41,6 +44,7 @@ function headTags(opts) {
     '<meta property="og:title" content="' + attr(ogTitle) + '" />',
     '<meta property="og:description" content="' + attr(ogDescription) + '" />',
     '<meta property="og:image" content="' + attr(ogImage) + '" />',
+    '<meta property="og:image:alt" content="' + attr(ogImageAlt) + '" />',
     '<meta property="og:type" content="' + attr(ogType) + '" />',
     '<link rel="canonical" href="' + attr(canonical) + '" />',
     '<meta name="robots" content="' + attr(robots) + '" />',
@@ -51,6 +55,7 @@ function headTags(opts) {
     '<meta name="twitter:title" content="' + attr(ogTitle) + '" />',
     '<meta name="twitter:description" content="' + attr(ogDescription) + '" />',
     '<meta name="twitter:image" content="' + attr(ogImage) + '" />',
+    '<meta name="twitter:image:alt" content="' + attr(ogImageAlt) + '" />',
     extra
   ].filter(Boolean).join('\n  ');
 }

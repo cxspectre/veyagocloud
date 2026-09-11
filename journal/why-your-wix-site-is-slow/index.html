@@ -3,16 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Why your Wix site is slow, and what a rebuild actually changes. | Veyago</title>
-  <meta name="description" content="Where the weight in a Wix or Squarespace site comes from, why it hurts on phones and in search, and how to check your own site in ten minutes." />
+  <title>Why your Wix site is slow (and how to fix it) | Veyago</title>
+  <meta name="description" content="A Wix or Squarespace site is slow because the builder ships one runtime for every feature, whether your page uses them or not. Here is where the weight is." />
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="/styles.css" />
   <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
-  <meta property="og:title" content="Why your Wix site is slow, and what a rebuild actually changes. | Veyago" />
-  <meta property="og:description" content="Where the weight in a Wix or Squarespace site comes from, why it hurts on phones and in search, and how to check your own site in ten minutes." />
-  <meta property="og:image" content="https://www.veyago.cloud/assets/og.png" />
+  <meta property="og:title" content="Why your Wix site is slow (and how to fix it) | Veyago" />
+  <meta property="og:description" content="A Wix or Squarespace site is slow because the builder ships one runtime for every feature, whether your page uses them or not. Here is where the weight is." />
+  <meta property="og:image" content="https://www.veyago.cloud/assets/og-article-wix.png" />
+  <meta property="og:image:alt" content="Why your Wix site is slow (and how to fix it) — a field note from Veyago" />
   <meta property="og:type" content="article" />
   <link rel="canonical" href="https://www.veyago.cloud/journal/why-your-wix-site-is-slow/" />
   <meta name="robots" content="index,follow" />
@@ -20,12 +21,15 @@
   <meta property="og:site_name" content="Veyago" />
   <meta property="og:locale" content="en_US" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Why your Wix site is slow, and what a rebuild actually changes. | Veyago" />
-  <meta name="twitter:description" content="Where the weight in a Wix or Squarespace site comes from, why it hurts on phones and in search, and how to check your own site in ten minutes." />
-  <meta name="twitter:image" content="https://www.veyago.cloud/assets/og.png" />
-  <meta name="author" content="Veyago Inc." />
+  <meta name="twitter:title" content="Why your Wix site is slow (and how to fix it) | Veyago" />
+  <meta name="twitter:description" content="A Wix or Squarespace site is slow because the builder ships one runtime for every feature, whether your page uses them or not. Here is where the weight is." />
+  <meta name="twitter:image" content="https://www.veyago.cloud/assets/og-article-wix.png" />
+  <meta name="twitter:image:alt" content="Why your Wix site is slow (and how to fix it) — a field note from Veyago" />
+  <meta name="author" content="Cassian Drefke" />
+  <link rel="alternate" type="application/rss+xml" title="Veyago field notes" href="https://www.veyago.cloud/feed.xml" />
   <meta property="article:published_time" content="2026-09-03" />
   <meta property="article:modified_time" content="2026-09-07" />
+  <meta property="article:author" content="https://www.veyago.cloud/team/#cassian-drefke" />
   <meta property="article:publisher" content="https://www.veyago.cloud/" />
   <script type="application/ld+json">
   {
@@ -34,32 +38,110 @@
       {
         "@type": "BlogPosting",
         "@id": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#article",
-        "headline": "Why your Wix site is slow, and what a rebuild actually changes.",
-        "description": "Where the weight in a Wix or Squarespace site comes from, why it hurts on phones and in search, and how to check your own site in ten minutes.",
+        "headline": "Why your Wix site is slow (and how to fix it)",
+        "description": "A Wix or Squarespace site is slow because the builder ships one runtime for every feature, whether your page uses them or not. Here is where the weight is.",
         "url": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/",
         "mainEntityOfPage": {
           "@type": "WebPage",
           "@id": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/"
         },
-        "image": "https://www.veyago.cloud/assets/og.png",
+        "image": "https://www.veyago.cloud/assets/og-article-wix.png",
         "inLanguage": "en",
         "isAccessibleForFree": true,
-        "wordCount": 1204,
+        "wordCount": 1307,
         "datePublished": "2026-09-03",
         "dateModified": "2026-09-07",
         "author": {
-          "@type": "Organization",
-          "@id": "https://www.veyago.cloud/#organization",
-          "name": "Veyago Inc.",
-          "url": "https://www.veyago.cloud/"
+          "@id": "https://www.veyago.cloud/team/#cassian-drefke"
         },
         "publisher": {
           "@id": "https://www.veyago.cloud/#organization"
         },
         "isPartOf": {
-          "@type": "Blog",
           "@id": "https://www.veyago.cloud/journal/#blog"
-        }
+        },
+        "speakable": {
+          "@type": "SpeakableSpecification",
+          "cssSelector": [
+            ".paper-title",
+            ".answer-first"
+          ]
+        },
+        "keywords": "wix site slow, squarespace slow, website speed, page weight, core web vitals, website rebuild",
+        "about": [
+          {
+            "@type": "Thing",
+            "name": "Website performance"
+          },
+          {
+            "@type": "Thing",
+            "name": "Core Web Vitals"
+          }
+        ],
+        "citation": [
+          {
+            "@type": "WebPage",
+            "name": "HTTP Archive — Page Weight report",
+            "url": "https://httparchive.org/reports/page-weight"
+          },
+          {
+            "@type": "WebPage",
+            "name": "web.dev — Largest Contentful Paint (LCP)",
+            "url": "https://web.dev/articles/lcp"
+          },
+          {
+            "@type": "WebPage",
+            "name": "Google Search Central — Understanding page experience",
+            "url": "https://developers.google.com/search/docs/appearance/page-experience"
+          },
+          {
+            "@type": "WebPage",
+            "name": "PageSpeed Insights",
+            "url": "https://pagespeed.web.dev/"
+          },
+          {
+            "@type": "WebPage",
+            "name": "Chrome DevTools — Inspect network activity",
+            "url": "https://developer.chrome.com/docs/devtools/network"
+          }
+        ]
+      },
+      {
+        "@type": "Person",
+        "@id": "https://www.veyago.cloud/team/#cassian-drefke",
+        "name": "Cassian Drefke",
+        "givenName": "Cassian",
+        "familyName": "Drefke",
+        "jobTitle": "Founder & CEO",
+        "description": "Cassian Drefke founded Veyago Inc. in New York in April 2026 and leads product strategy, design and engineering. He wrote the briefs that became Kept and the Veyago travel app, and builds the studio’s client websites himself.",
+        "image": {
+          "@type": "ImageObject",
+          "url": "https://www.veyago.cloud/assets/cassian-drefke-480w.webp",
+          "width": 480,
+          "height": 360
+        },
+        "url": "https://www.veyago.cloud/team/#cassian-drefke",
+        "email": "hello@veyago.cloud",
+        "worksFor": {
+          "@id": "https://www.veyago.cloud/#organization"
+        },
+        "homeLocation": {
+          "@type": "Place",
+          "name": "New York, United States"
+        },
+        "knowsAbout": [
+          "iOS app development",
+          "Swift and SwiftUI",
+          "on-device machine learning",
+          "privacy-first product design",
+          "technical SEO",
+          "static site architecture"
+        ],
+        "knowsLanguage": [
+          "en",
+          "nl",
+          "de"
+        ]
       },
       {
         "@type": "BreadcrumbList",
@@ -79,7 +161,54 @@
           {
             "@type": "ListItem",
             "position": 3,
-            "name": "Why your Wix site is slow, and what a rebuild actually changes."
+            "name": "Why your Wix site is slow (and how to fix it)"
+          }
+        ]
+      },
+      {
+        "@type": "HowTo",
+        "@id": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#howto",
+        "name": "How to check whether your own website is slow",
+        "description": "Two free checks, about ten minutes, no consultant: run PageSpeed Insights on the mobile result, then read the page weight in your own browser.",
+        "isPartOf": {
+          "@id": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#article"
+        },
+        "step": [
+          {
+            "@type": "HowToStep",
+            "position": 1,
+            "name": "Run PageSpeed Insights on the mobile result",
+            "text": "Paste your address into pagespeed.web.dev and read the mobile result first. You get a performance score and a list of the biggest opportunities underneath it. A list led by unused JavaScript, unused CSS and oversized images is the builder runtime showing through.",
+            "url": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#how-to-check-your-own-site"
+          },
+          {
+            "@type": "HowToStep",
+            "position": 2,
+            "name": "Read the page weight in your own browser",
+            "text": "Open your site in Chrome, right-click and choose Inspect, pick the Network tab and reload. The bar at the bottom shows how many requests the page made and how much data it transferred. Sort by size to see what is at the top.",
+            "url": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#how-to-check-your-own-site"
+          },
+          {
+            "@type": "HowToStep",
+            "position": 3,
+            "name": "Write the numbers down before you change anything",
+            "text": "Record the mobile performance score, the Largest Contentful Paint time, the transferred weight and the request count. Without a before, no rebuild can prove it changed anything.",
+            "url": "https://www.veyago.cloud/journal/why-your-wix-site-is-slow/#how-to-check-your-own-site"
+          }
+        ],
+        "totalTime": "PT10M",
+        "tool": [
+          {
+            "@type": "HowToTool",
+            "name": "A web browser"
+          },
+          {
+            "@type": "HowToTool",
+            "name": "PageSpeed Insights (free)"
+          },
+          {
+            "@type": "HowToTool",
+            "name": "Chrome DevTools (built in)"
           }
         ]
       }
@@ -153,12 +282,13 @@
       <div class="paper-main">
         <div class="paper-masthead">
           <p class="paper-kicker"><a href="/journal/">&larr; Articles</a></p>
-          <h1 class="paper-title">Why your Wix site is slow, and what a rebuild actually changes.</h1>
-          <p class="paper-dek">Where the weight in a builder site comes from, why it costs you on phones and in search, and how to check your own site without asking us.</p>
-          <p class="paper-meta">September 3, 2026 · 6 min read</p>
+          <h1 class="paper-title">Why your Wix site is slow (and how to fix it)</h1>
+          <p class="paper-dek">Where the weight in a builder site comes from, why it costs you on phones and in search, and the two checks that tell you where you stand.</p>
+          <p class="byline"><img src="/assets/cassian-drefke-240w.webp" alt="" width="34" height="34" loading="lazy" decoding="async" /><span>By <a href="/team/#cassian-drefke" rel="author">Cassian Drefke</a>, Founder &amp; CEO · <time datetime="2026-09-03">September 3, 2026</time> · updated <time datetime="2026-09-07">September 7, 2026</time> · 7 min read</span></p>
         </div>
         <div class="paper-body">
         <p class="eyebrow paper-marker">Websites</p>
+        <div class="answer-first"><p>A Wix or Squarespace site is slow because a builder ships one runtime that covers every feature it offers, whether your page uses them or not. A brochure page ends up carrying several megabytes and a hundred-plus requests. A rebuild fixes the weight and the markup; it does not fix your photographs or your copy.</p></div>
         <p>You built the site yourself, or someone built it for you in an afternoon, and for a while it did the job. Then you opened it on your phone in a car park and watched it load. The text jumped about. The menu arrived late. Somewhere in that wait, a customer decided to ring someone else.</p><p>This is not a Wix problem in particular. Squarespace, GoDaddy's builder and most of their cousins produce sites of the same shape, and the shape is what makes them slow. The causes have names, and a rebuild changes some of them and keeps others. This is what we tell people who ask.</p>
         <h2 id="where-the-weight-comes-from">Where the weight comes from.</h2>
         <p>A web page is a pile of files your visitor's phone has to download and work through before it can show anything. The slowness you feel is mostly the size of that pile and the order it arrives in. On a builder site the pile is large for four reasons.</p><ul><li><strong>The builder's own runtime.</strong> A builder site is not really a page. It is a small application that draws the page after it loads, and that application ships on every visit whether your page needs it or not. It is often the single largest thing your visitor downloads, and it has to run before your content appears.</li><li><strong>Images that were never resized.</strong> Builders let you drop in a photo straight from your camera roll. Many will then serve a version far larger than the space it fills, so a phone downloads a poster to show a thumbnail.</li><li><strong>Third-party widgets.</strong> The booking button, the chat bubble, the Instagram feed, the review carousel, the map. Each one loads code from someone else's server, and each one is allowed to slow your page down as much as it likes.</li><li><strong>Template styling for everything you did not use.</strong> The template carries the styling for every layout the designer offered, including the twenty you never picked. Your visitor downloads all of it.</li></ul><p>None of these are mistakes on your part. They are the cost of a tool that has to work for everyone, on every page, without anyone looking at the code.</p>
@@ -172,10 +302,19 @@
         <h2 id="what-a-rebuild-keeps">What a rebuild keeps.</h2>
         <p>People worry that a rebuild means starting again, and a builder's cancellation page will happily encourage that worry. It does not have to be that way. A careful rebuild keeps:</p><ul><li><strong>Your content.</strong> The words, the photos, the services, the prices. We carry them across and tidy them. We do not throw them away.</li><li><strong>Your addresses.</strong> Every page on the old site has a URL, and some of those are known to Google and linked from elsewhere. We keep the ones that make sense. For the ones that change, we set up permanent redirects so the old address lands on the new page. That is how rankings survive a move.</li><li><strong>Your domain and your email.</strong> The domain comes with you. Nothing about your email changes.</li><li><strong>Whatever is working.</strong> If a page is bringing in enquiries, we do not redesign it for the sake of it.</li></ul><p>What changes is underneath: the structure, the weight, the titles and descriptions that search engines read, how images are delivered, and where the site is hosted. From the outside it should feel like the same business with the fog lifted.</p>
         <h2 id="how-to-check-your-own-site">How to check your own site.</h2>
-        <p>You do not need us to find out whether any of this applies to you. Two checks take about ten minutes and cost nothing.</p><ol><li><strong>Run PageSpeed Insights.</strong> Google offers it free at pagespeed.web.dev. Paste your address and look at the mobile result first. You get a performance score and, underneath, a list of the biggest opportunities. If that list is led by unused JavaScript, unused CSS and images that could be smaller, you are looking at the four causes above.</li><li><strong>Look at the page weight yourself.</strong> In Chrome, open your site, right-click the page and choose Inspect, then pick the Network tab and reload. The bar at the bottom shows how many requests the page made and how much data it transferred. Sort by size and see what is at the top. A brochure site that transfers several megabytes, or makes well over a hundred requests, is carrying weight it does not need.</li></ol><p>The same Lighthouse audit that powers PageSpeed Insights is built into Chrome's developer tools, so you can rerun it on any page whenever you like. Write the scores down now, so you have a before.</p>
+        <p>You do not need us to find out whether any of this applies to you. Two checks take about ten minutes and cost nothing.</p><ol><li><strong>Run PageSpeed Insights.</strong> Google offers it free at <a href="https://pagespeed.web.dev/" target="_blank" rel="noopener noreferrer">pagespeed.web.dev</a>. Paste your address and look at the mobile result first. You get a performance score and, underneath, a list of the biggest opportunities. If that list is led by unused JavaScript, unused CSS and images that could be smaller, you are looking at the four causes above.</li><li><strong>Look at the page weight yourself.</strong> In Chrome, open your site, right-click the page and choose Inspect, then pick <a href="https://developer.chrome.com/docs/devtools/network" target="_blank" rel="noopener noreferrer">the Network tab</a> and reload. The bar at the bottom shows how many requests the page made and how much data it transferred. Sort by size and see what is at the top. A brochure site that transfers several megabytes, or makes well over a hundred requests, is carrying weight it does not need.</li></ol><p>The same <a href="https://developer.chrome.com/docs/lighthouse/overview" target="_blank" rel="noopener noreferrer">Lighthouse</a> audit that powers PageSpeed Insights is built into Chrome's developer tools, so you can rerun it on any page whenever you like. Write the scores down now, so you have a before.</p>
         <hr class="paper-rule" />
         <p>If the numbers look fine, they probably are, and you do not need a rebuild. If they do not, and you would like a second opinion, <a href="https://www.veyago.cloud/websites/#quote" target="_blank" rel="noopener noreferrer">send us the address of your current site</a> and we will tell you honestly what it would take and what it would cost. If the answer is to leave it alone, that is what we will say.</p>
+        <p><strong>Sources.</strong> Page weight across the web is tracked by the <a href="https://httparchive.org/reports/page-weight" target="_blank" rel="noopener noreferrer">HTTP Archive page weight report</a>. The loading metric the checks above report is defined in <a href="https://web.dev/articles/lcp" target="_blank" rel="noopener noreferrer">web.dev’s Largest Contentful Paint article</a>, and Google explains how page experience feeds ranking in <a href="https://developers.google.com/search/docs/appearance/page-experience" target="_blank" rel="noopener noreferrer">its own Search Central documentation</a>.</p>
         </div>
+        <aside class="author-box">
+          <img src="/assets/cassian-drefke-240w.webp" alt="Cassian Drefke" width="64" height="64" loading="lazy" decoding="async" />
+          <div>
+            <span class="ab-role">Written by</span>
+            <h2><a href="/team/#cassian-drefke" rel="author">Cassian Drefke</a> — Founder &amp; CEO, Veyago Inc.</h2>
+            <p>Cassian founded Veyago in New York in April 2026. He designs and builds the studio's iOS apps and every client website it ships, which is where the numbers in these notes come from. Write to <a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a> and he answers within one working day.</p>
+          </div>
+        </aside>
         <section class="newsletter" data-newsletter aria-labelledby="nl-h-article">
           <div class="nl-inner">
             <p class="eyebrow">Newsletter</p>
@@ -198,6 +337,7 @@
         <footer class="paper-foot">
           <div class="pf-nav">
             <a class="pf-back" href="/journal/">&larr; All articles</a>
+            <a class="pf-next" href="/journal/what-a-699-website-includes/"><span class="pf-next-k">Read next</span><span class="pf-next-t">What a $699 website includes, line by line. &rarr;</span></a>
           </div>
         </footer>
       </div>

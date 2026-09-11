@@ -15,7 +15,10 @@
     "sitemap:lastmod": "node tools/sitemap-lastmod.js",
     "shots:work": "node tools/capture-work-shots.js",
     "test": "node --test \"tools/lib/*.test.js\" \"tools/*.test.js\" \"admin/js/*.test.js\" \"assets/js/*.test.js\" \"supabase/functions/_shared/*.test.js\"",
-    "check": "node tools/check.js"
+    "check": "node tools/check.js",
+    "sync:entities": "node tools/sync-entities.js",
+    "build:og": "node tools/build-og-images.js",
+    "journal:fixture": "node tools/journal-fixture.js"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.45.0",

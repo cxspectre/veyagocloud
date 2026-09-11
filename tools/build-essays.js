@@ -15,6 +15,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 const { page: renderPage, SITE, DEFAULT_OG_IMAGE } = require('./lib/chrome');
 const { esc } = require('./lib/escape');
+const entity = require('./lib/entity');
 
 const ROOT = path.resolve(__dirname, '..');
 const SRC = path.join(ROOT, 'data', 'research');
@@ -29,12 +30,14 @@ const ESSAYS = {
     accent: '#0071e3',
     related: { label: 'Kept', href: '/apps/#kept' },
     published: '2026-06-12',
+    ogImage: '/assets/og-paper-unkept-life.png',
   },
   'the-edge-moves-in': {
     description: 'How intelligence is migrating to the device, WWDC 2026 as its consumer inflection point, and what it means for privacy-first software.',
     accent: '#0a8d7c',
     related: null,
     published: '2026-06-12',
+    ogImage: '/assets/og-paper-edge-moves-in.png',
   },
 };
 
@@ -70,14 +73,23 @@ function headingHtml(h) {
   return inline(h);
 }
 
+/* "Author, title, publication, https://…" → a CreativeWork node. The URL is
+   split off so the citation carries a name and a target rather than one blob. */
+function citation(line) {
+  const m = line.match(/^([\s\S]+?)[,;]?\s+(https?:\/\/\S+)$/);
+  if (!m) return { '@type': 'CreativeWork', name: line };
+  return { '@type': 'CreativeWork', name: m[1].trim(), url: m[2] };
+}
+
 function parse(md) {
   const lines = md.split('\n');
   let title = '', dek = '', byline = '', seenH2 = false, inRefs = false;
-  const body = [], toc = [];
+  const body = [], toc = [], references = [];
   let para = [];
   const flush = () => {
     if (!para.length) return;
     const text = para.join(' ');
+    if (inRefs) references.push(citation(text));
     body.push(inRefs
       ? '<p class="ref">' + reference(text) + '</p>'
       : '<p>' + inline(text) + '</p>');
@@ -109,10 +121,17 @@ function parse(md) {
     para.push(t);
   }
   flush();
-  return { title, dek, byline, body: body.join('\n        '), toc };
+  return { title, dek, byline, body: body.join('\n        '), toc, references };
 }
 
 const ORG_ID = SITE + '/#organization';
+
+// "2026-06-12" → "12 June 2026", the visible half of a <time datetime> pair.
+function longDate(iso) {
+  const d = new Date(iso + 'T00:00:00Z');
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
 
 function git(args) {
   return execFileSync('git', args, { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
@@ -138,8 +157,7 @@ function lastModified(slug, fallback) {
 // for these two papers in its CollectionPage, and the Organization @id is the same
 // node, so the graphs join up.
 function jsonLd(slug, meta, doc, url) {
-  const data = {
-    '@context': 'https://schema.org',
+  const report = {
     '@type': 'Report',
     '@id': url + '#report',
     headline: doc.title,
@@ -147,13 +165,29 @@ function jsonLd(slug, meta, doc, url) {
     abstract: doc.dek,
     url: url,
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
-    image: DEFAULT_OG_IMAGE,
+    image: meta.ogImage ? SITE + meta.ogImage : DEFAULT_OG_IMAGE,
     inLanguage: 'en',
     isAccessibleForFree: true,
     datePublished: meta.published,
     dateModified: lastModified(slug, meta.published),
-    author: { '@type': 'Organization', '@id': ORG_ID, name: 'Veyago Inc.', url: SITE + '/' },
+    author: entity.authorRef(),
     publisher: { '@id': ORG_ID },
+    learningResourceType: 'Working paper',
+    genre: 'Research report',
+    citation: doc.references,
+    speakable: { '@type': 'SpeakableSpecification', cssSelector: ['.paper-title', '.paper-dek'] },
+  };
+  const data = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      report,
+      entity.founder(),
+      entity.breadcrumb([
+        { name: 'Home', url: SITE + '/' },
+        { name: 'Projects', url: SITE + '/projects/' },
+        { name: doc.title },
+      ]),
+    ],
   };
   // "</" can never close the script element early, whatever a title contains.
   return JSON.stringify(data, null, 2).replace(/<\//g, '<\\/');
@@ -163,9 +197,11 @@ function jsonLd(slug, meta, doc, url) {
 // (og:type is already "article"; these give it a date and a byline).
 function headExtra(slug, meta, doc, url) {
   return [
-    '<meta name="author" content="Veyago Inc." />',
+    '<meta name="author" content="Cassian Drefke" />',
     '<meta property="article:published_time" content="' + meta.published + '" />',
-    '<meta property="article:author" content="Veyago Inc." />',
+    '<meta property="article:modified_time" content="' + lastModified(slug, meta.published) + '" />',
+    '<meta property="article:author" content="' + SITE + '/team/#cassian-drefke" />',
+    '<link rel="alternate" type="application/rss+xml" title="Veyago field notes" href="' + SITE + '/feed.xml" />',
     '<script type="application/ld+json">\n  ' + jsonLd(slug, meta, doc, url).replace(/\n/g, '\n  ') + '\n  </script>',
   ].join('\n  ');
 }
@@ -194,10 +230,19 @@ function page(slug, meta, doc, next) {
           <h1 class="paper-title">${esc(doc.title)}</h1>
           <p class="paper-dek">${esc(doc.dek)}</p>
           <p class="paper-meta">${esc(doc.byline)}</p>
+          <p class="byline"><img src="/assets/cassian-drefke-240w.webp" alt="" width="34" height="34" loading="lazy" decoding="async" /><span>By <a href="/team/#cassian-drefke" rel="author">Cassian Drefke</a>, Founder &amp; CEO · published <time datetime="${meta.published}">${esc(longDate(meta.published))}</time> · updated <time datetime="${lastModified(slug, meta.published)}">${esc(longDate(lastModified(slug, meta.published)))}</time></span></p>
         </div>
         <div class="paper-body">
         ${doc.body}
         </div>
+        <aside class="author-box">
+          <img src="/assets/cassian-drefke-240w.webp" alt="Cassian Drefke" width="64" height="64" loading="lazy" decoding="async" />
+          <div>
+            <span class="ab-role">Written by</span>
+            <h2><a href="/team/#cassian-drefke" rel="author">Cassian Drefke</a> — Founder &amp; CEO, Veyago Inc.</h2>
+            <p>Cassian founded Veyago in New York in April 2026 and writes the studio's working papers himself. Each one is the research that precedes a build rather than marketing written after it. Corrections and disagreements to <a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a>.</p>
+          </div>
+        </aside>
         <footer class="paper-foot">${related}
           <div class="pf-nav">
             <a class="pf-back" href="/projects/">&larr; All projects</a>
@@ -215,9 +260,25 @@ function page(slug, meta, doc, next) {
       description: meta.description,
       canonical: url,
       ogType: 'article',
+      ogImage: meta.ogImage ? SITE + meta.ogImage : DEFAULT_OG_IMAGE,
+      ogImageAlt: doc.title + ' — a Veyago working paper',
       extra: headExtra(slug, meta, doc, url)
     },
     body
+  });
+}
+
+// The papers as feed entries: title and dek from the Markdown, dates from git.
+function feedItems() {
+  return Object.keys(ESSAYS).map((slug) => {
+    const doc = parse(fs.readFileSync(path.join(SRC, slug + '.md'), 'utf8'));
+    return {
+      title: doc.title,
+      url: SITE + '/projects/' + slug + '/',
+      description: ESSAYS[slug].description,
+      date: lastModified(slug, ESSAYS[slug].published),
+      categories: ['Research'],
+    };
   });
 }
 
@@ -251,6 +312,6 @@ function main() {
   console.log(pages.length + ' essay page(s) generated.');
 }
 
-module.exports = { renderEssays, parse, ESSAYS };
+module.exports = { renderEssays, parse, ESSAYS, feedItems };
 
 if (require.main === module) main();

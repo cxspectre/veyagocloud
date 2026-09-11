@@ -17,7 +17,9 @@ const {
   expectedSitemapUrls,
   MIN_PAGE_BYTES,
   SITE,
-  GENERATED_APP_MARKER, checkNoCatastrophicShrink } = require('./verify-build');
+  GENERATED_APP_MARKER, checkNoCatastrophicShrink,
+  forbiddenSitemapUrls
+} = require('./verify-build');
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -447,7 +449,7 @@ test('checkSitemapCoverage passes an empty managed block when nothing is expecte
 // ---------------------------------------------------------------------------
 
 test('expectedSitemapUrls mirrors what build.js writes into the managed block', () => {
-  const urls = expectedSitemapUrls(SITE, [{ slug: 'post' }], [{ slug: 'app' }]);
+  const urls = expectedSitemapUrls(SITE, [{ slug: 'post' }], [{ slug: 'app' }], [{ title: 'A set' }]);
   assert.deepStrictEqual(urls, [
     SITE + '/journal/',
     SITE + '/journal/post/',
@@ -456,10 +458,15 @@ test('expectedSitemapUrls mirrors what build.js writes into the managed block', 
   ]);
 });
 
-test('expectedSitemapUrls always includes both index pages, even when empty', () => {
-  assert.deepStrictEqual(expectedSitemapUrls(SITE, [], []), [
+test('an empty index is expected OUT of the sitemap, because it renders noindex', () => {
+  assert.deepStrictEqual(expectedSitemapUrls(SITE, [], [], []), []);
+  assert.deepStrictEqual(forbiddenSitemapUrls(SITE, [], []), [
     SITE + '/journal/', SITE + '/wallpapers/'
   ]);
+});
+
+test('an index with something on it is expected IN the sitemap and not forbidden', () => {
+  assert.deepStrictEqual(forbiddenSitemapUrls(SITE, [{ slug: 'post' }], [{ title: 'A set' }]), []);
 });
 
 // ---------------------------------------------------------------------------
@@ -537,7 +544,7 @@ function makeBuildRoot(t) {
     body: '<main>' + GENERATED_APP_MARKER + '<h1>Ledger</h1><p>' + FILLER + '</p></main>'
   }));
   writeFile(root, 'apps/index.html', '<!DOCTYPE html><html><body>hand-authored catalogue</body></html>');
-  writeFile(root, 'sitemap.xml', makeSitemap(expectedSitemapUrls(SITE, ARTICLES, APP_PAGES)));
+  writeFile(root, 'sitemap.xml', makeSitemap(expectedSitemapUrls(SITE, ARTICLES, APP_PAGES, WALLPAPERS)));
   writeFile(root, 'assets/js/site-config.js',
     'window.VEYAGO_SITE_CONFIG = {\n  "announcement": {\n    "active": false\n  }\n};\n');
   return root;

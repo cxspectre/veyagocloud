@@ -1,6 +1,10 @@
 /* Estimate reading time (whole minutes) from an article's block body, counting
-   the words a reader actually reads: text, headings, quotes, markers. Roughly
-   200 words/minute (spec §9). Always at least 1. */
+   the words a reader actually reads: text, headings, quotes, markers, the opening
+   answer and the cells of a table. Roughly 200 words/minute (spec §9). Always at
+   least 1.
+
+   blockWords() is exported so the BlogPosting's wordCount and the "N min read"
+   line on the page can never be computed two different ways. */
 'use strict';
 
 function stripTags(html) {
@@ -12,18 +16,24 @@ function countWords(s) {
   return t ? t.split(' ').length : 0;
 }
 
-function readingMinutes(blocks, wordsPerMinute) {
-  var wpm = wordsPerMinute || 200;
-  var words = 0;
-  (blocks || []).forEach(function (b) {
-    if (!b || !b.type) return;
-    if (b.type === 'text') words += countWords(stripTags(b.html));
-    else if (b.type === 'heading') words += countWords(b.text);
-    else if (b.type === 'quote') words += countWords(b.text) + countWords(b.attribution);
-    else if (b.type === 'section_marker') words += countWords(b.text);
-    else if (b.type === 'image') words += countWords(b.caption);
-  });
-  return Math.max(1, Math.round(words / wpm));
+function blockWords(blocks) {
+  return (blocks || []).reduce(function (words, b) {
+    if (!b || !b.type) return words;
+    if (b.type === 'text' || b.type === 'answer') return words + countWords(stripTags(b.html));
+    if (b.type === 'heading') return words + countWords(b.text);
+    if (b.type === 'quote') return words + countWords(b.text) + countWords(b.attribution);
+    if (b.type === 'section_marker') return words + countWords(b.text);
+    if (b.type === 'image') return words + countWords(b.caption);
+    if (b.type === 'table') {
+      return words + countWords(b.caption) + countWords((b.columns || []).join(' ')) +
+        countWords((b.rows || []).map(function (r) { return r.join(' '); }).join(' '));
+    }
+    return words;
+  }, 0);
 }
 
-module.exports = { readingMinutes, countWords, stripTags };
+function readingMinutes(blocks, wordsPerMinute) {
+  return Math.max(1, Math.round(blockWords(blocks) / (wordsPerMinute || 200)));
+}
+
+module.exports = { readingMinutes, blockWords, countWords, stripTags };
