@@ -77,6 +77,53 @@ select 'manager: overview revenue is a number', 'true',
        (public.workspace_overview() -> 'revenue_month' <> 'null'::jsonb)::text,
        public.workspace_overview() -> 'revenue_month' <> 'null'::jsonb;
 
+-- 0038: "personal means personal" holds against the manager too. Reassigning
+-- a colleague's mailbox would hand over its reading and, with send-mail, its
+-- sending.
+do $$
+begin
+  update public.integration_connections
+  set employee_id = (select id from public.employees where user_id = '21fc20c1-50e8-4764-9a11-71031d2f8f2c')
+  where id = '66666666-6666-6666-6666-666666666666';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX OWNER: a manager cannot reassign a personal mailbox', 'refused', 'REASSIGNED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX OWNER: a manager cannot reassign a personal mailbox', 'refused', 'refused', true);
+end $$;
+
+do $$
+begin
+  update public.integration_connections set employee_id = null
+  where id = '66666666-6666-6666-6666-666666666666';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX OWNER: nor make it shared with everyone', 'refused', 'SHARED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX OWNER: nor make it shared with everyone', 'refused', 'refused', true);
+end $$;
+
+-- The sync's own functions are the service role's alone.
+do $$
+begin
+  perform public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', '[]'::jsonb);
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: a signed-in person cannot write mail through store_mail_batch', 'denied', 'ALLOWED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: a signed-in person cannot write mail through store_mail_batch', 'denied', 'denied', true);
+end $$;
+
+do $$
+begin
+  perform public.claim_mail_sync('55555555-5555-5555-5555-555555555555', 240);
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: nor take the sync lock', 'denied', 'ALLOWED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: nor take the sync lock', 'denied', 'denied', true);
+end $$;
+
 reset role;
 
 -- ── as an ordinary EMPLOYEE (staff, not manager) ────────────────────────────

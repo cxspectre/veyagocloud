@@ -82,6 +82,15 @@ Deno.serve(async (req) => {
     const saysWho = body && Object.prototype.hasOwnProperty.call(body, 'employeeId');
     const employeeId = saysWho ? (body.employeeId ?? null) : (previous?.employee_id ?? null);
 
+    /* A connected mailbox keeps its owner. Reassigning one here — with the
+       grant still stored and the status still connected — would hand a
+       colleague's personal mailbox, its reading and its sending, to whoever
+       asked. Changing hands means disconnecting and connecting fresh. The
+       database refuses the same change from the browser (0038). */
+    if (previous && (previous.employee_id ?? null) !== employeeId) {
+      return json({ error: 'A connected mailbox keeps its owner. Disconnect it before connecting it for someone else.' }, 409);
+    }
+
     /* Who will sit at the consent screen. For a personal mailbox that is the
        mailbox itself. For a SHARED one it is not — hello@veyago.cloud has no
        sign-in, so hinting it sends the person to a prompt that cannot succeed.

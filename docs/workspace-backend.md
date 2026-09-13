@@ -4,8 +4,10 @@ The workspace is a second front end onto the **same** Supabase project as
 `/admin`, not a second database. Same auth, same `employees.role`, same anon
 key in the browser with RLS as the only boundary.
 
-Migrations `0021`–`0037`. Applied to the live project and verified there —
-see [Tests](#tests).
+Migrations `0021`–`0038`. `0021`–`0037` are applied to the live project and
+verified there — see [Tests](#tests). `0038` (sending mail) is written and
+tested locally but **not applied yet**; see
+[Going live](#going-live).
 
 The front end is a separate repo, [`cxspectre/workspaceveyago`][repo], live at
 **<https://workspace.veyago.cloud>**. `veyago.cloud/login/` links straight to
@@ -22,7 +24,9 @@ it; `veyago.cloud/workspace/` is a permanent redirect for old links.
 | CRM | `crm_companies`, `crm_contacts` | `promote_enquiry_to_crm()` graduates a `/websites/` enquiry into both |
 | Client work | `client_projects`, `tasks.project_id` | **not** `public.projects`, which is the marketing site's research projects |
 | Support | `support_tickets`, `ticket_messages` | numbered from 101, rendered `#VYG-142` |
-| Mail | `mail_threads`, `mail_messages` | written by the sync, never by the browser |
+| Mail | `mail_threads`, `mail_messages` | written by the sync, never by the browser — except a thread's `is_read` / `is_starred`, the only columns a person may change (0038) |
+| Signatures | `mail_signatures` | one per person per mailbox, private to its owner (0038) |
+| Outgoing attachments | Storage bucket `mail-attachments` | private, one folder per auth id, emptied by `send-mail` after sending (0038) |
 | Agenda | `calendar_events` | `connection_id null` = entered here; set = synced |
 | Integrations | `integration_connections`, `integration_secrets` | metadata vs. tokens, split hard |
 | Feed | `workspace_activity` | maintained by triggers, tagged `staff` / `manager` |
@@ -51,6 +55,7 @@ Two helpers do the aggregate work so a screen is one round trip:
 | Activity feed | – | `staff` rows only | all rows |
 | A studio mailbox | – | read | read |
 | A personal mailbox | – | only their own | **only their own** |
+| A mail signature | – | only their own | **only their own** |
 | `integration_secrets` | – | – | – |
 
 Two of those deserve saying out loud:
@@ -90,8 +95,9 @@ https://vtbvhhilucxroqoaohjb.supabase.co/functions/v1/microsoft-callback
 ```
 
 - **API permissions** → Add → Microsoft Graph → **Delegated**:
-  `Mail.Read`, `Mail.Send`, `Calendars.ReadWrite`, `User.Read`,
-  `offline_access`. Grant admin consent if your tenant requires it.
+  `Mail.Read`, `Mail.Send`, `Mail.ReadWrite`, `Mail.Read.Shared`,
+  `Mail.Send.Shared`, `Mail.ReadWrite.Shared`, `Calendars.ReadWrite`,
+  `User.Read`, `offline_access`. Grant admin consent if your tenant requires it.
 - **Certificates & secrets** → New client secret. Azure shows the **Value**
   exactly once — that is what you copy, not the Secret ID.
 
@@ -120,7 +126,9 @@ an employee id instead to make it personal — and personal means personal, with
 no manager override. Open the `consentUrl` it returns, approve, and the
 callback stores the grant.
 
-Then sync (`microsoft_calendar` + `sync-outlook-calendar` for the diary):
+Then run a first import by hand; after that the schedule keeps mail current
+(see [Sending mail from the workspace](#sending-mail-from-the-workspace)). The
+diary — `microsoft_calendar` + `sync-outlook-calendar` — is not scheduled yet:
 
 ```bash
 curl -X POST https://vtbvhhilucxroqoaohjb.supabase.co/functions/v1/sync-outlook-mail \
@@ -128,24 +136,26 @@ curl -X POST https://vtbvhhilucxroqoaohjb.supabase.co/functions/v1/sync-outlook-
   -d '{"connectionId":"<from step 3>","days":30,"max":200,"folder":"inbox"}'
 ```
 
-### What is asked for, and what is not
+### What is asked for, and why
 
 | Scope | Why |
 |---|---|
 | `Mail.Read` | read the inbox |
-| `Mail.Send` | reply from the studio mailbox, so it lands in Sent and threads properly |
+| `Mail.Send` | send from the mailbox, so it lands in Sent and threads properly |
+| `Mail.ReadWrite` | drafts (every workspace send is one), attachments of 3 MB and up, and read/starred state that reaches Outlook |
+| `Mail.Read.Shared`, `Mail.Send.Shared`, `Mail.ReadWrite.Shared` | the same three on a shared mailbox such as hello@veyago.cloud |
 | `Calendars.ReadWrite` | read the diary and put things in it |
 | `User.Read` | which mailbox was actually authorised |
 | `offline_access` | without it there is no refresh token at all |
 
-**Not `Mail.ReadWrite`.** Graph has no "read and mark-as-read but not delete"
-delegated scope — ReadWrite is the granularity on offer, and it carries
-permanent delete of client correspondence. The only thing it would buy is
-syncing read/flag state back to Outlook, which the workspace does without: it
-keeps that state on its own mirror. A bug that can fail to mark something read
-is a different class of problem from one that can empty a mailbox. There is a
-test that fails if the scope is ever pasted in, so that stays a decision rather
-than an accident — say the word and it is one line.
+**`Mail.ReadWrite` also permits deleting mail.** Graph has no narrower
+delegated scope that allows drafts and read state without it. It was held back
+for exactly that reason until 2026-09-13, when it was taken for sending from
+the workspace. What the grant cannot limit, the code does, twice: every Graph
+call for mail passes `_shared/graph-guard.ts`, an allowlist checked at the call,
+and `mail-safety.test.js` reads every Edge Function and migration and fails on
+any delete, purge, move or copy of a message — so deleting mail stays a
+decision, not an accident. See [Nothing deletes mail](#nothing-deletes-mail).
 
 ### Things that will bite otherwise
 
@@ -175,7 +185,7 @@ than an accident — say the word and it is one line.
   flips the connection to `needs_reauth` with the reason in `last_error`,
   rather than retrying forever.
 
-### Mercury### Mercury
+### Mercury
 
 Already built and unchanged: `sync-mercury` uses one studio-wide
 `MERCURY_API_KEY` secret and upserts into `finance_accounts` /
@@ -314,12 +324,15 @@ carries its own delete block.
 
 `send-ticket-reply` posts the message **and** sends it in one call.
 
-It sends from the **studio's connected Outlook mailbox** when there is one: the
-reply lands in Sent where anyone can see the customer was answered, and their
-client threads it with the rest of the conversation instead of starting a new
-one. With no mailbox connected — or if Graph refuses — it falls back to Resend,
-the path invites and invoices already use. Losing a reply is worse than sending
-it from the wrong place. The response says which was used (`via`).
+It sends from a **connected studio mailbox** when there is one: the reply lands
+in Sent where anyone can see the customer was answered, and their client
+threads it with the rest of the conversation instead of starting a new one.
+Never from a personal mailbox (`pickTicketMailbox()`): the query used to take
+any connected mailbox, so with the studio's disconnected a customer could be
+answered from someone's private address. With no studio mailbox — or if Graph
+refuses — it falls back to Resend, the path invites and invoices already use.
+Losing a reply is worse than sending it from the wrong place. The response says
+which was used (`via`).
 
 The insert runs as the **caller**, through the anon key with their own JWT, so
 RLS still decides whether they may post and whose name goes on it. Only the
@@ -419,12 +432,146 @@ workspace inserts a local event itself through the RLS policy that exists for
 exactly that. The toast says which happened, because an event only the
 workspace knows about is a different thing from one that is now on your phone.
 
+## Sending mail from the workspace
+
+Migration `0038` and three functions. **Written and unit-tested, not deployed
+yet** — the checklist is at the end of this section.
+
+### send-mail
+
+New mail, reply, reply-all and forward, from any mailbox the caller can read
+(`can_read_connection()`: the studio's, and their own).
+
+```
+POST /functions/v1/send-mail
+{ "connectionId", "mode": "new" | "reply" | "replyAll" | "forward",
+  "messageId"?, "to"?, "cc"?, "bcc"?, "subject"?, "html",
+  "importance"?: "low" | "normal" | "high",
+  "attachments"?: [{ "path", "name", "size", "contentType" }] }
+→ { ok, sent, mailbox, threadId, stored }
+```
+
+Every send is a **draft first**: created (for a reply, by Outlook, with the
+original quoted and the threading headers set), filled in, given its
+attachments, then sent. Graph's one-shot `sendMail` cannot carry an attachment
+of 3 MB or more, and a reply made that way loses Outlook's quoting. A failure
+after the draft exists leaves it in **Drafts**, where it can be finished in
+Outlook, and the response says so.
+
+- The request is checked in full before anything reaches Graph
+  (`_shared/mail-send.ts`): addresses de-duplicated across To/Cc/Bcc, at most
+  500 recipients, 20 attachments and 25 MB, outgoing HTML stripped of scripts
+  and handlers, and a reply whose recipients were all removed refused.
+- **Attachments go to Storage first** (`mail-attachments`, private), and
+  `send-mail` reads every one of them **as the caller**, before any draft
+  exists. A path is exactly `<auth id>/<upload id>/<plain name>`, nothing
+  percent-encoded: fetch resolves `%2e%2e` to `..` before a request leaves, so a
+  path starting with your own id could otherwise end in someone else's folder.
+  The storage policy then says the same thing again. From 3 MB a file goes
+  through an upload session. (Why Storage at all: an Edge Function has two
+  seconds of CPU, not enough to parse 25 MB of base64 out of a JSON body.)
+- Only a mailbox that is `connected`, or retrying after an `error`, sends. A
+  reply comes from the mailbox the message arrived in; Graph ids belong to one
+  mailbox. A shared mailbox that lets the consenting account read but not
+  *Send As* gets told exactly that, not "reconnect".
+- After sending, the sent copy is read back from Sent Items **by its
+  Message-ID** and stored through the sync's own path, so the conversation
+  shows it at once and the next sync finds the row already right.
+
+### Nothing deletes mail
+
+`Mail.ReadWrite` would allow it, so it is refused twice. **At runtime**, every
+Graph call for mail goes through `graphRequest()`, which asks
+`_shared/graph-guard.ts` first: an allowlist of reads, drafts, attachments,
+sends and read/flag changes. A call assembled from variables cannot talk its way
+past it, and an attachment upload may only go to the session Graph issued.
+**In source**, `mail-safety.test.js` fails on any delete, purge, move or copy in
+a function or a migration, and checks the guard is actually wired in.
+
+### update-mail-state
+
+Read and starred now reach Outlook. The change goes to Graph first, then to
+the stored messages, then to the thread — as the caller, through a column grant
+that allows exactly `is_read` and `is_starred`. (0038 revoked the rest: the 0025
+policy let anyone who could read a studio thread move it into their own
+mailbox.) Un-starring clears every flag in the conversation, because a thread is
+starred while any of its messages is flagged. A mailbox connected before
+`Mail.ReadWrite` answers 403; the change still lands here, and the response says
+Outlook did not get it.
+
+### Mail syncs itself
+
+Every five minutes `pg_cron` sends **one request per connected mailbox** to
+`sync-mail-scheduled`, so a slow mailbox cannot use up the others' time. Each run
+is incremental — what changed since the last, by `lastModifiedDateTime`, oldest
+first — and when there is more than one run takes, it records how far it got so
+the next run carries on instead of skipping. A per-mailbox lock
+(`claim_mail_sync`) keeps the schedule, a manual sync and a long run from
+overlapping.
+
+Everything is stored through `store_mail_batch()`, one call per batch, which
+upserts the messages and brings each conversation in line with **every** message
+it holds, in one statement: the inbox wins (a reply of ours found in Sent never
+moves a conversation), unread while anything from outside is unread, starred
+while anything is flagged. Decided per batch in the function, those went wrong:
+overlapping runs wrote each other's stale state back, and a batch that did not
+happen to contain the unread message marked the thread read. Mail found in Sent
+is always ours, so a reply sent *as* hello@ from a personal mailbox is never
+filed onto a ticket as the customer's words.
+
+The function is deployed `--no-verify-jwt` and checks an `x-sync-secret` header
+instead: a schedule has no user to sign in as, and should not be handed the
+service-role key. A failure marks a mailbox `needs_reauth` — which takes it off
+the schedule — only when a reconnect would fix it: a refused grant, missing
+credentials. Anything else is `error`, which the schedule retries.
+
+### A mailbox keeps its owner
+
+Managers may write `integration_connections`, and that used to include
+`employee_id`: point a colleague's personal mailbox at yourself and
+`can_read_connection()` would hand you their mail — and now their sending. 0038
+adds a trigger that refuses the change from the browser, and `microsoft-connect`
+refuses it for a mailbox that is already connected. Changing hands means
+disconnecting and connecting fresh.
+
+### Going live
+
+`0038` needs **Postgres 15 or later** (`unique nulls not distinct`). Check first,
+read-only: `show server_version;` in the SQL editor.
+
+```bash
+supabase db push                                   # 0038
+supabase functions deploy send-mail update-mail-state sync-outlook-mail \
+  send-ticket-reply microsoft-connect
+supabase functions deploy sync-mail-scheduled --no-verify-jwt
+supabase secrets set MAIL_SYNC_SECRET=$(openssl rand -hex 32)
+```
+
+Then once, in the SQL editor, with the same secret value — never committed:
+
+```sql
+select vault.create_secret('https://vtbvhhilucxroqoaohjb.supabase.co', 'project_url');
+select vault.create_secret('<MAIL_SYNC_SECRET>', 'mail_sync_secret');
+```
+
+**Then reconnect every mailbox** through `microsoft-connect`. A grant carries
+only the scopes it was consented with, so `Mail.ReadWrite` arrives with the next
+consent; until then `send-mail` answers 409 with `reconnect: true`. Add
+`Mail.ReadWrite` and `Mail.ReadWrite.Shared` under **API permissions** in Entra
+ID first. A reconnect keeps the mailbox's owner and consenting account, so
+`employeeId` no longer has to be repeated — leaving it out used to turn a
+personal mailbox into a shared one.
+
 ## What is still not built
 
-- **Scheduled sync.** `sync-outlook-mail` and `sync-outlook-calendar` are called by
-  hand. A `pg_cron` job is the next step.
-- **Attachments**, on either tickets or mail.
+- **Compose in the workspace.** `send-mail` and `update-mail-state` exist; the
+  Mail view does not call them yet, so compose still sends nothing.
+- **Scheduled calendar sync.** Mail syncs itself every five minutes;
+  `sync-outlook-calendar` is still called by hand.
+- **Attachments on tickets.** Mail can carry them; tickets cannot.
+- **Cleaning up unsent uploads.** `send-mail` removes a message's files from
+  `mail-attachments` once it is sent. Files uploaded for a message that was
+  never sent — the compose window closed, or the send failed — stay until
+  someone removes them.
 - **Invoice creation** from the workspace — Finance reads `finance_invoices`,
   which is still written from `/admin`.
-- **Outbound mail outside a ticket.** Compose in the Mail view still saves
-  nothing; replies go out only through `send-ticket-reply`.

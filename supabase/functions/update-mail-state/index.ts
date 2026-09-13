@@ -3,16 +3,19 @@
  * Before Mail.ReadWrite, the workspace kept read and starred on its own
  * mirror, and every sync put Outlook's version back — so a conversation read
  * in the workspace was unread again five minutes later. Now the change goes
- * to Outlook first, and the sync agrees with it.
+ * to Outlook first, then to the stored messages, then to the thread.
  *
- * Outlook tracks read per message and a thread is unread while any message
- * from outside is (mail-store.ts), so marking read touches each of those.
- * Starred is Outlook's flag, on the newest message from outside — the one the
- * inbox sync reads it from.
+ * The thread's state is derived from its messages (store_mail_batch, 0038):
+ * unread while any message from outside is unread, starred while any message
+ * is flagged. So marking read touches every message from outside; starring
+ * flags the newest one; un-starring clears every flag in the conversation —
+ * clearing only the newest let the next sync find an older flag and star the
+ * thread again.
  *
  * A mailbox connected before Mail.ReadWrite answers 403. The change still
  * lands here and the caller is told Outlook did not get it, rather than the
- * star refusing to work until someone reconnects.
+ * star refusing to work until someone reconnects. A message that has moved in
+ * Outlook since the last sync is skipped, not a reason to stop.
  *
  * Deploy:  supabase functions deploy update-mail-state
  * Body:    { "threadId": "...", "read"?: boolean, "starred"?: boolean }
@@ -25,8 +28,8 @@ import { mailboxPath } from '../_shared/mailbox.ts';
 import { GRAPH, GraphError, graphRequest } from '../_shared/mail-sync.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/* A thread with more unread messages than this is marked in Outlook as far
-   as this goes; the database change is whole either way. */
+/* A thread with more messages to change than this is changed in Outlook as
+   far as this goes; the database change is whole either way. */
 const MAX_MESSAGES = 50;
 
 const CORS = {
@@ -40,6 +43,8 @@ function json(body: unknown, status = 200): Response {
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   });
 }
+
+interface StoredMessage { id: string; external_id: string; direction: string; is_flagged: boolean }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -76,42 +81,65 @@ Deno.serve(async (req) => {
       .select('id, account_label, external_id, status')
       .eq('id', thread.connection_id)
       .maybeSingle();
-    const { data: messages } = await admin
+    const { data: stored } = await admin
       .from('mail_messages')
-      .select('external_id, direction')
+      .select('id, external_id, direction, is_flagged')
       .eq('thread_id', threadId)
       .order('sent_at', { ascending: false });
-    const inbound = (messages ?? []).filter((m) => m.direction === 'inbound');
+    const messages: StoredMessage[] = stored ?? [];
+    const inbound = messages.filter((m) => m.direction === 'inbound');
+
+    /* Which messages change, and how. */
+    const readTargets = read === undefined ? [] : inbound;
+    const flagOn = inbound[0] ?? messages[0];
+    const flagTargets = starred === undefined ? []
+      : starred ? (flagOn ? [flagOn] : [])
+      : messages.filter((m) => m.is_flagged || m === flagOn);
 
     let outlook = true;
     let reason: string | null = null;
+    let moved = 0;
     try {
-      if (!conn || conn.status === 'needs_reauth') throw new GraphError(401, 'mailbox needs reconnecting');
+      if (!conn || !['connected', 'error'].includes(conn.status)) throw new GraphError(401, 'mailbox not connected');
       const token = await accessTokenFor(admin, conn.id);
       const box = `${GRAPH}${mailboxPath(conn)}`;
-      const patch = (externalId: string, change: unknown) =>
-        graphRequest(`${box}/messages/${encodeURIComponent(externalId)}`, token, { method: 'PATCH', body: change });
-
-      if (read !== undefined) {
-        for (const m of inbound.slice(0, MAX_MESSAGES)) await patch(m.external_id, { isRead: read });
+      const patch = async (m: StoredMessage, change: unknown) => {
+        try {
+          await graphRequest(`${box}/messages/${encodeURIComponent(m.external_id)}`, token, { method: 'PATCH', body: change });
+        } catch (err) {
+          /* Moved in Outlook since the last sync: skip it, keep going. */
+          if (err instanceof GraphError && err.status === 404) { moved += 1; return; }
+          throw err;
+        }
+      };
+      for (const m of readTargets.slice(0, MAX_MESSAGES)) await patch(m, { isRead: read });
+      for (const m of flagTargets.slice(0, MAX_MESSAGES)) {
+        await patch(m, { flag: { flagStatus: starred ? 'flagged' : 'notFlagged' } });
       }
-      const flagOn = inbound[0] ?? (messages ?? [])[0];
-      if (starred !== undefined && flagOn) {
-        await patch(flagOn.external_id, { flag: { flagStatus: starred ? 'flagged' : 'notFlagged' } });
-      }
+      if (moved) reason = `${moved} message${moved === 1 ? ' has' : 's have'} moved in Outlook since the last sync.`;
     } catch (err) {
       if (err instanceof GraphError && (err.status === 401 || err.status === 403)) {
         outlook = false;
         reason = 'Reconnect this mailbox for read and starred to reach Outlook — until then the next sync may undo it.';
-      } else if (err instanceof GraphError && err.status === 404) {
-        outlook = false;
-        reason = 'The message has moved in Outlook since the last sync.';
       } else {
         return json({ error: `Outlook did not take the change: ${String((err as Error).message || err)}` }, 502);
       }
     }
 
-    /* As the caller: the column grant (0038) allows exactly these two. */
+    /* The stored messages, which the thread's state is derived from. The
+       browser has no write on mail_messages; this is the service role. */
+    if (read !== undefined && readTargets.length) {
+      const { error } = await admin.from('mail_messages')
+        .update({ is_read: read }).in('id', readTargets.map((m) => m.id));
+      if (error) return json({ error: error.message }, 500);
+    }
+    if (starred !== undefined && flagTargets.length) {
+      const { error } = await admin.from('mail_messages')
+        .update({ is_flagged: starred }).in('id', flagTargets.map((m) => m.id));
+      if (error) return json({ error: error.message }, 500);
+    }
+
+    /* The thread, as the caller: the column grant (0038) allows exactly these two. */
     const changes = {
       ...(read !== undefined ? { is_read: read } : {}),
       ...(starred !== undefined ? { is_starred: starred } : {}),

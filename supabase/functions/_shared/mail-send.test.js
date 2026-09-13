@@ -20,6 +20,8 @@ test.before(async () => {
 const CONN = 'c0000000-0000-4000-8000-00000000000b';
 const MSG = 'e0000000-0000-4000-8000-000000000001';
 const USER = 'a0000000-0000-4000-8000-000000000001';
+const VICTIM = 'b0000000-0000-4000-8000-000000000002';
+const UPLOAD = 'f0000001-0000-4000-8000-000000000000';
 
 function ok(payload) {
   const result = m.parseSendRequest(payload);
@@ -60,6 +62,12 @@ test('replies and forwards name the message they answer; a reply may leave To to
   refused({ connectionId: CONN, mode: 'delete', messageId: MSG, html: '<p>x</p>' }, /mode/);
 });
 
+test('a reply that removes every recipient is refused before Outlook sees it', () => {
+  refused({ connectionId: CONN, mode: 'reply', messageId: MSG, to: [], html: '<p>x</p>' }, /recipient/);
+  refused({ connectionId: CONN, mode: 'replyAll', messageId: MSG, to: [], cc: [], bcc: [], html: '<p>x</p>' }, /recipient/);
+  ok({ connectionId: CONN, mode: 'reply', messageId: MSG, to: [], cc: ['pm@client.com'], html: '<p>x</p>' });
+});
+
 test('addresses are trimmed, de-duplicated across fields, and a bad one is named', () => {
   const v = ok(newMail({
     to: [' Anna@Client.com ', 'anna@client.com'],
@@ -85,24 +93,49 @@ test('importance defaults to normal and refuses anything else', () => {
 
 const file = (n, size) => ({
   path: `${USER}/f000000${n}-0000-4000-8000-000000000000/plan.pdf`,
-  name: 'plan.pdf', size, contentType: 'application/pdf',
+  name: 'Plan (final).pdf', size, contentType: 'application/pdf',
 });
 
 test('attachments are counted, capped, and are something to send on their own', () => {
   const v = ok(newMail({ html: '', attachments: [file(1, 1000)] }));
   assert.equal(v.attachments.length, 1);
-  assert.equal(v.attachments[0].name, 'plan.pdf');
+  assert.equal(v.attachments[0].name, 'Plan (final).pdf', 'the display name travels apart from the path');
   refused(newMail({ attachments: [{ ...file(1, 10), path: '../etc/passwd' }] }), /attachment/);
   refused(newMail({ attachments: [{ ...file(1, 10), size: -1 }] }), /attachment/);
   refused(newMail({ attachments: [file(1, 20 * 1024 * 1024), file(2, 6 * 1024 * 1024)] }), /25 MB/);
   refused(newMail({ attachments: Array.from({ length: 21 }, (_, i) => file(i % 9, 10)) }), /20 attachments/);
 });
 
-test('an upload belongs to the person whose folder it is in', () => {
-  assert.equal(m.ownsAttachment(`${USER}/x/plan.pdf`, USER), true);
-  assert.equal(m.ownsAttachment('someone-else/x/plan.pdf', USER), false);
-  assert.equal(m.ownsAttachment(`${USER}/../other/plan.pdf`, USER), false);
-  assert.equal(m.ownsAttachment(`${USER}/x/plan.pdf`, ''), false);
+test('an upload path is exactly <your id>/<upload id>/<plain name>', () => {
+  assert.equal(m.ownsAttachment(`${USER}/${UPLOAD}/plan.pdf`, USER), true);
+  assert.equal(m.ownsAttachment(`${USER.toUpperCase()}/${UPLOAD}/plan.pdf`, USER), true,
+    'ids compare without regard to case');
+  assert.equal(m.ownsAttachment(`${USER}/${UPLOAD}/plan.pdf`, ''), false);
+  assert.equal(m.ownsAttachment(`${USER}/${UPLOAD}/plan.pdf`, 'not-a-uuid'), false);
+});
+
+test('a path that starts with your id but walks into someone else\'s folder is refused', () => {
+  /* fetch resolves %2e%2e to .. BEFORE the request is sent, so this path —
+     which begins with the caller's own id — used to download the victim's file. */
+  for (const bad of [
+    `${USER}/${UPLOAD}/%2e%2e/%2e%2e/${VICTIM}/${UPLOAD}/contract.pdf`,
+    `${USER}/x/%2e%2e/%2e%2e/${VICTIM}/${UPLOAD}/contract.pdf`,
+    `${USER}/${UPLOAD}/.%2E`,
+    `${USER}/${UPLOAD}/..`,
+    `${USER}/${UPLOAD}/.`,
+    `${USER}/${UPLOAD}/a%2Fb.pdf`,
+    `${USER}/${UPLOAD}/a?b.pdf`,
+    `${USER}/${UPLOAD}/a#b.pdf`,
+    `${USER}/${UPLOAD}/sub/plan.pdf`,
+    `${USER}/x/plan.pdf`,
+    `/${USER}/${UPLOAD}/plan.pdf`,
+    `${VICTIM}/${UPLOAD}/plan.pdf`,
+    'someone-else/x/plan.pdf',
+  ]) {
+    assert.equal(m.ownsAttachment(bad, USER), false, bad);
+  }
+  refused(newMail({ attachments: [{ ...file(1, 10), path: `${USER}/${UPLOAD}/%2e%2e/%2e%2e/${VICTIM}/${UPLOAD}/c.pdf` }] }),
+    /attachment/);
 });
 
 test('outgoing html loses scripts, handlers and javascript: links, and keeps its formatting', () => {

@@ -6,10 +6,11 @@
  * of 3 MB or more, and a reply made that way loses Outlook's quoting.
  *
  * What a failure leaves behind depends on when it happens, so the order is
- * deliberate. Nothing touches Graph until the request is checked in full
- * (_shared/mail-send.ts). A failure after the draft exists leaves it in the
- * mailbox's Drafts, where it can be finished in Outlook — this function never
- * deletes anything, which mail-safety.test.js enforces.
+ * deliberate. Nothing touches Graph until the request is checked in full and
+ * every attachment has been read — as the caller, so the storage policy decides
+ * whose files they are. A failure after the draft exists leaves it in the
+ * mailbox's Drafts, where it can be finished in Outlook; nothing here deletes
+ * anything (graph-guard.ts, mail-safety.test.js).
  *
  * After sending, the sent copy is read back from Sent Items by its Message-ID
  * and stored through the path the sync uses, so the conversation shows the
@@ -22,12 +23,13 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { accessTokenFor } from '../_shared/graph-token.ts';
+import { assertUploadCall } from '../_shared/graph-guard.ts';
 import { MESSAGE_SELECT } from '../_shared/graph-message.ts';
 import { draftMessagePayload, fileAttachmentPayload, uploadRanges, uploadSessionPayload } from '../_shared/graph-write.ts';
 import { mailboxPath } from '../_shared/mailbox.ts';
 import {
   attachmentPlan, ownsAttachment, parseSendRequest, prependToBody, sanitizeOutgoingHtml,
-  type SendRequest,
+  type AttachmentRef, type SendRequest,
 } from '../_shared/mail-send.ts';
 import { GRAPH, GraphError, graphRequest, storeMessages, type MailConnection } from '../_shared/mail-sync.ts';
 import { bytesToBase64 } from '../_shared/bytes.ts';
@@ -38,6 +40,9 @@ const BUCKET = 'mail-attachments';
 const SENT_COPY_ATTEMPTS = 4;
 const SENT_COPY_WAIT_MS = 1500;
 const CREATE_DRAFT = { reply: 'createReply', replyAll: 'createReplyAll', forward: 'createForward' } as const;
+/* One message whatever went wrong with an attachment: saying "not found" for
+   one and "wrong size" for another would tell a caller which files exist. */
+const UNREADABLE_ATTACHMENT = 'An attachment could not be read. Remove it and add it again.';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -53,19 +58,53 @@ function json(body: unknown, status = 200): Response {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/* 401/403 from Graph on a mailbox connected before Mail.ReadWrite: the grant
-   can send, but not create a draft. That is a reconnect, not an outage. */
-function refusal(err: unknown, fallback: string): Response {
-  if (err instanceof GraphError && (err.status === 401 || err.status === 403)) {
-    return json({ error: 'This mailbox needs reconnecting before it can send from the workspace.', reconnect: true }, 409);
+/* What to tell the person, by what Graph actually said. */
+function refusal(err: unknown, fallback: string, mailbox: MailConnection): { status: number; body: Record<string, unknown> } {
+  const message = String((err as Error).message || err);
+  if (/SendAsDenied/i.test(message)) {
+    return {
+      status: 403,
+      body: {
+        error: `${mailbox.account_label} does not let ${mailbox.external_id || 'the connected account'} send as it. `
+          + 'In Exchange, give that account Send As on the mailbox.',
+      },
+    };
   }
-  return json({ error: `${fallback}: ${String((err as Error).message || err)}` }, 502);
+  if (err instanceof GraphError && (err.status === 401 || err.status === 403)) {
+    return {
+      status: 409,
+      body: { error: 'This mailbox needs reconnecting before it can send from the workspace.', reconnect: true },
+    };
+  }
+  return { status: 502, body: { error: `${fallback}: ${message}` } };
 }
 
 // deno-lint-ignore no-explicit-any
 type Admin = any;
 // deno-lint-ignore no-explicit-any
+type Caller = any;
+// deno-lint-ignore no-explicit-any
 type Draft = any;
+
+interface LoadedFile extends AttachmentRef {
+  bytes: Uint8Array;
+}
+
+/* Every attachment, read before anything exists in Graph — as the caller, so
+   the storage select policy (own folder only) is the last word on whose file
+   it is. A missing or changed file would otherwise be found only after the
+   draft was made, leaving one more draft behind on every retry. */
+async function loadAttachments(asCaller: Caller, files: AttachmentRef[]): Promise<LoadedFile[] | null> {
+  const loaded: LoadedFile[] = [];
+  for (const file of files) {
+    const { data: blob, error } = await asCaller.storage.from(BUCKET).download(file.path);
+    if (error || !blob) return null;
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    if (bytes.length !== file.size) return null;
+    loaded.push({ ...file, bytes });
+  }
+  return loaded;
+}
 
 async function createDraft(
   box: string, token: string, request: SendRequest, html: string,
@@ -100,35 +139,32 @@ async function createDraft(
   });
 }
 
-async function attachFiles(admin: Admin, box: string, token: string, draftId: string, request: SendRequest): Promise<void> {
-  for (const file of attachmentPlan(request.attachments)) {
-    const { data: blob, error } = await admin.storage.from(BUCKET).download(file.path);
-    if (error || !blob) throw new Error(`Could not read the attachment "${file.name}"`);
-    const bytes = new Uint8Array(await blob.arrayBuffer());
-    if (bytes.length !== file.size) throw new Error(`The attachment "${file.name}" is not the file that was added`);
-
-    const attachments = `${box}/messages/${encodeURIComponent(draftId)}/attachments`;
+async function attachFiles(box: string, token: string, draftId: string, files: LoadedFile[]): Promise<void> {
+  const attachments = `${box}/messages/${encodeURIComponent(draftId)}/attachments`;
+  for (const file of attachmentPlan(files)) {
     if (file.method === 'inline') {
       await graphRequest(attachments, token, {
         method: 'POST',
-        body: fileAttachmentPayload({ name: file.name, contentType: file.contentType, contentBase64: bytesToBase64(bytes) }),
+        body: fileAttachmentPayload({ name: file.name, contentType: file.contentType, contentBase64: bytesToBase64(file.bytes) }),
       });
       continue;
     }
 
     /* From 3 MB: an upload session, in ranges. The upload URL is
-       pre-authenticated — sending our token to it as well is refused. */
+       pre-authenticated — sending our token to it as well is refused — and it
+       must be the Outlook attachment session Graph created, nowhere else. */
     const session = await graphRequest(`${attachments}/createUploadSession`, token, {
-      method: 'POST', body: uploadSessionPayload({ name: file.name, size: bytes.length }),
+      method: 'POST', body: uploadSessionPayload({ name: file.name, size: file.bytes.length }),
     });
-    for (const range of uploadRanges(bytes.length)) {
+    assertUploadCall(session?.uploadUrl);
+    for (const range of uploadRanges(file.bytes.length)) {
       const res = await fetch(session.uploadUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/octet-stream',
-          'Content-Range': `bytes ${range.start}-${range.end}/${bytes.length}`,
+          'Content-Range': `bytes ${range.start}-${range.end}/${file.bytes.length}`,
         },
-        body: bytes.subarray(range.start, range.end + 1),
+        body: file.bytes.subarray(range.start, range.end + 1),
       });
       if (!res.ok) throw new GraphError(res.status, `uploading "${file.name}": ${(await res.text()).slice(0, 200)}`);
     }
@@ -187,13 +223,19 @@ Deno.serve(async (req) => {
       .eq('id', request.connectionId)
       .maybeSingle();
     if (!conn || conn.provider !== 'microsoft_mail') return json({ error: 'That is not a mailbox' }, 400);
-    if (conn.status === 'needs_reauth') {
+    /* Only a mailbox that is working. A disconnected row can still have a
+       stored grant, and sending on it would bypass whoever disconnected it. */
+    if (!['connected', 'error'].includes(conn.status)) {
       return json({ error: 'This mailbox needs reconnecting before it can send.', reconnect: true }, 409);
     }
 
-    /* Checked against the caller, never taken from the request. */
-    const foreign = request.attachments.find((a) => !ownsAttachment(a.path, userData.user.id));
-    if (foreign) return json({ error: `The attachment "${foreign.name}" is not yours to send` }, 403);
+    /* Checked against the caller, never taken from the request — then read
+       as the caller, below, so the storage policy agrees or nothing is sent. */
+    if (request.attachments.some((a) => !ownsAttachment(a.path, userData.user.id))) {
+      return json({ error: UNREADABLE_ATTACHMENT }, 400);
+    }
+    const files = await loadAttachments(asCaller, request.attachments);
+    if (!files) return json({ error: UNREADABLE_ATTACHMENT }, 400);
 
     /* The message being answered, read as the caller so RLS decides whether
        they may see it. Graph ids belong to one mailbox, so it has to be this
@@ -222,17 +264,17 @@ Deno.serve(async (req) => {
     try {
       draft = await createDraft(box, token, request, html, originalExternalId, given);
     } catch (err) {
-      return refusal(err, 'The message could not be created');
+      const r = refusal(err, 'The message could not be created', conn);
+      return json(r.body, r.status);
     }
 
     try {
-      await attachFiles(admin, box, token, draft.id, request);
+      await attachFiles(box, token, draft.id, files);
       await graphRequest(`${box}/messages/${encodeURIComponent(draft.id)}/send`, token, { method: 'POST', body: {} });
     } catch (err) {
-      const response = refusal(err, 'The message was not sent');
+      const r = refusal(err, 'The message was not sent', conn);
       /* Say where it is: in Drafts, finished in Outlook with one click. */
-      const body = await response.json();
-      return json({ ...body, error: `${body.error} It is saved in Drafts in Outlook.`, draftSaved: true }, response.status);
+      return json({ ...r.body, error: `${r.body.error} It is saved in Drafts in Outlook.`, draftSaved: true }, r.status);
     }
 
     /* Sent. Everything below is tidying up, and none of it may turn a sent
@@ -245,7 +287,7 @@ Deno.serve(async (req) => {
       : null;
 
     if (request.attachments.length) {
-      const { error: removeErr } = await admin.storage.from(BUCKET).remove(request.attachments.map((a) => a.path));
+      const { error: removeErr } = await asCaller.storage.from(BUCKET).remove(request.attachments.map((a) => a.path));
       if (removeErr) console.warn('[send-mail] uploads not removed:', removeErr.message);
     }
 

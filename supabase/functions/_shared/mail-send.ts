@@ -23,15 +23,23 @@ export type Importance = 'low' | 'normal' | 'high';
 
 const MODES: string[] = ['new', 'reply', 'replyAll', 'forward'];
 const IMPORTANCE: string[] = ['low', 'normal', 'high'];
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PART = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+const UUID = new RegExp(`^${UUID_PART}$`, 'i');
 /* Deliberately loose, like decideSend() in ticket-reply.ts: validation that
    tries to be clever rejects real addresses, and a bounce is a better failure
    than a refusal to try. */
 const ADDRESS = /^[^@\s]+@[^@\s.]+\.[^@\s]+$/;
 
+/* <auth user id>/<upload id>/<object name>, and nothing else. The object name
+   is the browser's plain version of the file name — letters, digits, dot,
+   dash, underscore — and the name a person sees travels separately. Nothing
+   percent-encoded: fetch resolves %2e%2e to .. BEFORE the request is sent, so
+   a path that begins with your own id could end in somebody else's folder. */
+const ATTACHMENT_PATH = new RegExp(`^(${UUID_PART})/(${UUID_PART})/([A-Za-z0-9._-]{1,200})$`, 'i');
+
 export interface AttachmentRef {
-  path: string;          // <auth user id>/<upload id>/<file name> in the mail-attachments bucket
-  name: string;
+  path: string;          // see ATTACHMENT_PATH, in the mail-attachments bucket
+  name: string;          // what the recipient sees
   size: number;
   contentType: string;
 }
@@ -53,6 +61,12 @@ export type Parsed = { ok: true; value: SendRequest } | { ok: false; error: stri
 
 const fail = (error: string): Parsed => ({ ok: false, error });
 
+function pathShape(path: string): RegExpExecArray | null {
+  const match = ATTACHMENT_PATH.exec(String(path || ''));
+  /* "." and ".." are made only of allowed characters, and mean something else. */
+  return match && !/^\.+$/.test(match[3]) ? match : null;
+}
+
 /* One address field. `taken` is what earlier fields already hold, so an
  * address in To is not repeated in Cc, nor one in Cc in Bcc. */
 function addressField(value: unknown, label: string, taken: string[]): { list: string[] } | { error: string } {
@@ -67,8 +81,6 @@ function addressField(value: unknown, label: string, taken: string[]): { list: s
   };
 }
 
-const SAFE_PATH = /^[^/\\]+(\/[^/\\]+){2,}$/;
-
 function attachmentList(value: unknown): { list: AttachmentRef[] } | { error: string } {
   if (value === undefined || value === null) return { list: [] };
   if (!Array.isArray(value)) return { error: 'Attachments must be a list' };
@@ -82,12 +94,8 @@ function attachmentList(value: unknown): { list: AttachmentRef[] } | { error: st
     size: Number(a?.size),
     contentType: String(a?.contentType || 'application/octet-stream'),
   }));
-  const bad = list.find((a) =>
-    !SAFE_PATH.test(a.path)
-    || a.path.split('/').some((part) => part === '..' || part === '.')
-    || !a.name
-    || !Number.isInteger(a.size) || a.size <= 0);
-  if (bad) return { error: `The attachment "${bad.name || bad.path}" is not one that was uploaded` };
+  const bad = list.find((a) => !pathShape(a.path) || !a.name || !Number.isInteger(a.size) || a.size <= 0);
+  if (bad) return { error: `The attachment "${bad.name || 'unnamed'}" is not one that was uploaded` };
   const total = list.reduce((sum, a) => sum + a.size, 0);
   if (total > LIMITS.attachmentBytes) return { error: 'Attachments come to more than 25 MB' };
   return { list };
@@ -122,12 +130,14 @@ export function parseSendRequest(input: unknown): Parsed {
   if ('error' in cc) return fail(cc.error);
   const bcc = addressField(p.bcc, 'Bcc', [...to.list, ...cc.list].map((a) => a.toLowerCase()));
   if ('error' in bcc) return fail(bcc.error);
-  if (to.list.length + cc.list.length + bcc.list.length > LIMITS.recipients) {
-    return fail(`At most ${LIMITS.recipients} recipients per message`);
-  }
+  const recipients = to.list.length + cc.list.length + bcc.list.length;
+  if (recipients > LIMITS.recipients) return fail(`At most ${LIMITS.recipients} recipients per message`);
   /* A reply can leave To to Outlook, which fills in whoever is being
-     answered. A new message or a forward has nobody unless we say. */
+     answered. A new message or a forward has nobody unless we say — and a
+     reply whose recipients were all removed has nobody either: Outlook would
+     be told to send to no one, refuse, and leave a draft behind. */
   if ((mode === 'new' || mode === 'forward') && !to.list.length) return fail('Add at least one recipient');
+  if (answering && Array.isArray(p.to) && !recipients) return fail('Add at least one recipient');
 
   const subject = String(p.subject ?? '').trim();
   if (mode === 'new' && !subject) return fail('Add a subject');
@@ -157,21 +167,19 @@ export function parseSendRequest(input: unknown): Parsed {
   };
 }
 
-/* Uploads live under the uploader's auth id. Checked against the CALLER, not
- * taken from the request, so nobody can attach a file from another person's
- * folder by naming its path. */
+/* An upload belongs to the auth id its path starts with. Checked against the
+ * CALLER, never taken from the request — and send-mail also downloads as the
+ * caller, so the storage policy says no even if this ever said yes. */
 export function ownsAttachment(path: string, userId: string): boolean {
-  const parts = String(path || '').split('/');
-  return Boolean(userId)
-    && parts.length >= 3
-    && parts[0] === userId
-    && !parts.some((part) => part === '' || part === '.' || part === '..');
+  const match = pathShape(path);
+  return Boolean(match && UUID.test(String(userId || '')) && match[1].toLowerCase() === String(userId).toLowerCase());
 }
 
 /* Defence in depth for what we send, not a full sanitiser: the compose editor
  * cleans with DOMPurify before this sees anything. This removes what should
  * never leave the studio under our name even if that step were bypassed —
- * scripts, embedded frames and forms, event handlers, script URLs. */
+ * scripts, embedded frames and forms, event handlers, script URLs. It is not
+ * a boundary; do not rely on it as one. */
 export function sanitizeOutgoingHtml(html: string): string {
   return String(html || '')
     .replace(/<(script|style|iframe|object|embed|form|button|select|textarea)\b[\s\S]*?<\/\1\s*>/gi, '')

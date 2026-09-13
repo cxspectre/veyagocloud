@@ -1,8 +1,8 @@
-/* Tests for _shared/mail-store.ts — the rules a sync follows when it sees a
-   conversation again. A thread is one row per conversation, but Graph returns
-   a conversation's messages from whichever folder they sit in; without these
-   rules, syncing Sent Items pulls every conversation we have replied to out of
-   the inbox, and a thread reads as "read" because its newest message is ours. */
+/* Tests for _shared/mail-store.ts — the decisions a sync makes around storing
+   mail. Which folder a conversation belongs in and whether it is read are made
+   in the database (store_mail_batch, 0038), atomically and from every stored
+   message, and tested in supabase/tests/03-sync-path.sql. What stays here is
+   what the function decides before and after that call. */
 'use strict';
 
 const test = require('node:test');
@@ -17,38 +17,46 @@ test.before(async () => {
   m = await import('data:text/javascript,' + encodeURIComponent(stripTypeScriptTypes(src)));
 });
 
-test('mail from outside keeps a conversation in the inbox', () => {
-  assert.equal(m.mergedFolder('inbox', 'sent'), 'inbox',
-    'our reply sitting in Sent must not pull the conversation out of the inbox');
-  assert.equal(m.mergedFolder('sent', 'inbox'), 'inbox',
-    'an answer to something we sent lands in the inbox');
+test('a refused grant needs a person to reconnect; anything else is worth retrying', () => {
+  assert.equal(m.failureStatus('Microsoft refused the refresh: AADSTS70000: invalid_grant'), 'needs_reauth');
+  assert.equal(m.failureStatus('Microsoft refused the refresh: interaction_required'), 'needs_reauth');
+  assert.equal(m.failureStatus('That connection has no credentials. Connect it again.'), 'needs_reauth');
+  assert.equal(m.failureStatus('That connection cannot refresh itself. Connect it again.'), 'needs_reauth');
+  assert.equal(m.failureStatus('Could not read the credentials: connection reset'), 'error',
+    'a database hiccup is not a revoked grant — needs_reauth takes a mailbox off the schedule');
+  assert.equal(m.failureStatus('Could not store the refreshed token: timeout'), 'error');
+  assert.equal(m.failureStatus('Graph → 503: Service Unavailable'), 'error');
+  assert.equal(m.failureStatus(''), 'error');
 });
 
-test('a conversation seen for the first time takes the folder it was found in', () => {
-  assert.equal(m.mergedFolder(null, 'sent'), 'sent');
-  assert.equal(m.mergedFolder(undefined, 'inbox'), 'inbox');
+test('our own addresses are the mailbox and whoever consented to reading it', () => {
+  assert.deepEqual(m.ownAddresses({ account_label: 'hello@veyago.cloud', external_id: 'Cassian@Veyago.cloud' }),
+    ['hello@veyago.cloud', 'cassian@veyago.cloud']);
+  assert.deepEqual(m.ownAddresses({ account_label: 'me@veyago.cloud', external_id: 'ME@veyago.cloud' }),
+    ['me@veyago.cloud']);
+  assert.deepEqual(m.ownAddresses({ account_label: 'me@veyago.cloud', external_id: null }), ['me@veyago.cloud']);
 });
 
-test('a sent copy never moves a conversation that was filed elsewhere', () => {
-  assert.equal(m.mergedFolder('archive', 'sent'), 'archive');
+const NOW = Date.parse('2026-09-13T12:00:00Z');
+
+test('an incremental sync starts a little before the last one ended', () => {
+  assert.equal(m.syncWindowStart('2026-09-13T11:55:00Z', NOW), '2026-09-13T11:45:00.000Z');
 });
 
-test('a conversation is unread while any message from outside is unread', () => {
-  assert.equal(m.threadIsRead([
-    { direction: 'inbound', is_read: true },
-    { direction: 'inbound', is_read: false },
-  ]), false);
-  assert.equal(m.threadIsRead([{ direction: 'outbound', is_read: false }]), true,
-    'our own mail is never waiting for us');
-  assert.equal(m.threadIsRead([]), true);
+test('a first sync looks back three days, and a long outage at most fourteen', () => {
+  assert.equal(m.syncWindowStart(null, NOW), '2026-09-10T12:00:00.000Z');
+  assert.equal(m.syncWindowStart('not a date', NOW), '2026-09-10T12:00:00.000Z');
+  assert.equal(m.syncWindowStart('2026-08-01T00:00:00Z', NOW), '2026-08-30T12:00:00.000Z');
 });
 
-test('messages group by conversation, keeping the order Graph returned', () => {
-  const groups = m.groupByThread([
-    { thread_external_id: 'A', external_id: '1' },
-    { thread_external_id: 'B', external_id: '2' },
-    { thread_external_id: 'A', external_id: '3' },
-  ]);
-  assert.deepEqual([...groups.keys()], ['A', 'B']);
-  assert.deepEqual(groups.get('A').map((r) => r.external_id), ['1', '3']);
+test('a last-synced time in the future does not skip mail', () => {
+  assert.equal(m.syncWindowStart('2026-09-14T00:00:00Z', NOW), '2026-09-13T11:50:00.000Z');
+});
+
+test('mail found in Sent is ours, whatever its From says', () => {
+  assert.equal(m.directionFor('sentitems', 'inbound'), 'outbound',
+    'a reply sent as hello@ lands in a personal Sent folder with a From that is not the personal label');
+  assert.equal(m.directionFor('inbox', 'inbound'), 'inbound');
+  assert.equal(m.directionFor('inbox', 'outbound'), 'outbound');
+  assert.equal(m.directionFor('archive', 'inbound'), 'inbound');
 });

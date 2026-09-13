@@ -123,6 +123,102 @@ exception when check_violation then
   values ('priority refuses a value Graph does not have', 'rejected', 'rejected', true);
 end $$;
 
+-- 0038: store_mail_batch — the one way every sync, and send-mail, stores mail.
+-- A question arrives in the inbox (unread, flagged), then our reply is found in
+-- Sent. The thread's state is derived from every stored message, atomically.
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', jsonb_build_array(jsonb_build_object(
+  'external_id', 'b-in-1', 'thread_external_id', 'conv-b', 'internet_message_id', '<b-in-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'Sync Fixture Person', 'from_email', 'person@sync-fixture.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Batch question', 'body_text', 'Is it ready?', 'body_html', '', 'snippet', 'Is it ready?',
+  'sent_at', (now() - interval '2 hours')::text, 'is_read', false, 'is_flagged', true,
+  'importance', 'normal', 'has_attachments', false)));
+
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'sent', jsonb_build_array(jsonb_build_object(
+  'external_id', 'b-out-1', 'thread_external_id', 'conv-b', 'internet_message_id', '<b-out-1@sync-fixture.invalid>',
+  'direction', 'outbound', 'from_name', 'Sync Fixture', 'from_email', 'sync.fixture@example.invalid',
+  'to_emails', jsonb_build_array('person@sync-fixture.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Re: Batch question', 'body_text', 'It is.', 'body_html', '', 'snippet', 'It is.',
+  'sent_at', (now() - interval '1 hour')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'high', 'has_attachments', false)));
+
+insert into results(name, expected, actual, pass)
+select 'our reply found in Sent keeps the conversation in the inbox', 'inbox', folder, folder = 'inbox'
+from public.mail_threads where connection_id = '55555555-5555-5555-5555-555555555555' and external_id = 'conv-b';
+
+insert into results(name, expected, actual, pass)
+select 'a conversation stays unread while mail from outside in it is', 'unread',
+       case when is_read then 'read' else 'unread' end, not is_read
+from public.mail_threads where connection_id = '55555555-5555-5555-5555-555555555555' and external_id = 'conv-b';
+
+insert into results(name, expected, actual, pass)
+select 'starred follows any flagged message, not just the newest', 'starred',
+       case when is_starred then 'starred' else 'not starred' end, is_starred
+from public.mail_threads where connection_id = '55555555-5555-5555-5555-555555555555' and external_id = 'conv-b';
+
+insert into results(name, expected, actual, pass)
+select 'the preview follows the newest message', 'It is.', snippet, snippet = 'It is.'
+from public.mail_threads where connection_id = '55555555-5555-5555-5555-555555555555' and external_id = 'conv-b';
+
+-- Outlook marks the question read and unflagged; the same batch arrives twice.
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', jsonb_build_array(jsonb_build_object(
+  'external_id', 'b-in-1', 'thread_external_id', 'conv-b', 'internet_message_id', '<b-in-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'Sync Fixture Person', 'from_email', 'person@sync-fixture.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Batch question', 'body_text', 'Is it ready?', 'body_html', '', 'snippet', 'Is it ready?',
+  'sent_at', (now() - interval '2 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)))
+from generate_series(1, 2);
+
+insert into results(name, expected, actual, pass)
+select 'read and unflagged in Outlook reads and unstars here; a repeat adds nothing', 'read · not starred · 2',
+       case when t.is_read then 'read' else 'unread' end || ' · '
+         || case when t.is_starred then 'starred' else 'not starred' end || ' · '
+         || (select count(*) from public.mail_messages m where m.thread_id = t.id)::text,
+       t.is_read and not t.is_starred and (select count(*) from public.mail_messages m where m.thread_id = t.id) = 2
+from public.mail_threads t
+where t.connection_id = '55555555-5555-5555-5555-555555555555' and t.external_id = 'conv-b';
+
+-- The question moves folder in Outlook and comes back with a new Graph id: the
+-- same message by its Message-ID, so re-pointed rather than stored twice.
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', jsonb_build_array(jsonb_build_object(
+  'external_id', 'b-in-1-moved', 'thread_external_id', 'conv-b', 'internet_message_id', '<b-in-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'Sync Fixture Person', 'from_email', 'person@sync-fixture.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Batch question', 'body_text', 'Is it ready?', 'body_html', '', 'snippet', 'Is it ready?',
+  'sent_at', (now() - interval '2 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+
+insert into results(name, expected, actual, pass)
+select 'a message with a new Graph id is re-pointed, not duplicated', '2 · b-in-1-moved',
+       count(*)::text || ' · ' || coalesce(max(m.external_id) filter (where m.direction = 'inbound'), 'none'),
+       count(*) = 2 and max(m.external_id) filter (where m.direction = 'inbound') = 'b-in-1-moved'
+from public.mail_messages m
+join public.mail_threads t on t.id = m.thread_id
+where t.connection_id = '55555555-5555-5555-5555-555555555555' and t.external_id = 'conv-b';
+
+-- A conversation first seen in Sent is filed as sent; an archive sync does not
+-- pull a conversation with mail from outside out of the inbox.
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'sent', jsonb_build_array(jsonb_build_object(
+  'external_id', 'c-out-1', 'thread_external_id', 'conv-c', 'internet_message_id', '<c-out-1@sync-fixture.invalid>',
+  'direction', 'outbound', 'from_name', 'Sync Fixture', 'from_email', 'sync.fixture@example.invalid',
+  'to_emails', jsonb_build_array('person@sync-fixture.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'An introduction', 'body_text', 'Hello.', 'body_html', '', 'snippet', 'Hello.',
+  'sent_at', now()::text, 'is_read', true, 'is_flagged', false, 'importance', 'normal', 'has_attachments', false)));
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'archive', jsonb_build_array(jsonb_build_object(
+  'external_id', 'b-in-1-moved', 'thread_external_id', 'conv-b', 'internet_message_id', '<b-in-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'Sync Fixture Person', 'from_email', 'person@sync-fixture.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Batch question', 'body_text', 'Is it ready?', 'body_html', '', 'snippet', 'Is it ready?',
+  'sent_at', (now() - interval '2 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+
+insert into results(name, expected, actual, pass)
+select 'first seen in Sent is filed as sent; archive does not empty the inbox', 'sent · inbox',
+       max(folder) filter (where external_id = 'conv-c') || ' · ' || max(folder) filter (where external_id = 'conv-b'),
+       max(folder) filter (where external_id = 'conv-c') = 'sent' and max(folder) filter (where external_id = 'conv-b') = 'inbox'
+from public.mail_threads where connection_id = '55555555-5555-5555-5555-555555555555';
+
 -- The ON CONFLICT target compose uses for a signature — including the
 -- "every mailbox" row, whose connection_id is null. With a plain unique
 -- constraint two nulls never collide and the second write would insert.

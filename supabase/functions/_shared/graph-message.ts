@@ -101,6 +101,9 @@ export const MESSAGE_SELECT = [
   'id', 'conversationId', 'internetMessageId', 'subject', 'bodyPreview', 'body',
   'from', 'sender', 'toRecipients', 'ccRecipients', 'bccRecipients',
   'receivedDateTime', 'sentDateTime', 'isRead', 'flag', 'importance', 'hasAttachments',
+  /* Not stored, but what an incremental sync pages by: it changes when a
+     message is read or flagged in Outlook, not only when one arrives. */
+  'lastModifiedDateTime',
 ].join(',');
 
 export type Importance = 'low' | 'normal' | 'high';
