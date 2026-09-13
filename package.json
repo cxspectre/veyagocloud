@@ -18,7 +18,9 @@
     "check": "node tools/check.js",
     "sync:entities": "node tools/sync-entities.js",
     "build:og": "node tools/build-og-images.js",
-    "journal:fixture": "node tools/journal-fixture.js"
+    "journal:fixture": "node tools/journal-fixture.js",
+    "check:db": "node tools/check-db.js",
+    "version:assets": "node tools/version-assets.js"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.45.0",

@@ -17,6 +17,8 @@ Veyago travel app) with the privacy policies.
 | `nl/`, `de/` | Generated locale twins of `websites/` — never edit by hand, run `npm run build:locales` |
 | `projects/<slug>/` | Generated research papers — edit `data/research/<slug>.md`, run `npm run build:essays` |
 | `tools/` | Build scripts and the `npm run check` gate, with their tests (see **Scripts and checks**) |
+| `supabase/tests/` | SQL suites run against the live database inside a rollback — `npm run check:db` |
+| `docs/workspace-backend.md` | The Veyago Workspace backend: schema, who can see what, connecting Gmail/Calendar |
 | `tools/lib/entity.js` | The site-wide entity graph — the `Organization`, `WebSite` and `Person` JSON-LD nodes every page repeats. Change a company fact here, then `npm run sync:entities` |
 | `feed.xml` | Generated RSS for the journal and the research papers — written by `npm run build`, never by hand |
 | `docs/seo-keywords.md` | What the Position Tracking campaign should measure, and which page answers each query |

@@ -3,324 +3,58 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Client and studio dashboard | Veyago</title>
-  <meta name="description" content="The Veyago dashboard for clients and the studio is not open yet. It will carry project status, invoices and handover files in one place. Write to us meanwhile." />
-  <meta name="theme-color" content="#ffffff" />
+  <title>Sign in | Veyago</title>
+  <meta name="description" content="Sign in to Veyago: the Workspace the studio runs on, or the Client Portal that carries your project, scope, invoices and files." />
+  <meta name="theme-color" content="#f5f5f7" />
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="/styles.css" />
-  <meta property="og:title" content="Client and studio dashboard | Veyago" />
-  <meta property="og:description" content="The Veyago dashboard for clients and the studio is not open yet. It will carry project status, invoices and handover files in one place. Write to us meanwhile." />
-  <meta property="og:image" content="https://www.veyago.cloud/assets/og.png" />
-  <meta property="og:type" content="website" />
-
+  <link rel="stylesheet" href="/assets/css/auth.css" />
   <link rel="canonical" href="https://www.veyago.cloud/login/" />
   <meta name="robots" content="noindex,follow" />
+  <meta property="og:title" content="Sign in | Veyago" />
+  <meta property="og:description" content="Sign in to Veyago: the Workspace the studio runs on, or the Client Portal that carries your project, scope, invoices and files." />
   <meta property="og:url" content="https://www.veyago.cloud/login/" />
   <meta property="og:site_name" content="Veyago" />
-  <meta property="og:locale" content="en_US" />
-  <meta property="og:image:alt" content="Veyago support - help with Kept, Veyago travel and client websites" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Client and studio dashboard | Veyago" />
-  <meta name="twitter:description" content="The Veyago dashboard for clients and the studio is not open yet. It will carry project status, invoices and handover files in one place. Write to us meanwhile." />
-  <meta name="twitter:image" content="https://www.veyago.cloud/assets/og.png" />
-  <meta name="twitter:image:alt" content="Veyago support - help with Kept, Veyago travel and client websites" />
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "@id": "https://www.veyago.cloud/#organization",
-        "name": "Veyago Inc.",
-        "alternateName": "Veyago",
-        "legalName": "Veyago Inc.",
-        "url": "https://www.veyago.cloud/",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://www.veyago.cloud/assets/apple-touch-icon.png",
-          "width": 512,
-          "height": 512
-        },
-        "image": "https://www.veyago.cloud/assets/og.png",
-        "description": "Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps and fast, hand-written websites for small businesses.",
-        "slogan": "Software for the journey.",
-        "foundingDate": "2026-04-28",
-        "foundingLocation": {
-          "@type": "Place",
-          "name": "New York, United States"
-        },
-        "founder": {
-          "@id": "https://www.veyago.cloud/team/#cassian-drefke"
-        },
-        "employee": [
-          {
-            "@id": "https://www.veyago.cloud/team/#cassian-drefke"
-          },
-          {
-            "@id": "https://www.veyago.cloud/team/#wessel-gelderblom"
-          }
-        ],
-        "numberOfEmployees": {
-          "@type": "QuantitativeValue",
-          "value": 2
-        },
-        "knowsAbout": [
-          "iOS app development",
-          "on-device machine learning",
-          "privacy by design",
-          "website design and development",
-          "technical SEO",
-          "small business websites"
-        ],
-        "address": {
-          "@type": "PostalAddress",
-          "streetAddress": "54 State Street, Ste 804 #17055",
-          "addressLocality": "Albany",
-          "addressRegion": "NY",
-          "postalCode": "12207",
-          "addressCountry": "US"
-        },
-        "email": "hello@veyago.cloud",
-        "telephone": "+1-518-913-2531",
-        "contactPoint": [
-          {
-            "@type": "ContactPoint",
-            "contactType": "customer support",
-            "telephone": "+1-518-913-2531",
-            "email": "hello@veyago.cloud",
-            "areaServed": "US",
-            "availableLanguage": [
-              "en",
-              "nl",
-              "de"
-            ]
-          },
-          {
-            "@type": "ContactPoint",
-            "contactType": "customer support",
-            "telephone": "+1-943-273-6579",
-            "email": "hello@veyago.cloud",
-            "areaServed": "Worldwide",
-            "availableLanguage": [
-              "en",
-              "nl",
-              "de"
-            ]
-          },
-          {
-            "@type": "ContactPoint",
-            "contactType": "sales",
-            "email": "hello@veyago.cloud",
-            "url": "https://www.veyago.cloud/websites/#quote",
-            "areaServed": "Worldwide",
-            "availableLanguage": [
-              "en",
-              "nl",
-              "de"
-            ]
-          }
-        ],
-        "areaServed": "Worldwide",
-        "sameAs": [
-          "https://instagram.com/veyago_cloud",
-          "https://wefunder.com/veyago",
-          "https://veyago.app",
-          "https://apps.apple.com/app/id6776402520",
-          "https://github.com/cxspectre/veyagocloud"
-        ]
-      },
-      {
-        "@type": "WebSite",
-        "@id": "https://www.veyago.cloud/#website",
-        "url": "https://www.veyago.cloud/",
-        "name": "Veyago",
-        "alternateName": "Veyago Inc.",
-        "description": "Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps and fast, hand-written websites for small businesses.",
-        "inLanguage": [
-          "en",
-          "nl",
-          "de"
-        ],
-        "publisher": {
-          "@id": "https://www.veyago.cloud/#organization"
-        }
-      },
-      {
-        "@type": "WebPage",
-        "@id": "https://www.veyago.cloud/login/#webpage",
-        "url": "https://www.veyago.cloud/login/",
-        "name": "Client and studio dashboard",
-        "isPartOf": {
-          "@id": "https://www.veyago.cloud/#website"
-        },
-        "about": {
-          "@id": "https://www.veyago.cloud/#organization"
-        },
-        "primaryImageOfPage": {
-          "@type": "ImageObject",
-          "url": "https://www.veyago.cloud/assets/og.png"
-        },
-        "speakable": {
-          "@type": "SpeakableSpecification",
-          "cssSelector": [
-            ".speakable-answer",
-            "h1"
-          ]
-        },
-        "dateModified": "2026-09-11",
-        "description": "The Veyago dashboard for clients and the studio is not open yet."
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://www.veyago.cloud/"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Log in",
-            "item": "https://www.veyago.cloud/login/"
-          }
-        ],
-        "@id": "https://www.veyago.cloud/login/#breadcrumb"
-      }
-    ]
-  }
-  </script>
-  <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+  <meta property="og:type" content="website" />
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
-  <header class="nav" id="site-nav">
-    <div class="wrap">
-      <a class="brand" href="/"><img src="/assets/veyago-icon-44.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
-      <nav class="nav-links">
-        <a href="/apps/">Apps</a>
-        <a href="/projects/">Projects</a>
-        <a href="/journal/">Articles</a>
-        <a href="/websites/">Websites</a>
-        <a href="/services/">Services</a>
-        <div class="nav-item" id="company-nav">
-          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="nav-dropdown">
-            <a href="/company/"><span class="dd-title">About</span><span class="dd-sub">The studio and our story</span></a>
-            <a href="/team/"><span class="dd-title">Team</span><span class="dd-sub">The people building it</span></a>
-            <a href="/approach/"><span class="dd-title">Approach</span><span class="dd-sub">How we think and build</span></a>
-          </div>
-        </div>
-      </nav>
-      <div class="nav-right">
-        <a class="nav-login" href="/login/">Log in</a>
-        <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
-        <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
-          <span></span><span></span><span></span>
-        </button>
+  <a class="auth-back" href="/">
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back
+  </a>
+
+  <main class="auth" id="main">
+    <div class="auth-inner">
+      <h1>Sign in to Veyago.</h1>
+
+      <div class="auth-choices">
+        <a class="auth-choice" href="/workspace/">
+          <span class="auth-tile auth-tile-studio" aria-hidden="true">V</span>
+          <span class="auth-eyebrow">For the studio</span>
+          <h2>Veyago Workspace</h2>
+          <p>Mail, tickets, projects and the day's numbers.</p>
+          <span class="auth-btn">
+            Sign in
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </a>
+
+        <div class="auth-rule" aria-hidden="true"></div>
+
+        <a class="auth-choice" href="/portal/">
+          <span class="auth-tile auth-tile-client" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.55"/><path d="M4.8 19.6a7.4 7.4 0 0 1 14.4 0" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/></svg>
+          </span>
+          <span class="auth-eyebrow">For clients</span>
+          <h2>Veyago Client Portal</h2>
+          <p>Your project, its scope, invoices and files.</p>
+          <span class="auth-btn">
+            Sign in
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </a>
       </div>
     </div>
-  </header>
-
-  <!-- Mobile navigation drawer -->
-  <div class="nav-scrim" id="nav-scrim"></div>
-  <aside class="nav-drawer" id="nav-drawer" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
-    <div class="nav-drawer-top">
-      <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-    <nav class="nav-drawer-links" aria-label="Primary">
-      <a href="/apps/">Apps</a>
-      <a href="/projects/">Projects</a>
-      <a href="/journal/">Articles</a>
-      <a href="/websites/">Websites</a>
-      <a href="/services/">Services</a>
-      <p class="nm-label">Company</p>
-      <a class="nm-sub" href="/company/">About</a>
-      <a class="nm-sub" href="/team/">Team</a>
-      <a class="nm-sub" href="/approach/">Approach</a>
-      <a class="nm-sub" href="/login/">Log in</a>
-      <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
-    </nav>
-  </aside>
-  <nav class="crumbs" aria-label="Breadcrumb">
-    <ol>
-      <li><a href="/">Home</a></li>
-      <li><span aria-current="page">Log in</span></li>
-    </ol>
-  </nav>
-  <main id="main">
-
-  <section class="section hero">
-    <div class="wrap">
-      <p class="eyebrow">Client access</p>
-      <h1 class="headline">Your dashboard is coming.</h1>
-      <p class="definition"><strong>The Veyago dashboard is not open yet.</strong> When it is, clients will sign in here to follow a project, read the written scope and price, download invoices, and collect the files and keys we hand over at launch. The studio uses the same place to run the work.</p>
-      <div class="actions">
-        <a class="btn btn-blue" href="mailto:hello@veyago.cloud?subject=Dashboard%20access">Email us</a>
-        <a class="btn btn-line" href="/support/">Get support</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section soft">
-    <div class="wrap">
-      <p class="eyebrow">What it will hold</p>
-      <h2 class="section-headline">Everything about your project, in one place.</h2>
-      <ul class="capabilities">
-        <li class="reveal">
-          <h3>Where the project stands</h3>
-          <p>The stage it is at, what we are waiting on, and the date we are working to - the same view we use ourselves.</p>
-        </li>
-        <li class="reveal">
-          <h3>Scope and price in writing</h3>
-          <p>The quote you accepted, what it includes and what it does not, kept where you can read it back at any time.</p>
-        </li>
-        <li class="reveal">
-          <h3>Invoices and payments</h3>
-          <p>What has been invoiced, what has been paid, and what is outstanding. No chasing an email thread for a number.</p>
-        </li>
-        <li class="reveal">
-          <h3>Your files and keys</h3>
-          <p>The repository, the hosting account and the domain - the handover, collected in one place rather than sent piecemeal.</p>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="wrap">
-      <p class="eyebrow">In the meantime</p>
-      <h2 class="section-headline">Write to a person.</h2>
-      <p class="subhead muted">Until it opens, everything above is a reply away - within one working day, from one of the two of us.</p>
-      <div class="actions">
-        <a class="link" href="mailto:hello@veyago.cloud">hello@veyago.cloud</a>
-        <a class="link" href="/support/">Support</a>
-      </div>
-    </div>
-  </section>
-
   </main>
-  <footer class="footer">
-    <div class="wrap">
-      <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
-      <div class="footer-cols">
-        <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/kept/">Kept</a></div>
-        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/services/">Services</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
-        <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/kept-privacy/">Kept Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
-        <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15189132531">+1 (518) 913 2531 (US customers)</a><a href="tel:+19432736579">+1 (943) 273 6579 (international customers)</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
-      </div>
-      <p class="footer-press">Press &amp; investors: <a href="mailto:hello@veyago.cloud?subject=Press%20%26%20investors">hello@veyago.cloud</a> · <a href="https://wefunder.com/veyago" target="_blank" rel="noopener">Invest on Wefunder ↗</a></p>
-      <div class="footer-base">
-        <span>© <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
-        <span>Private apps and proper websites · New York</span>
-      </div>
-    </div>
-  </footer>
-  <script src="/assets/js/site-config.js?v=20260911"></script>
-  <script src="/app.js" defer></script>
 </body>
 </html>

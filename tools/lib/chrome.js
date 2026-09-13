@@ -7,6 +7,8 @@
    at runtime — those are NOT part of this static chrome. */
 'use strict';
 
+var assets = require('./asset-version');
+
 var { esc, attr } = require('./escape');
 
 var SITE = 'https://www.veyago.cloud';
@@ -39,7 +41,9 @@ function headTags(opts) {
     '<meta name="theme-color" content="#ffffff" />',
     '<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />',
     '<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />',
-    '<link rel="stylesheet" href="/styles.css" />',
+    /* Content-hashed: vercel.json caches this for a day and serves it stale
+       for a week, so an unversioned link pairs new HTML with old CSS. */
+    '<link rel="stylesheet" href="' + assets.versioned('styles.css') + '" />',
     '<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>',
     '<meta property="og:title" content="' + attr(ogTitle) + '" />',
     '<meta property="og:description" content="' + attr(ogDescription) + '" />',
@@ -155,7 +159,7 @@ function page(opts) {
     ensureMain(opts.body) + '\n\n' +
     '  ' + footer() + '\n' +
     '  <script src="' + SITE_CONFIG_SRC + '"></script>\n' +
-    '  <script src="/app.js" defer></script>\n' +
+    '  <script src="' + assets.versioned('app.js') + '" defer></script>\n' +
     (scripts ? scripts + '\n' : '') +
     '</body>\n</html>\n';
 }

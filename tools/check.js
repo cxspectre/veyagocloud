@@ -154,6 +154,15 @@ function checkLocaleCoverage() {
   return { ok: r.ok, lines: r.ok ? r.lines : r.lines.concat(advice) };
 }
 
+/* vercel.json caches styles.css and app.js for a day and serves them stale for
+   a week. Unversioned links therefore ship new HTML against an old stylesheet,
+   which is what put a 462px `</>` glyph through the homepage on 2026-09-13:
+   the new markup used .cap-ic and the cached CSS had never heard of it. */
+function checkAssetVersions() {
+  var r = runNode(['tools/version-assets.js', '--check']);
+  return { ok: r.ok, lines: r.lines.map(function (l) { return l.replace(/^(PASS|FAIL)\s+/, ''); }) };
+}
+
 function checkGeneratedTree() {
   return runNode(['tools/verify-cli.js', '--root', ROOT]);
 }
@@ -246,6 +255,7 @@ var CHECKS = [
   { name: 'generated files are fresh — essays and locale twins', run: checkGeneratedFresh },
   { name: 'generated tree is sound — tools/verify-cli.js', run: checkGeneratedTree },
   { name: 'entity graph matches tools/lib/entity.js', run: checkEntities },
+  { name: 'asset versions — styles.css and app.js are cache-busted', run: checkAssetVersions },
   { name: 'on-page signals — titles, descriptions, headings, schema', run: checkPageSignals }
 ];
 
