@@ -23,6 +23,8 @@ test('reading mail, drafting, attaching and sending are allowed', () => {
   for (const [method, url, body] of [
     ['GET', `${G}/me/mailFolders/inbox/messages?$top=10`],
     ['GET', `${G}/users/hello%40veyago.cloud/mailFolders/sentitems/messages?$filter=x`],
+    ['GET', `${G}/me/mailFolders/inbox/messages/delta?$deltatoken=abc`],
+    ['GET', `${G}/users/hello%40veyago.cloud/mailFolders/sentitems/messages/delta?$skiptoken=def`],
     ['POST', `${G}/me/messages`, { subject: 's' }],
     ['POST', `${G}/users/hello%40veyago.cloud/messages/AAMk%3D/createReply`, {}],
     ['POST', `${G}/me/messages/AAMk/createReplyAll`, {}],

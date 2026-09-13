@@ -128,14 +128,21 @@ Deno.serve(async (req) => {
 
     /* The stored messages, which the thread's state is derived from. The
        browser has no write on mail_messages; this is the service role. */
-    if (read !== undefined && readTargets.length) {
+    /* By conversation, not by a list of ids: a long conversation's id list
+       makes a URL long enough to fail — after Outlook has already changed. */
+    if (read !== undefined) {
       const { error } = await admin.from('mail_messages')
-        .update({ is_read: read }).in('id', readTargets.map((m) => m.id));
+        .update({ is_read: read }).eq('thread_id', threadId).eq('direction', 'inbound');
       if (error) return json({ error: error.message }, 500);
     }
-    if (starred !== undefined && flagTargets.length) {
+    if (starred === true && flagOn) {
       const { error } = await admin.from('mail_messages')
-        .update({ is_flagged: starred }).in('id', flagTargets.map((m) => m.id));
+        .update({ is_flagged: true }).eq('id', flagOn.id);
+      if (error) return json({ error: error.message }, 500);
+    }
+    if (starred === false) {
+      const { error } = await admin.from('mail_messages')
+        .update({ is_flagged: false }).eq('thread_id', threadId);
       if (error) return json({ error: error.message }, 500);
     }
 

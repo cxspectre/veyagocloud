@@ -2,26 +2,24 @@
  *
  * Which folder a conversation belongs in, and whether it is read or starred,
  * are decided in the database — store_mail_batch() in 0038 — atomically and
- * from every stored message. Decided here, from one batch, they went wrong in
- * two ways: two runs overlapping wrote each other's stale state back, and a
- * batch that did not happen to contain the unread message marked a thread read.
+ * from every stored message. What stays here is what a function decides before
+ * and after that call: whose mail is ours, what a failure means, and where the
+ * scheduled sync carries on from.
  *
- * What stays here is what a function decides before and after that call.
  * Kept free of imports so it can be tested in node as-is.
  */
 
-const MINUTE = 60 * 1000;
-const DAY = 24 * 60 * MINUTE;
+const DAY = 24 * 60 * 60 * 1000;
+const GRAPH_PREFIX = 'https://graph.microsoft.com/';
 
-/* How far an incremental sync looks back. The overlap covers a run that was
-   still going when the last one ended; the ceiling stops a mailbox that was
-   down for a month from asking Graph for all of it at once. */
-export const SYNC_WINDOW = { overlapMinutes: 10, firstRunDays: 3, maxDays: 14 };
+/* How far back a folder's first delta round looks. */
+export const FIRST_SYNC_DAYS = 3;
 
 /* Which status a failed sync leaves its connection in. needs_reauth takes a
    mailbox off the schedule until someone reconnects it, so it is kept for
    what a reconnect actually fixes: a grant Microsoft refused, or credentials
-   that are gone. A database hiccup while reading the token is not that. */
+   that are gone. A database hiccup, or Microsoft being briefly unavailable,
+   is not that. */
 export function failureStatus(message: string): 'needs_reauth' | 'error' {
   return /invalid_grant|interaction_required|no credentials|cannot refresh itself|no refresh token/i
     .test(String(message || ''))
@@ -29,22 +27,12 @@ export function failureStatus(message: string): 'needs_reauth' | 'error' {
     : 'error';
 }
 
-/* The addresses that count as "us" for a connection: the mailbox itself, and
-   whoever consented to reading it — who may be sending as the mailbox. */
+/* The address that counts as "us" for a connection: the mailbox itself. Not
+   whoever consented to reading it — mail that person sends TO the shared inbox
+   is mail from outside it. Replies sent AS the mailbox, which land in a
+   personal Sent folder, are caught by directionFor(). */
 export function ownAddresses(conn: { account_label: string; external_id?: string | null }): string[] {
-  const addresses = [conn.account_label, conn.external_id]
-    .map((a) => String(a ?? '').trim().toLowerCase())
-    .filter(Boolean);
-  return [...new Set(addresses)];
-}
-
-/* Where an incremental sync starts, as an ISO instant. */
-export function syncWindowStart(lastSyncedAt: string | null | undefined, nowMs: number, opts = SYNC_WINDOW): string {
-  const last = Date.parse(String(lastSyncedAt ?? ''));
-  if (!Number.isFinite(last)) return new Date(nowMs - opts.firstRunDays * DAY).toISOString();
-  /* A last-synced time from the future (clock skew) must not skip mail. */
-  const start = Math.min(last, nowMs) - opts.overlapMinutes * MINUTE;
-  return new Date(Math.max(start, nowMs - opts.maxDays * DAY)).toISOString();
+  return [String(conn.account_label ?? '').trim().toLowerCase()].filter(Boolean);
 }
 
 /* Mail found in Sent Items is ours, whatever its From says. Comparing From
@@ -53,4 +41,32 @@ export function syncWindowStart(lastSyncedAt: string | null | undefined, nowMs: 
    appended it to the ticket as the customer's words. */
 export function directionFor(graphFolder: string, parsed: 'inbound' | 'outbound'): 'inbound' | 'outbound' {
   return String(graphFolder).toLowerCase() === 'sentitems' ? 'outbound' : parsed;
+}
+
+export function firstSyncSince(nowMs: number): string {
+  return new Date(nowMs - FIRST_SYNC_DAYS * DAY).toISOString();
+}
+
+/* The scheduled sync's Graph delta links, one per folder, kept together as
+   JSON in integration_connections.sync_cursor. A link is followed as a URL, so
+   anything that is not a Graph link is dropped here rather than fetched — and
+   a cursor that cannot be read is simply a fresh start. */
+export function readCursors(raw: string | null | undefined): Record<string, string> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(String(raw ?? ''));
+  } catch {
+    return {};
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  return Object.fromEntries(
+    Object.entries(parsed as Record<string, unknown>)
+      .filter(([, link]) => typeof link === 'string' && link.startsWith(GRAPH_PREFIX)),
+  ) as Record<string, string>;
+}
+
+/* The cursor with one folder's link set — or cleared, with null. */
+export function withCursor(raw: string | null | undefined, folder: string, link: string | null): string {
+  const { [folder]: _previous, ...others } = readCursors(raw);
+  return JSON.stringify(link ? { ...others, [folder]: link } : others);
 }

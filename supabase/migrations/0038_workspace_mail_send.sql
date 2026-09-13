@@ -12,8 +12,9 @@
 --   2. A thread's person-editable columns are read and starred, and nothing
 --      else. The 0025 policy allowed every column, so anyone who could read a
 --      studio thread could move it into their own personal mailbox.
---   3. A mailbox keeps its owner. Reassigning a personal mailbox would hand
---      over its reading and, with send-mail, its sending.
+--   3. A connection's identity stays what was consented to: from the browser
+--      it can only be disconnected, and a manager deletes only the studio's
+--      connections or their own.
 --   4. mail_signatures: one per person per mailbox, private to its owner.
 --   5. mail-attachments: a private bucket, one folder per auth id.
 --   6. store_mail_batch(): the one way the sync and send-mail store mail —
@@ -105,32 +106,58 @@ revoke update on public.mail_threads from anon, authenticated;
 grant update (is_read, is_starred) on public.mail_threads to authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 3. A mailbox keeps its owner.
+-- 3. A connection's identity stays what was consented to.
 --
---    Managers may write integration_connections (0024), which included
---    employee_id: point a colleague's personal mailbox at yourself and
---    can_read_connection() hands you their mail — and now their sending.
---    Changing hands is disconnect and connect fresh, through the service role.
+--    Managers may write integration_connections (0024). Three columns decide
+--    whose mail a connection reads and sends as: employee_id (who may use it),
+--    account_label (which mailbox), external_id (who consented — clear it on
+--    the shared mailbox and the sync reads the consenting person's own mail
+--    into it, for all staff to see). From the browser, the one change left is
+--    disconnecting. Everything else is the service role's: microsoft-connect,
+--    the callback, and the sync.
 -- ─────────────────────────────────────────────────────────────────────────────
-create or replace function public.integration_connections_keep_owner()
+create or replace function public.integration_connections_browser_can_only_disconnect()
 returns trigger
 language plpgsql
 set search_path = public
 as $$
 begin
-  if new.employee_id is distinct from old.employee_id
-     and current_user in ('anon', 'authenticated') then
-    raise exception 'A mailbox keeps its owner. Disconnect it and connect it again for someone else.'
+  if current_user in ('anon', 'authenticated') and (
+       (to_jsonb(new) - 'status' - 'last_error' - 'updated_at')
+         is distinct from (to_jsonb(old) - 'status' - 'last_error' - 'updated_at')
+    or (new.status is distinct from old.status and new.status <> 'disconnected')
+  ) then
+    raise exception 'From the workspace a connection can only be disconnected. Connect it again to change it.'
       using errcode = 'insufficient_privilege';
   end if;
   return new;
 end;
 $$;
 
-drop trigger if exists integration_connections_keep_owner on public.integration_connections;
-create trigger integration_connections_keep_owner
+drop trigger if exists integration_connections_browser_can_only_disconnect on public.integration_connections;
+create trigger integration_connections_browser_can_only_disconnect
   before update on public.integration_connections
-  for each row execute function public.integration_connections_keep_owner();
+  for each row execute function public.integration_connections_browser_can_only_disconnect();
+
+-- A personal connection's row takes its grant and every stored message with
+-- it. A manager removes the studio's connections, or their own — not a
+-- colleague's. (0024's single "for all" policy is split to say so.)
+drop policy if exists "manager writes integration_connections" on public.integration_connections;
+
+drop policy if exists "manager inserts integration_connections" on public.integration_connections;
+create policy "manager inserts integration_connections"
+  on public.integration_connections for insert
+  with check (public.is_manager());
+
+drop policy if exists "manager updates integration_connections" on public.integration_connections;
+create policy "manager updates integration_connections"
+  on public.integration_connections for update
+  using (public.is_manager()) with check (public.is_manager());
+
+drop policy if exists "manager deletes studio or own integration_connections" on public.integration_connections;
+create policy "manager deletes studio or own integration_connections"
+  on public.integration_connections for delete
+  using (public.is_manager() and (employee_id is null or employee_id = public.active_employee_id()));
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4. Signatures.
@@ -226,9 +253,15 @@ create policy "staff remove own mail attachments"
 --      subject,   from the newest message
 --      snippet
 --    In one statement per thread, so two overlapping runs cannot write each
---    other's stale state back. A message with a new Graph id — moved within a
---    folder — is re-pointed by Message-ID rather than stored twice, when that
---    cannot collide. New mail from outside is routed to its ticket (0035).
+--    other's stale state back.
+--
+--    A message that comes back under a new Graph id — moved within a folder,
+--    or out of the inbox into archive, spam or trash — is re-pointed by its
+--    Message-ID rather than stored twice. Only a copy going the same way: a
+--    message we send to our own mailbox has an inbound and an outbound copy
+--    under one Message-ID, and those stay two. New mail from outside is routed
+--    to its ticket (0035) — once: not again for a copy of a message already
+--    routed.
 -- ─────────────────────────────────────────────────────────────────────────────
 create or replace function public.store_mail_batch(p_connection uuid, p_folder text, p_rows jsonb)
 returns jsonb
@@ -246,12 +279,16 @@ declare
   v_messages int := 0;
   v_routed   int := 0;
   v_mid      text;
+  v_dir      text;
 begin
   if p_folder not in ('inbox', 'sent', 'archive', 'spam', 'trash') then
     raise exception 'store_mail_batch: unknown folder %', p_folder;
   end if;
 
   for v_row in select value from jsonb_array_elements(coalesce(p_rows, '[]'::jsonb)) loop
+    v_mid := nullif(v_row->>'internet_message_id', '');
+    v_dir := coalesce(nullif(v_row->>'direction', ''), 'inbound');
+
     insert into public.mail_threads (connection_id, external_id, subject, snippet, folder)
     values (p_connection, v_row->>'thread_external_id', v_row->>'subject', v_row->>'snippet', p_folder)
     on conflict (connection_id, external_id) do update
@@ -262,19 +299,19 @@ begin
       end
     returning id into v_thread;
 
-    v_mid := nullif(v_row->>'internet_message_id', '');
     if v_mid is not null then
       update public.mail_messages m
       set external_id = v_row->>'external_id'
       where m.thread_id = v_thread
         and m.internet_message_id = v_mid
-        and m.folder = p_folder
+        and m.direction = v_dir
+        and (m.folder = p_folder or (m.folder = 'inbox' and p_folder in ('archive', 'spam', 'trash')))
         and m.external_id <> v_row->>'external_id'
         and not exists (
           select 1 from public.mail_messages x
           where x.thread_id = v_thread and x.external_id = v_row->>'external_id')
         and (select count(*) from public.mail_messages y
-             where y.thread_id = v_thread and y.internet_message_id = v_mid and y.folder = p_folder) = 1;
+             where y.thread_id = v_thread and y.internet_message_id = v_mid and y.direction = v_dir) = 1;
     end if;
 
     insert into public.mail_messages (
@@ -282,8 +319,7 @@ begin
       to_emails, cc_emails, bcc_emails, subject, body_text, body_html, preview, sent_at,
       importance, has_attachments, is_read, is_flagged)
     values (
-      v_thread, v_row->>'external_id', v_mid, p_folder,
-      coalesce(nullif(v_row->>'direction', ''), 'inbound'),
+      v_thread, v_row->>'external_id', v_mid, p_folder, v_dir,
       v_row->>'from_name', v_row->>'from_email',
       coalesce(array(select jsonb_array_elements_text(v_row->'to_emails')), '{}'),
       coalesce(array(select jsonb_array_elements_text(v_row->'cc_emails')), '{}'),
@@ -313,7 +349,11 @@ begin
 
     -- A routing failure must not lose the batch: the mail is stored, and the
     -- worst case is one reply someone files by hand.
-    if v_inserted and coalesce(v_row->>'direction', 'inbound') = 'inbound' then
+    if v_inserted and v_dir = 'inbound'
+       and not (v_mid is not null and exists (
+         select 1 from public.mail_messages x
+         where x.thread_id = v_thread and x.internet_message_id = v_mid
+           and x.direction = 'inbound' and x.id <> v_message)) then
       begin
         if public.route_mail_to_ticket(v_message) is not null then
           v_routed := v_routed + 1;

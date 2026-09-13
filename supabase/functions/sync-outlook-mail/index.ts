@@ -4,7 +4,9 @@
  * background. This is the manager's version — one mailbox, a longer window, a
  * chosen folder — for a first import or to fill a gap. Both store through
  * _shared/mail-sync.ts, so they cannot disagree about a row, and they take the
- * same per-mailbox lock, so they cannot run over each other.
+ * same per-mailbox lock, so they cannot run over each other. It does not touch
+ * the schedule's delta cursor: a manual sync must not make the schedule skip
+ * what it had not reached yet.
  *
  * Idempotent: re-running never duplicates. A customer replying to something we
  * sent carries [#VYG-142] in the subject; route_mail_to_ticket() (0035) puts
@@ -16,9 +18,9 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { accessTokenFor, markSynced } from '../_shared/graph-token.ts';
+import { accessTokenFor } from '../_shared/graph-token.ts';
 import {
-  claimSync, fetchFolder, recordSyncFailure, releaseSync, storeMessages,
+  claimSync, fetchFolder, markSyncedIfLive, recordSyncFailure, releaseSync, storeMessages,
 } from '../_shared/mail-sync.ts';
 import { isShared } from '../_shared/mailbox.ts';
 
@@ -75,12 +77,10 @@ Deno.serve(async (req) => {
   try {
     const token = await accessTokenFor(admin, connectionId);
     const since = new Date(Date.now() - days * 86400_000).toISOString();
-    const page = await fetchFolder(conn, token, folder, {
-      since, field: 'receivedDateTime', order: 'desc', max,
-    });
+    const page = await fetchFolder(conn, token, folder, { since, max });
     const stored = await storeMessages(admin, conn, folder, page.items);
 
-    await markSynced(admin, connectionId, null);
+    await markSyncedIfLive(admin, connectionId);
     return json({
       ok: true, mailbox: conn.account_label, shared: isShared(conn), folder,
       threads: stored.threads, messages: stored.messages, routedToTickets: stored.routedToTickets,

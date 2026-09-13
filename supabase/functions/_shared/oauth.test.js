@@ -111,6 +111,18 @@ test('needsRefresh is true early, and true for anything unusable', () => {
   assert.equal(m.needsRefresh('not a date', now), true);
 });
 
+test('only a refused grant takes a mailbox off the schedule; an outage does not', () => {
+  assert.equal(m.refreshFailureIsPermanent(400,
+    { error: 'invalid_grant', error_description: 'AADSTS700082: The refresh token has expired' }), true);
+  assert.equal(m.refreshFailureIsPermanent(400, { error: 'interaction_required' }), true);
+  assert.equal(m.refreshFailureIsPermanent(503, { error: 'temporarily_unavailable' }), false,
+    'Microsoft being down must not need someone to reconnect');
+  assert.equal(m.refreshFailureIsPermanent(429, {}), false);
+  assert.equal(m.refreshFailureIsPermanent(500, null), false);
+  assert.equal(m.refreshFailureIsPermanent(400, { error: 'invalid_request' }), false,
+    'a malformed request is our bug, not a revoked grant');
+});
+
 test('a refresh never wipes the stored refresh token', () => {
   const stored = { access_token: 'old', refresh_token: 'THE-STORED-ONE', token_type: 'Bearer' };
   const merged = m.mergeTokens(stored, { access_token: 'new', expires_in: 3600 },

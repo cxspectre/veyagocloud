@@ -208,8 +208,13 @@ Deno.serve(async (req) => {
     const parsed = parseSendRequest(payload);
     if (!parsed.ok) return json({ error: parsed.error }, 400);
     const request = parsed.value;
+    /* A field counts as given when it carries a value. `to: null` is not "send
+       to nobody" — parseSendRequest lets Outlook fill To for it, so the draft
+       must not be told otherwise. */
     const given = (field: string) =>
-      Boolean(payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, field));
+      Boolean(payload && typeof payload === 'object'
+        && Object.prototype.hasOwnProperty.call(payload, field)
+        && payload[field] !== null && payload[field] !== undefined);
 
     /* The same rule that decides whose mail someone can read decides where
        they can send from: the studio's mailboxes, and their own. */

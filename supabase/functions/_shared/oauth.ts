@@ -131,6 +131,17 @@ export function mergeTokens(
   };
 }
 
+/* Whether a failed refresh needs a person to reconnect. Only Microsoft saying
+   the grant itself is gone does: invalid_grant (revoked, expired, password
+   changed) or interaction_required (new consent, MFA, conditional access).
+   A 429, a 5xx or temporarily_unavailable is Microsoft having a moment, and
+   must not take a mailbox off the schedule; invalid_request is our own bug. */
+export function refreshFailureIsPermanent(status: number, body: { error?: string } | null | undefined): boolean {
+  if (status === 429 || status >= 500) return false;
+  const code = String(body?.error ?? '').toLowerCase();
+  return code === 'invalid_grant' || code === 'interaction_required';
+}
+
 /* state carries the connection's identity through Microsoft and back. It is
    returned to us over a redirect the user controls, so it is signed: an
    unsigned state is an open invitation to bind someone else's mailbox to your

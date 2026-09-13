@@ -24,8 +24,7 @@ import { decideSend, pickTicketMailbox, ticketReplyEmail, ticketRef } from '../_
 import { accessTokenFor } from '../_shared/graph-token.ts';
 import { sendMailPayload } from '../_shared/graph-write.ts';
 import { mailboxPath } from '../_shared/mailbox.ts';
-
-const GRAPH = 'https://graph.microsoft.com/v1.0';
+import { GRAPH, graphRequest } from '../_shared/mail-sync.ts';
 
 /* Sending from the studio's own mailbox beats sending through Resend for a
  * support reply: it lands in Sent where anyone can see it was answered, and
@@ -45,18 +44,17 @@ async function sendViaGraph(
     const replyTo = Deno.env.get('SUPPORT_REPLY_TO');
     /* Sent through the shared mailbox's own path, so it leaves as
        hello@veyago.cloud rather than as whoever's grant is being used — and
-       lands in THAT mailbox's Sent items, where the team can see it. */
-    const res = await fetch(`${GRAPH}${mailboxPath(connection)}/sendMail`, {
+       lands in THAT mailbox's Sent items, where the team can see it. Through
+       graphRequest, like every other Graph call for mail, so the guard sees it.
+       Graph answers 202 Accepted with an empty body on success. */
+    await graphRequest(`${GRAPH}${mailboxPath(connection)}/sendMail`, token, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(sendMailPayload({
+      body: sendMailPayload({
         to: [to], subject, html,
         ...(replyTo ? { replyTo: [replyTo] } : {}),
-      })),
+      }),
     });
-    /* Graph answers 202 Accepted with an empty body on success. */
-    if (res.status === 202 || res.ok) return { ok: true };
-    return { ok: false, error: `Graph sendMail → ${res.status}: ${(await res.text()).slice(0, 200)}` };
+    return { ok: true };
   } catch (err) {
     return { ok: false, error: String((err as Error).message || err) };
   }

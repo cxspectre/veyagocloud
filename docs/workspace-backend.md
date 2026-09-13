@@ -503,11 +503,16 @@ Outlook did not get it.
 
 Every five minutes `pg_cron` sends **one request per connected mailbox** to
 `sync-mail-scheduled`, so a slow mailbox cannot use up the others' time. Each run
-is incremental — what changed since the last, by `lastModifiedDateTime`, oldest
-first — and when there is more than one run takes, it records how far it got so
-the next run carries on instead of skipping. A per-mailbox lock
-(`claim_mail_sync`) keeps the schedule, a manual sync and a long run from
-overlapping.
+follows Graph's **delta** for Inbox and Sent Items: new mail, and read and flag
+changes made in Outlook. The link Graph hands back is saved after every page
+(`sync_cursor`, one per folder), so a burst of changes bigger than one run —
+"mark all as read" on a busy inbox — carries on from exactly where it stopped
+instead of being re-read from the top. A folder's first round looks back three
+days; a link Graph has expired starts that folder's round again. A manual sync
+(`sync-outlook-mail`) never touches the cursor, so it cannot make the schedule
+skip anything. A per-mailbox lock (`claim_mail_sync`) keeps the schedule, a
+manual sync and a long run from overlapping. A message deleted or moved out of
+a synced folder in Outlook stays in the workspace.
 
 Everything is stored through `store_mail_batch()`, one call per batch, which
 upserts the messages and brings each conversation in line with **every** message
@@ -522,17 +527,28 @@ filed onto a ticket as the customer's words.
 The function is deployed `--no-verify-jwt` and checks an `x-sync-secret` header
 instead: a schedule has no user to sign in as, and should not be handed the
 service-role key. A failure marks a mailbox `needs_reauth` — which takes it off
-the schedule — only when a reconnect would fix it: a refused grant, missing
-credentials. Anything else is `error`, which the schedule retries.
+the schedule — only when a reconnect would fix it: Microsoft refusing the grant
+(`invalid_grant`, `interaction_required`) or credentials that are gone. A rate
+limit, Microsoft being briefly unavailable or a database hiccup is `error`,
+which the schedule retries. A run that finishes after someone disconnected the
+mailbox leaves it disconnected.
 
-### A mailbox keeps its owner
+### A mailbox keeps what it was connected as
 
-Managers may write `integration_connections`, and that used to include
-`employee_id`: point a colleague's personal mailbox at yourself and
-`can_read_connection()` would hand you their mail — and now their sending. 0038
-adds a trigger that refuses the change from the browser, and `microsoft-connect`
-refuses it for a mailbox that is already connected. Changing hands means
-disconnecting and connecting fresh.
+Managers may write `integration_connections`, and that used to mean every
+column. Point a colleague's personal mailbox at yourself (`employee_id`) and
+`can_read_connection()` would hand you their mail — and now their sending. Clear
+`external_id` on the shared mailbox and the sync would read the consenting
+person's own mail into it, for all staff to see. 0038 adds a trigger: **from the
+browser a connection can only be disconnected**. Everything else about it is
+written by `microsoft-connect`, the callback and the sync, as the service role.
+
+`microsoft-connect` refuses a different owner for a mailbox that already has a
+row, and two first connections of the same address at once cannot overwrite
+each other's owner. A manager deletes the studio's connections or their own,
+not a colleague's — the row takes the grant and every stored message with it.
+Handing a mailbox to someone else means removing the connection and connecting
+it fresh; disconnecting keeps the row, and its owner.
 
 ### Going live
 
@@ -573,5 +589,8 @@ personal mailbox into a shared one.
   `mail-attachments` once it is sent. Files uploaded for a message that was
   never sent — the compose window closed, or the send failed — stay until
   someone removes them.
+- **Mail stored before 0038** has no Message-ID or folder until a sync sees it
+  again. One that moves in Outlook before then is stored a second time under its
+  new Graph id rather than recognised as the same message.
 - **Invoice creation** from the workspace — Finance reads `finance_invoices`,
   which is still written from `/admin`.

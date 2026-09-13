@@ -124,6 +124,69 @@ exception when insufficient_privilege then
   values ('SYNC PATH: nor take the sync lock', 'denied', 'denied', true);
 end $$;
 
+-- 0038: from the browser a connection can only be disconnected. Its address
+-- and who consented decide WHICH mail is read: clearing external_id on the
+-- shared mailbox would read the consenting person's own mail into it.
+do $$
+begin
+  update public.integration_connections set external_id = null
+  where id = '55555555-5555-5555-5555-555555555555';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: a manager cannot change who consented', 'refused', 'CHANGED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: a manager cannot change who consented', 'refused', 'refused', true);
+end $$;
+
+do $$
+begin
+  update public.integration_connections set account_label = 'someone.else@example.invalid'
+  where id = '55555555-5555-5555-5555-555555555555';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor which mailbox it reads', 'refused', 'CHANGED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor which mailbox it reads', 'refused', 'refused', true);
+end $$;
+
+do $$
+begin
+  update public.integration_connections set sync_started_at = now() + interval '1 year'
+  where id = '55555555-5555-5555-5555-555555555555';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor stall its sync', 'refused', 'STALLED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor stall its sync', 'refused', 'refused', true);
+end $$;
+
+with disconnected as (
+  update public.integration_connections set status = 'disconnected'
+  where id = '55555555-5555-5555-5555-555555555555'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'manager: can still disconnect a studio mailbox', '1', count(*)::text, count(*) = 1
+from disconnected;
+
+-- A colleague's personal mailbox takes its grant and every stored message with
+-- its row. Made here as the database owner; deleted, or not, as the manager.
+reset role;
+insert into public.integration_connections (id, provider, account_label, employee_id, status)
+values ('99999999-9999-9999-9999-999999999999', 'microsoft_mail', 'fixture.colleague@example.invalid',
+        (select id from public.employees where user_id = '21fc20c1-50e8-4764-9a11-71031d2f8f2c'), 'connected');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+
+with gone as (
+  delete from public.integration_connections
+  where id = '99999999-9999-9999-9999-999999999999'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'MAILBOX: a manager cannot delete a colleague''s personal mailbox', '0', count(*)::text, count(*) = 0
+from gone;
+
 reset role;
 
 -- ── as an ordinary EMPLOYEE (staff, not manager) ────────────────────────────

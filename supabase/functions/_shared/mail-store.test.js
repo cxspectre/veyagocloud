@@ -18,39 +18,22 @@ test.before(async () => {
 });
 
 test('a refused grant needs a person to reconnect; anything else is worth retrying', () => {
-  assert.equal(m.failureStatus('Microsoft refused the refresh: AADSTS70000: invalid_grant'), 'needs_reauth');
-  assert.equal(m.failureStatus('Microsoft refused the refresh: interaction_required'), 'needs_reauth');
+  assert.equal(m.failureStatus('Microsoft refused the refresh (invalid_grant): AADSTS700082: expired'), 'needs_reauth');
+  assert.equal(m.failureStatus('Microsoft refused the refresh (interaction_required): consent'), 'needs_reauth');
   assert.equal(m.failureStatus('That connection has no credentials. Connect it again.'), 'needs_reauth');
   assert.equal(m.failureStatus('That connection cannot refresh itself. Connect it again.'), 'needs_reauth');
   assert.equal(m.failureStatus('Could not read the credentials: connection reset'), 'error',
     'a database hiccup is not a revoked grant — needs_reauth takes a mailbox off the schedule');
-  assert.equal(m.failureStatus('Could not store the refreshed token: timeout'), 'error');
+  assert.equal(m.failureStatus('Microsoft could not refresh the token (temporarily_unavailable): try again'), 'error');
   assert.equal(m.failureStatus('Graph → 503: Service Unavailable'), 'error');
   assert.equal(m.failureStatus(''), 'error');
 });
 
-test('our own addresses are the mailbox and whoever consented to reading it', () => {
-  assert.deepEqual(m.ownAddresses({ account_label: 'hello@veyago.cloud', external_id: 'Cassian@Veyago.cloud' }),
-    ['hello@veyago.cloud', 'cassian@veyago.cloud']);
-  assert.deepEqual(m.ownAddresses({ account_label: 'me@veyago.cloud', external_id: 'ME@veyago.cloud' }),
-    ['me@veyago.cloud']);
-  assert.deepEqual(m.ownAddresses({ account_label: 'me@veyago.cloud', external_id: null }), ['me@veyago.cloud']);
-});
-
-const NOW = Date.parse('2026-09-13T12:00:00Z');
-
-test('an incremental sync starts a little before the last one ended', () => {
-  assert.equal(m.syncWindowStart('2026-09-13T11:55:00Z', NOW), '2026-09-13T11:45:00.000Z');
-});
-
-test('a first sync looks back three days, and a long outage at most fourteen', () => {
-  assert.equal(m.syncWindowStart(null, NOW), '2026-09-10T12:00:00.000Z');
-  assert.equal(m.syncWindowStart('not a date', NOW), '2026-09-10T12:00:00.000Z');
-  assert.equal(m.syncWindowStart('2026-08-01T00:00:00Z', NOW), '2026-08-30T12:00:00.000Z');
-});
-
-test('a last-synced time in the future does not skip mail', () => {
-  assert.equal(m.syncWindowStart('2026-09-14T00:00:00Z', NOW), '2026-09-13T11:50:00.000Z');
+test('our own address is the mailbox itself, not whoever consented to reading it', () => {
+  assert.deepEqual(m.ownAddresses({ account_label: 'Hello@Veyago.cloud', external_id: 'cassian@veyago.cloud' }),
+    ['hello@veyago.cloud'],
+    'mail the consenting person sends TO the shared inbox is mail from outside it; replies sent AS it are caught by directionFor');
+  assert.deepEqual(m.ownAddresses({ account_label: ' me@veyago.cloud ', external_id: null }), ['me@veyago.cloud']);
 });
 
 test('mail found in Sent is ours, whatever its From says', () => {
@@ -59,4 +42,37 @@ test('mail found in Sent is ours, whatever its From says', () => {
   assert.equal(m.directionFor('inbox', 'inbound'), 'inbound');
   assert.equal(m.directionFor('inbox', 'outbound'), 'outbound');
   assert.equal(m.directionFor('archive', 'inbound'), 'inbound');
+});
+
+const INBOX_LINK = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages/delta?$deltatoken=A';
+const SENT_LINK = 'https://graph.microsoft.com/v1.0/me/mailFolders/sentitems/messages/delta?$skiptoken=B';
+
+test('delta links are kept per folder, together', () => {
+  const one = m.withCursor(null, 'inbox', INBOX_LINK);
+  const two = m.withCursor(one, 'sentitems', SENT_LINK);
+  assert.deepEqual(m.readCursors(two), { inbox: INBOX_LINK, sentitems: SENT_LINK });
+  assert.deepEqual(m.readCursors(m.withCursor(two, 'inbox', null)), { sentitems: SENT_LINK },
+    'clearing one folder leaves the other where it was');
+});
+
+test('no cursor, or one that is not ours to read, is a fresh start', () => {
+  assert.deepEqual(m.readCursors(null), {});
+  assert.deepEqual(m.readCursors(''), {});
+  assert.deepEqual(m.readCursors('not json'), {});
+  assert.deepEqual(m.readCursors('["x"]'), {});
+  assert.deepEqual(m.readCursors('"a string"'), {});
+});
+
+test('a cursor that is not a Graph link is ignored, never followed', () => {
+  assert.deepEqual(m.readCursors(JSON.stringify({
+    inbox: 'https://evil.example/v1.0/me/mailFolders/inbox/messages/delta',
+    sentitems: 42,
+    archive: 'http://graph.microsoft.com/v1.0/me/mailFolders/archive/messages/delta',
+  })), {});
+});
+
+const NOW = Date.parse('2026-09-13T12:00:00Z');
+
+test('a first delta sync starts three days back', () => {
+  assert.equal(m.firstSyncSince(NOW), '2026-09-10T12:00:00.000Z');
 });

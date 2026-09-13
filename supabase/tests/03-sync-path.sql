@@ -213,6 +213,25 @@ select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'archive'
   'sent_at', (now() - interval '2 hours')::text, 'is_read', true, 'is_flagged', false,
   'importance', 'normal', 'has_attachments', false)));
 
+-- The question is archived in Outlook and comes back from an archive sync under
+-- yet another Graph id: the same message by Message-ID, re-pointed — not stored,
+-- nor routed to its ticket, a second time.
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'archive', jsonb_build_array(jsonb_build_object(
+  'external_id', 'b-in-1-archived', 'thread_external_id', 'conv-b', 'internet_message_id', '<b-in-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'Sync Fixture Person', 'from_email', 'person@sync-fixture.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Batch question', 'body_text', 'Is it ready?', 'body_html', '', 'snippet', 'Is it ready?',
+  'sent_at', (now() - interval '2 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+
+insert into results(name, expected, actual, pass)
+select 'an archived message is the same message, not a second one', '2 · b-in-1-archived',
+       count(*)::text || ' · ' || coalesce(max(m.external_id) filter (where m.direction = 'inbound'), 'none'),
+       count(*) = 2 and max(m.external_id) filter (where m.direction = 'inbound') = 'b-in-1-archived'
+from public.mail_messages m
+join public.mail_threads t on t.id = m.thread_id
+where t.connection_id = '55555555-5555-5555-5555-555555555555' and t.external_id = 'conv-b';
+
 insert into results(name, expected, actual, pass)
 select 'first seen in Sent is filed as sent; archive does not empty the inbox', 'sent · inbox',
        max(folder) filter (where external_id = 'conv-c') || ' · ' || max(folder) filter (where external_id = 'conv-b'),

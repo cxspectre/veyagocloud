@@ -4,7 +4,7 @@
  * writes the new one back. Only ever called with a SERVICE ROLE client —
  * integration_secrets refuses every other role by design (migration 0024).
  */
-import { mergeTokens, needsRefresh, tokenUrl } from './oauth.ts';
+import { mergeTokens, needsRefresh, refreshFailureIsPermanent, tokenUrl } from './oauth.ts';
 
 // deno-lint-ignore no-explicit-any
 type Admin = any;
@@ -39,16 +39,23 @@ export async function accessTokenFor(admin: Admin, connectionId: string): Promis
       scope: secret.extra?.scope ?? 'offline_access https://graph.microsoft.com/.default',
     }),
   });
-  const fresh = await res.json();
+  /* A gateway error can answer with HTML; its status is what matters then. */
+  const fresh = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    /* invalid_grant means the grant was revoked, the password changed, or a
-       conditional-access policy now refuses it. No amount of retrying fixes
-       any of those, so the connection is flagged for a human rather than left
-       to fail silently on a schedule. */
-    const why = fresh.error_description || fresh.error || `HTTP ${res.status}`;
-    await markNeedsReauth(admin, connectionId, String(why));
-    throw new Error(`Microsoft refused the refresh: ${why}`);
+    const code = String(fresh?.error || `http_${res.status}`);
+    const why = String(fresh?.error_description || fresh?.error || `HTTP ${res.status}`);
+    /* invalid_grant or interaction_required: the grant is gone — revoked, a
+       password changed, a conditional-access policy now refuses it — and no
+       retry brings it back, so the connection is flagged for a person. The
+       code goes in the message too: error_description ("AADSTS700082: …")
+       does not always say it, and failureStatus() reads the message. Anything
+       else is Microsoft having a moment, and the next run tries again. */
+    if (refreshFailureIsPermanent(res.status, fresh)) {
+      await markNeedsReauth(admin, connectionId, `${code}: ${why}`);
+      throw new Error(`Microsoft refused the refresh (${code}): ${why}`);
+    }
+    throw new Error(`Microsoft could not refresh the token (${code}): ${why}`);
   }
 
   /* merge, not replace: a refresh response carries no refresh_token. */

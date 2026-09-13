@@ -1,8 +1,8 @@
 /* microsoft-connect — step 1 of connecting an Outlook mailbox or calendar.
  *
- * Creates (or reuses) the integration_connections row and returns the Microsoft
- * consent URL to send the manager to. Nothing is authorised yet; the tokens
- * arrive in microsoft-callback.
+ * Creates the integration_connections row (or finds the existing one) and
+ * returns the Microsoft consent URL to send the manager to. Nothing is
+ * authorised yet; the tokens arrive in microsoft-callback.
  *
  * Deploy:  supabase functions deploy microsoft-connect
  * Secrets: supabase secrets set \
@@ -28,6 +28,10 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+
+/* Disconnecting keeps the row, and with it the owner — so the way to hand a
+   mailbox to someone else is removing the connection, not disconnecting it. */
+const OWNER_KEPT = 'This mailbox is already connected for someone else. Remove the connection before connecting it for a different owner.';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -65,13 +69,15 @@ Deno.serve(async (req) => {
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
     /* Reconnecting an existing mailbox — to grant a scope added since, say —
-       starts from what is already known about it. */
-    const { data: previous } = await admin
+       starts from what is already known about it. A lookup that failed is not
+       "there is none": treating it so would create or reassign the wrong row. */
+    const { data: previous, error: previousErr } = await admin
       .from('integration_connections')
-      .select('employee_id, external_id')
+      .select('id, employee_id, external_id')
       .eq('provider', provider)
       .eq('account_label', accountLabel)
       .maybeSingle();
+    if (previousErr) return json({ error: previousErr.message }, 500);
 
     /* employeeId null means a studio-wide mailbox that every staff member can
        read. Anything else is personal and stays private to that person — see
@@ -82,14 +88,12 @@ Deno.serve(async (req) => {
     const saysWho = body && Object.prototype.hasOwnProperty.call(body, 'employeeId');
     const employeeId = saysWho ? (body.employeeId ?? null) : (previous?.employee_id ?? null);
 
-    /* A connected mailbox keeps its owner. Reassigning one here — with the
-       grant still stored and the status still connected — would hand a
-       colleague's personal mailbox, its reading and its sending, to whoever
-       asked. Changing hands means disconnecting and connecting fresh. The
-       database refuses the same change from the browser (0038). */
-    if (previous && (previous.employee_id ?? null) !== employeeId) {
-      return json({ error: 'A connected mailbox keeps its owner. Disconnect it before connecting it for someone else.' }, 409);
-    }
+    /* A connected mailbox keeps its owner. Reassigning one — with the grant
+       still stored — would hand a colleague's personal mailbox, its reading
+       and its sending, to whoever asked. Changing hands means disconnecting and
+       connecting fresh. The database refuses the same change from the
+       browser (0038). */
+    if (previous && (previous.employee_id ?? null) !== employeeId) return json({ error: OWNER_KEPT }, 409);
 
     /* Who will sit at the consent screen. For a personal mailbox that is the
        mailbox itself. For a SHARED one it is not — hello@veyago.cloud has no
@@ -100,44 +104,65 @@ Deno.serve(async (req) => {
       || String(previous?.external_id || '').trim().toLowerCase()
       || accountLabel;
 
-    const { data: conn, error: connErr } = await admin
-      .from('integration_connections')
-      .upsert(
-        {
-          provider,
-          account_label: accountLabel,
-          employee_id: employeeId,
-          /* A mailbox that is working keeps working while someone is at the
-             consent screen; only a new one starts disconnected. */
-          ...(previous ? {} : { status: 'disconnected' }),
-          scopes: provider === 'microsoft_mail' ? SCOPES.mail : SCOPES.calendar,
-          last_error: null,
-        },
-        { onConflict: 'provider,account_label' },
-      )
-      .select('id')
-      .single();
-    if (connErr) return json({ error: connErr.message }, 500);
+    const scopes = provider === 'microsoft_mail' ? SCOPES.mail : SCOPES.calendar;
+    let connectionId: string;
 
-    const scopes = [
-      ...(provider === 'microsoft_mail' ? SCOPES.mail : SCOPES.calendar),
-      ...SCOPES.identity,
-    ];
+    if (previous) {
+      /* A reconnect changes what is asked for — never whose mailbox it is,
+         and never its status: a working mailbox keeps working while someone
+         is at the consent screen. */
+      const { error } = await admin
+        .from('integration_connections')
+        .update({ scopes, last_error: null })
+        .eq('id', previous.id);
+      if (error) return json({ error: error.message }, 500);
+      connectionId = previous.id;
+    } else {
+      /* A new connection. If another request made the same row a moment ago,
+         this one must not rewrite its owner: insert-or-nothing, then read the
+         row back and check whose it is. */
+      const { error: insertErr } = await admin
+        .from('integration_connections')
+        .upsert(
+          {
+            provider,
+            account_label: accountLabel,
+            employee_id: employeeId,
+            status: 'disconnected',
+            scopes,
+            last_error: null,
+          },
+          { onConflict: 'provider,account_label', ignoreDuplicates: true },
+        );
+      if (insertErr) return json({ error: insertErr.message }, 500);
+
+      const { data: row, error: rowErr } = await admin
+        .from('integration_connections')
+        .select('id, employee_id')
+        .eq('provider', provider)
+        .eq('account_label', accountLabel)
+        .single();
+      if (rowErr || !row) return json({ error: rowErr?.message ?? 'The connection was not created' }, 500);
+      if ((row.employee_id ?? null) !== employeeId) return json({ error: OWNER_KEPT }, 409);
+      connectionId = row.id;
+    }
+
+    const requested = [...scopes, ...SCOPES.identity];
 
     /* The scopes travel in the signed state so the callback can ask for the
        same set when it exchanges the code — Microsoft narrows the token
        otherwise, and the failure surfaces later, somewhere else. */
     const state = await signState(
-      { connection: conn.id, provider, issued: Date.now(), scopes: scopes.join(' ') },
+      { connection: connectionId, provider, issued: Date.now(), scopes: requested.join(' ') },
       stateSecret,
     );
 
     return json({
-      connectionId: conn.id,
+      connectionId,
       consentUrl: buildConsentUrl({
         clientId,
         redirectUri,
-        scopes,
+        scopes: requested,
         state,
         loginHint: consentAs,
         tenant: Deno.env.get('MICROSOFT_TENANT') ?? undefined,
