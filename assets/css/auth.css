@@ -1,4 +1,4 @@
-/* auth.css - the sign-in surface: /login/, /workspace/ and /portal/.
+/* auth.css - the sign-in surface: /login/ and /portal/.
 
    These pages carry no header, no footer and no navigation, so this file does
    not extend styles.css - it stands alone and is loaded nowhere else. The
@@ -181,7 +181,7 @@ a:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; border-
 .auth-btn svg { width: 15px; height: 15px; flex-shrink: 0; transition: transform .18s; }
 .auth-choice:hover .auth-btn svg { transform: translateX(2px); }
 
-/* ── The two stubs at /workspace/ and /portal/ ────────────────────────── */
+/* ── The stub at /portal/ ─────────────────────────────────────────────── */
 
 .auth-panel {
   padding: 30px 28px 28px;
