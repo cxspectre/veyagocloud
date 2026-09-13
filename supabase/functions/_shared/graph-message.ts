@@ -34,6 +34,10 @@ export interface GraphMessage {
   sentDateTime?: string;
   isRead?: boolean;
   flag?: { flagStatus?: string };
+  internetMessageId?: string;
+  bccRecipients?: GraphRecipient[];
+  importance?: string;
+  hasAttachments?: boolean;
 }
 
 export function address(r: GraphRecipient | undefined): { name: string; email: string } {
@@ -91,14 +95,30 @@ export function toInstant(when: { dateTime?: string; timeZone?: string } | undef
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+/* Every field toMailRow reads. The sync and send-mail both $select this, so
+ * a field added to the row cannot be forgotten in one of the requests. */
+export const MESSAGE_SELECT = [
+  'id', 'conversationId', 'internetMessageId', 'subject', 'bodyPreview', 'body',
+  'from', 'sender', 'toRecipients', 'ccRecipients', 'bccRecipients',
+  'receivedDateTime', 'sentDateTime', 'isRead', 'flag', 'importance', 'hasAttachments',
+].join(',');
+
+export type Importance = 'low' | 'normal' | 'high';
+
 export interface MailRow {
   external_id: string;
   thread_external_id: string;
+  /* RFC 2822 Message-ID. Unlike `external_id` it survives a move between
+     folders — a draft's id changes when it is sent, this does not — so it is
+     how a sent copy is recognised as the message we just sent. */
+  internet_message_id: string | null;
   direction: 'inbound' | 'outbound';
   from_name: string;
   from_email: string;
   to_emails: string[];
   cc_emails: string[];
+  /* Only ever present on our own sent copies: a recipient cannot see Bcc. */
+  bcc_emails: string[];
   subject: string;
   body_text: string;
   body_html: string;
@@ -106,6 +126,13 @@ export interface MailRow {
   snippet: string;
   is_read: boolean;
   is_flagged: boolean;
+  importance: Importance;
+  has_attachments: boolean;
+}
+
+function importanceOf(value: unknown): Importance {
+  const v = String(value ?? '').toLowerCase();
+  return v === 'low' || v === 'high' ? v : 'normal';
 }
 
 /* `ownAddresses` decides direction: a message we sent is one whose From is the
@@ -127,11 +154,13 @@ export function toMailRow(msg: GraphMessage, ownAddresses: string[] = []): MailR
     /* conversationId is Graph's thread. A message without one is its own
        thread rather than being dropped into a shared null bucket. */
     thread_external_id: msg.conversationId || msg.id,
+    internet_message_id: msg.internetMessageId ? String(msg.internetMessageId) : null,
     direction: mine.has(from.email) ? 'outbound' : 'inbound',
     from_name: from.name,
     from_email: from.email,
     to_emails: addressList(msg.toRecipients),
     cc_emails: addressList(msg.ccRecipients),
+    bcc_emails: addressList(msg.bccRecipients),
     subject: String(msg.subject ?? ''),
     body_text: isHtml ? htmlToText(content) : content,
     body_html: isHtml ? content : '',
@@ -139,6 +168,8 @@ export function toMailRow(msg: GraphMessage, ownAddresses: string[] = []): MailR
     snippet: String(msg.bodyPreview ?? '').slice(0, 300),
     is_read: msg.isRead !== false,
     is_flagged: String(msg.flag?.flagStatus ?? '') === 'flagged',
+    importance: importanceOf(msg.importance),
+    has_attachments: msg.hasAttachments === true,
   };
 }
 

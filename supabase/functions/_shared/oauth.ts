@@ -15,37 +15,40 @@
 export const AUTHORITY = 'https://login.microsoftonline.com';
 
 export const SCOPES = {
-  /* WHAT IS ASKED FOR, AND WHAT IS DELIBERATELY NOT.
+  /* WHAT IS ASKED FOR, AND WHY.
    *
    * The workspace is meant to replace opening Outlook, not to be a read-only
-   * window onto it — so it sends mail and writes the diary.
+   * window onto it — so it reads, sends and manages mail and writes the diary.
    *
    *   Mail.Read           read the inbox
-   *   Mail.Send           send a reply from the studio mailbox, so it lands in
-   *                       Sent and threads properly in the customer's client
+   *   Mail.Send           send from the mailbox, so it lands in Sent and
+   *                       threads properly in the other person's client
+   *   Mail.ReadWrite      drafts (a reply is created, edited, then sent),
+   *                       attachments over 3 MB, and read/flag state that
+   *                       reaches Outlook instead of living on a mirror
    *   Calendars.ReadWrite read the diary and put things in it
    *
-   * NOT Mail.ReadWrite. Graph has no "read and mark-as-read but not delete"
-   * delegated scope — ReadWrite is the granularity on offer, and it carries
-   * permanent delete of client correspondence. The only thing it would buy is
-   * syncing read/flag state back to Outlook, which the workspace can live
-   * without: it keeps that state on its own mirror. A bug in a young codebase
-   * that can only fail to mark something read is a very different class of
-   * problem from one that can empty a mailbox.
+   * Mail.ReadWrite also permits deleting mail; Graph offers nothing narrower
+   * that does the rest. It was held back for that reason until 2026-09-13,
+   * when the owner chose it. The line the grant cannot draw is drawn in the
+   * code instead: mail-safety.test.js fails if any function deletes, purges,
+   * moves or copies a message.
    *
    * offline_access is what makes a refresh token come back at all. */
   mail: [
     'offline_access',
     'https://graph.microsoft.com/Mail.Read',
     'https://graph.microsoft.com/Mail.Send',
+    'https://graph.microsoft.com/Mail.ReadWrite',
     /* A SHARED mailbox (hello@veyago.cloud) is not the mailbox of whoever
-       consents. Delegated access to one needs the .Shared pair, and the person
-       consenting must already have Full Access to it in Exchange — Graph will
-       not grant what Exchange has not. Requested always: asking for them on a
-       personal mailbox costs nothing, and discovering they are missing means
-       going back through consent. */
+       consents. Delegated access to one needs the .Shared variants, and the
+       person consenting must already have Full Access to it in Exchange —
+       Graph will not grant what Exchange has not. Requested always: asking for
+       them on a personal mailbox costs nothing, and discovering they are
+       missing means going back through consent. */
     'https://graph.microsoft.com/Mail.Read.Shared',
     'https://graph.microsoft.com/Mail.Send.Shared',
+    'https://graph.microsoft.com/Mail.ReadWrite.Shared',
   ],
   calendar: [
     'offline_access',

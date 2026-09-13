@@ -109,6 +109,39 @@ test('a plain-text body is not run through the html stripper', () => {
   assert.equal(row.body_html, '');
 });
 
+test('priority, attachments, the internet message id and bcc come across', () => {
+  const row = m.toMailRow({
+    ...message,
+    importance: 'high',
+    hasAttachments: true,
+    internetMessageId: '<abc123@mail.northline.example>',
+    bccRecipients: [{ emailAddress: { address: 'Boss@Veyago.cloud' } }],
+  });
+  assert.equal(row.importance, 'high');
+  assert.equal(row.has_attachments, true);
+  assert.equal(row.internet_message_id, '<abc123@mail.northline.example>');
+  assert.deepEqual(row.bcc_emails, ['boss@veyago.cloud']);
+});
+
+test('no priority, or one Graph does not define, is normal; no message id is null', () => {
+  const row = m.toMailRow(message);
+  assert.equal(row.importance, 'normal');
+  assert.equal(row.has_attachments, false);
+  assert.equal(row.internet_message_id, null);
+  assert.deepEqual(row.bcc_emails, []);
+  assert.equal(m.toMailRow({ ...message, importance: 'URGENT' }).importance, 'normal');
+  assert.equal(m.toMailRow({ ...message, importance: 'Low' }).importance, 'low');
+});
+
+test('the sync asks Graph for every field the row is built from', () => {
+  const fields = m.MESSAGE_SELECT.split(',');
+  for (const f of ['id', 'conversationId', 'internetMessageId', 'subject', 'body', 'from',
+    'toRecipients', 'ccRecipients', 'bccRecipients', 'sentDateTime', 'receivedDateTime',
+    'isRead', 'flag', 'importance', 'hasAttachments']) {
+    assert.ok(fields.includes(f), `${f} is missing from $select`);
+  }
+});
+
 test('folders map to ours', () => {
   assert.equal(m.folderFromWellKnownName('inbox'), 'inbox');
   assert.equal(m.folderFromWellKnownName('sentitems'), 'sent');

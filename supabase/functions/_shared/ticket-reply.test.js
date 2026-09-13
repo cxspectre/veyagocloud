@@ -97,6 +97,24 @@ test('a nameless contact still gets a sensible greeting', () => {
   assert.match(mail.bodyHtml, /Veyago/);
 });
 
+const studio = { id: 's', account_label: 'hello@veyago.cloud', employee_id: null, status: 'connected' };
+const personal = { id: 'p', account_label: 'cassian@veyago.cloud', employee_id: 'e1', status: 'connected' };
+
+test('a support reply leaves from a studio mailbox, never from a person\'s own', () => {
+  assert.equal(m.pickTicketMailbox([personal, studio]).id, 's');
+  assert.equal(m.pickTicketMailbox([personal]), null,
+    'better Resend from the studio address than a customer answered from a private inbox');
+  assert.equal(m.pickTicketMailbox([{ ...studio, status: 'needs_reauth' }]), null);
+  assert.equal(m.pickTicketMailbox([]), null);
+  assert.equal(m.pickTicketMailbox(undefined), null);
+});
+
+test('with two studio mailboxes the choice does not depend on row order', () => {
+  const support = { ...studio, id: 'a', account_label: 'support@veyago.cloud' };
+  assert.equal(m.pickTicketMailbox([support, studio]).id, 's');
+  assert.equal(m.pickTicketMailbox([studio, support]).id, 's');
+});
+
 test('a contact name that is markup cannot break out of the greeting', () => {
   const mail = m.ticketReplyEmail({ ticket, body: 'x', contactName: '<b>Ann</b> Smith' });
   assert.ok(!mail.bodyHtml.includes('<b>Ann</b>'));

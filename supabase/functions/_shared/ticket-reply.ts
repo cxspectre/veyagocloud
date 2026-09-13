@@ -119,3 +119,24 @@ export function ticketReplyEmail(opts: {
       `Reply to this email and it lands back on ${ticketRef(opts.ticket)}.`,
   };
 }
+
+export interface MailboxRow {
+  id: string;
+  account_label: string;
+  employee_id: string | null;
+  status: string;
+  external_id?: string | null;
+}
+
+/* Which connected mailbox a support reply leaves from: a studio mailbox, or
+ * none. It used to be "any connected mailbox, studio first" — so with the
+ * studio mailbox disconnected, a customer was answered from whichever personal
+ * inbox happened to be connected, under that person's private address and
+ * into their own Sent. Resend from the studio address is the better failure.
+ * Sorted by address, so two studio mailboxes cannot swap places between calls. */
+export function pickTicketMailbox(rows: MailboxRow[] | null | undefined): MailboxRow | null {
+  const studio = (rows ?? [])
+    .filter((r) => !r.employee_id && r.status === 'connected')
+    .sort((a, b) => String(a.account_label).localeCompare(String(b.account_label)));
+  return studio[0] ?? null;
+}

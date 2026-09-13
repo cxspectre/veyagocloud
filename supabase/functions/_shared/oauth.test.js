@@ -66,31 +66,31 @@ test('login_hint is included only when given', () => {
     'hello@veyago.cloud');
 });
 
-test('scopes cover sending and writing the diary, but never deleting mail', () => {
+test('mail scopes read, send and manage mail, on the shared mailbox too', () => {
   assert.deepEqual(m.SCOPES.mail, [
     'offline_access',
     'https://graph.microsoft.com/Mail.Read',
     'https://graph.microsoft.com/Mail.Send',
+    'https://graph.microsoft.com/Mail.ReadWrite',
     /* A shared mailbox is not the mailbox of whoever consents. */
     'https://graph.microsoft.com/Mail.Read.Shared',
     'https://graph.microsoft.com/Mail.Send.Shared',
+    'https://graph.microsoft.com/Mail.ReadWrite.Shared',
   ]);
   assert.deepEqual(m.SCOPES.calendar, [
     'offline_access',
     'https://graph.microsoft.com/Calendars.ReadWrite',
   ]);
 
-  /* Mail.ReadWrite is the only Graph scope that would sync read/flag state
-     back to Outlook, and it carries permanent delete of client mail. The
-     workspace keeps that state on its own mirror instead. If this assertion is
-     ever removed, it should be because someone decided that trade, not because
-     a scope got pasted in. */
+  /* Mail.ReadWrite used to be refused here, because it carries permanent
+     delete of client mail. The owner chose it on 2026-09-13 — drafts,
+     attachments over 3 MB, read/flag state that reaches Outlook — so the rule
+     that nothing deletes, purges or moves a message now lives in
+     mail-safety.test.js, which reads the functions rather than the grant. */
   const all = [...m.SCOPES.mail, ...m.SCOPES.calendar, ...m.SCOPES.identity];
-  assert.ok(!all.some((s) => /Mail\.ReadWrite/.test(s)),
-    'Mail.ReadWrite would allow deleting a customer\'s correspondence');
-  assert.ok(!all.some((s) => /ReadWrite\.Shared/.test(s)),
-    'and the .Shared variant would allow it on the studio mailbox');
   assert.ok(all.some((s) => /Mail\.Send/.test(s)), 'the desk has to be able to reply');
+  assert.ok(all.some((s) => /Mail\.ReadWrite\.Shared/.test(s)),
+    'without the .Shared variant, drafts from hello@veyago.cloud fail with 403');
   assert.ok(all.some((s) => /Calendars\.ReadWrite/.test(s)), 'the diary has to be writable');
 });
 

@@ -105,6 +105,54 @@ test('attendees are marked required, and omitted when there are none', () => {
   assert.ok(!('attendees' in m.eventPayload({ title: 'x', startsAt: '2026-09-11T09:00:00Z' })));
 });
 
+test('a draft carries only what it is given, so a PATCH never blanks what Graph filled in', () => {
+  assert.deepEqual(m.draftMessagePayload({ html: '<p>Hi</p>' }),
+    { body: { contentType: 'HTML', content: '<p>Hi</p>' } });
+  assert.deepEqual(m.draftMessagePayload({
+    to: ['a@b.com'], cc: ['c@d.com'], bcc: ['e@f.com'],
+    subject: 'Plan', html: '<p>x</p>', importance: 'high',
+  }), {
+    subject: 'Plan',
+    body: { contentType: 'HTML', content: '<p>x</p>' },
+    toRecipients: [{ emailAddress: { address: 'a@b.com' } }],
+    ccRecipients: [{ emailAddress: { address: 'c@d.com' } }],
+    bccRecipients: [{ emailAddress: { address: 'e@f.com' } }],
+    importance: 'high',
+  });
+});
+
+test('an empty recipient list is sent when given, so removing everyone from Cc sticks', () => {
+  assert.deepEqual(m.draftMessagePayload({ cc: [] }), { ccRecipients: [] });
+});
+
+test('importance is low, normal or high, and nothing else', () => {
+  assert.equal(m.draftMessagePayload({ importance: 'low' }).importance, 'low');
+  assert.throws(() => m.draftMessagePayload({ importance: 'urgent' }), /importance/);
+});
+
+test('a file attachment is the shape Graph expects', () => {
+  assert.deepEqual(
+    m.fileAttachmentPayload({ name: 'plan.pdf', contentType: 'application/pdf', contentBase64: 'SGVsbG8=' }),
+    { '@odata.type': '#microsoft.graph.fileAttachment', name: 'plan.pdf',
+      contentType: 'application/pdf', contentBytes: 'SGVsbG8=' });
+  assert.equal(m.fileAttachmentPayload({ name: 'x', contentBase64: 'AA==' }).contentType,
+    'application/octet-stream');
+});
+
+test('a large file goes through an upload session, in ranges that cover every byte once', () => {
+  assert.deepEqual(m.uploadSessionPayload({ name: 'walkthrough.mp4', size: 9000000 }),
+    { AttachmentItem: { attachmentType: 'file', name: 'walkthrough.mp4', size: 9000000 } });
+  const ranges = m.uploadRanges(7500000, 3 * 1024 * 1024);
+  assert.deepEqual(ranges, [
+    { start: 0, end: 3145727 },
+    { start: 3145728, end: 6291455 },
+    { start: 6291456, end: 7499999 },
+  ]);
+  assert.deepEqual(m.uploadRanges(0), []);
+  assert.ok(m.uploadRanges(10).every((r) => r.end - r.start + 1 <= 4 * 1024 * 1024),
+    'Graph asks for pieces under 4 MB');
+});
+
 test('an untitled event is refused', () => {
   assert.throws(() => m.eventPayload({ title: '   ', startsAt: '2026-09-11T09:00:00Z' }), /title/);
 });
