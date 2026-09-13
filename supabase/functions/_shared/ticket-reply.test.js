@@ -1,0 +1,104 @@
+/* Tests for _shared/ticket-reply.ts.
+   The first block is the one that matters: an internal note reaching the
+   customer is the worst thing this feature could do, so it is asserted from
+   several directions rather than trusted to one `if`. */
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const { stripTypeScriptTypes } = require('node:module');
+
+let m;
+test.before(async () => {
+  const src = fs.readFileSync(path.join(__dirname, 'ticket-reply.ts'), 'utf8');
+  m = await import('data:text/javascript,' + encodeURIComponent(stripTypeScriptTypes(src)));
+});
+
+const ticket = { number: 142, subject: 'Subscription not restoring on new device' };
+
+test('an internal note is never sent, whatever else is true', () => {
+  const d = m.decideSend({ direction: 'internal', body: 'Receipt looks valid.', toEmail: 'a@b.com' });
+  assert.equal(d.send, false);
+  assert.match(d.reason, /Internal/);
+});
+
+test('an inbound message is not sent back to the sender', () => {
+  assert.equal(m.decideSend({ direction: 'inbound', body: 'hi', toEmail: 'a@b.com' }).send, false);
+});
+
+test('an outbound reply with an address is sent', () => {
+  assert.deepEqual(m.decideSend({ direction: 'outbound', body: 'On it.', toEmail: 'a@b.com' }),
+    { send: true });
+});
+
+test('no contact email means saved but not sent, and says so', () => {
+  const d = m.decideSend({ direction: 'outbound', body: 'On it.', toEmail: null });
+  assert.equal(d.send, false);
+  assert.match(d.reason, /saved but not sent/);
+});
+
+test('an empty reply is not sent', () => {
+  assert.equal(m.decideSend({ direction: 'outbound', body: '   ', toEmail: 'a@b.com' }).send, false);
+});
+
+test('an obviously broken address is refused before the provider sees it', () => {
+  assert.equal(m.decideSend({ direction: 'outbound', body: 'x', toEmail: 'not-an-address' }).send, false);
+  assert.equal(m.decideSend({ direction: 'outbound', body: 'x', toEmail: 'a@b' }).send, false);
+  // …but a valid address with unusual parts is allowed through to the provider.
+  assert.equal(m.decideSend({ direction: 'outbound', body: 'x', toEmail: "o'brien+tag@sub.example.co.uk" }).send, true);
+});
+
+test('the subject carries the reference and does not stack Re:', () => {
+  assert.equal(m.replySubject(ticket),
+    'Re: Subscription not restoring on new device [#VYG-142]');
+  assert.equal(m.replySubject({ number: 7, subject: 'Re: Re: hello' }), 'Re: hello [#VYG-7]');
+  assert.equal(m.replySubject({ number: 7, subject: '' }), 'Re: Your message [#VYG-7]');
+});
+
+test('the reference survives a round trip through a subject line', () => {
+  const subject = m.replySubject(ticket);
+  assert.equal(m.ticketNumberFromSubject(subject), 142);
+  assert.equal(m.ticketNumberFromSubject('RE: something [#vyg-9] fwd'), 9);
+  assert.equal(m.ticketNumberFromSubject('no reference here'), null);
+  assert.equal(m.ticketNumberFromSubject(''), null);
+});
+
+test('blank lines become paragraphs, single newlines stay inside one', () => {
+  const html = m.bodyToHtml('First thought.\n\nSecond thought.\nStill the second.');
+  assert.equal((html.match(/<p /g) || []).length, 2);
+  assert.match(html, /Still the second/);
+  assert.match(html, /Second thought\.<br>/);
+});
+
+test('the body is escaped — a customer reply is untrusted text', () => {
+  const html = m.bodyToHtml('<script>alert(1)</script> & "quotes"');
+  assert.ok(!html.includes('<script>'), 'script tag must not survive');
+  assert.match(html, /&lt;script&gt;/);
+  assert.match(html, /&amp;/);
+});
+
+test('the email greets by first name and signs off with the sender', () => {
+  const mail = m.ticketReplyEmail({
+    ticket, body: 'We have found it.', fromName: 'Cassian Drefke', contactName: 'Olivia Chen'
+  });
+  assert.equal(mail.subject, 'Re: Subscription not restoring on new device [#VYG-142]');
+  assert.match(mail.bodyHtml, /Hi Olivia,/);
+  assert.match(mail.bodyHtml, /Cassian Drefke/);
+  assert.match(mail.bodyHtml, /#VYG-142/);
+  assert.match(mail.text, /Hi Olivia,/);
+  assert.match(mail.text, /We have found it\./);
+});
+
+test('a nameless contact still gets a sensible greeting', () => {
+  const mail = m.ticketReplyEmail({ ticket, body: 'Hello.' });
+  assert.match(mail.bodyHtml, /Hi,/);
+  assert.match(mail.bodyHtml, /Veyago/);
+});
+
+test('a contact name that is markup cannot break out of the greeting', () => {
+  const mail = m.ticketReplyEmail({ ticket, body: 'x', contactName: '<b>Ann</b> Smith' });
+  assert.ok(!mail.bodyHtml.includes('<b>Ann</b>'));
+  assert.match(mail.bodyHtml, /&lt;b&gt;Ann&lt;\/b&gt;/);
+});

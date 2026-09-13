@@ -1,0 +1,216 @@
+/* Turning Microsoft Graph payloads into our rows.
+ *
+ * Graph is kinder than Gmail here — no base64url, no nested parts tree, one
+ * body with a contentType — so most of this file is about the two things it
+ * does awkwardly: dates and HTML-only bodies.
+ *
+ * THE DATE TRAP. Graph returns `{ dateTime: "2026-09-11T09:00:00.0000000",
+ * timeZone: "W. Europe Standard Time" }`. The dateTime carries NO offset, and
+ * the zone is a Windows name that Intl cannot parse. Passing that string to
+ * `new Date()` gets you the server's local interpretation of a wall clock in
+ * someone else's timezone — an event silently an hour or two out, which is the
+ * kind of bug people blame on themselves for weeks.
+ *
+ * The fix is at the request, not here: the sync sends
+ * `Prefer: outlook.timezone="UTC"`, so Graph returns UTC and `toInstant()`
+ * appends the Z. If the zone comes back as anything else, toInstant() refuses
+ * rather than guessing — a missing event is easier to notice than a wrong one.
+ */
+
+export interface GraphAddress { name?: string; address?: string }
+export interface GraphRecipient { emailAddress?: GraphAddress }
+
+export interface GraphMessage {
+  id: string;
+  conversationId?: string;
+  subject?: string;
+  bodyPreview?: string;
+  body?: { contentType?: string; content?: string };
+  from?: GraphRecipient;
+  sender?: GraphRecipient;
+  toRecipients?: GraphRecipient[];
+  ccRecipients?: GraphRecipient[];
+  receivedDateTime?: string;
+  sentDateTime?: string;
+  isRead?: boolean;
+  flag?: { flagStatus?: string };
+}
+
+export function address(r: GraphRecipient | undefined): { name: string; email: string } {
+  const a = r?.emailAddress;
+  return {
+    name: String(a?.name ?? '').trim(),
+    email: String(a?.address ?? '').trim().toLowerCase(),
+  };
+}
+
+export function addressList(rs: GraphRecipient[] | undefined): string[] {
+  return (rs ?? []).map((r) => address(r).email).filter(Boolean);
+}
+
+/* Graph often returns HTML even for a message typed as plain text, so
+ * body_text would be empty for most of the inbox without this. Deliberately
+ * crude: it is a preview and a search target, not a rendering. Anything that
+ * actually displays the message uses body_html — after sanitising it. */
+export function htmlToText(html: string): string {
+  return String(html || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<\/(p|div|tr|h[1-6]|li)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/* A Graph dateTime + timeZone pair as an ISO instant, or null when the zone is
+ * not one we can trust. See the header: guessing is worse than skipping. */
+export function toInstant(when: { dateTime?: string; timeZone?: string } | undefined): string | null {
+  const raw = String(when?.dateTime ?? '').trim();
+  if (!raw) return null;
+
+  /* Already carries an offset — trust it. */
+  if (/(Z|[+-]\d{2}:?\d{2})$/.test(raw)) {
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+
+  const zone = String(when?.timeZone ?? '').trim().toLowerCase();
+  if (zone !== 'utc' && zone !== 'gmt' && zone !== '') return null;
+
+  /* Graph pads to seven fractional digits, which Date does not mind, but trim
+     it anyway so the value is a clean ISO string. */
+  const d = new Date(raw.replace(/(\.\d{3})\d+$/, '$1') + 'Z');
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+export interface MailRow {
+  external_id: string;
+  thread_external_id: string;
+  direction: 'inbound' | 'outbound';
+  from_name: string;
+  from_email: string;
+  to_emails: string[];
+  cc_emails: string[];
+  subject: string;
+  body_text: string;
+  body_html: string;
+  sent_at: string;
+  snippet: string;
+  is_read: boolean;
+  is_flagged: boolean;
+}
+
+/* `ownAddresses` decides direction: a message we sent is one whose From is the
+ * mailbox's own address. Comparing against the mailbox rather than trusting
+ * the folder means a reply inside a thread we started still resolves right. */
+export function toMailRow(msg: GraphMessage, ownAddresses: string[] = []): MailRow {
+  const from = address(msg.from ?? msg.sender);
+  const mine = new Set(ownAddresses.map((a) => String(a).toLowerCase()));
+  const isHtml = String(msg.body?.contentType ?? '').toLowerCase() === 'html';
+  const content = String(msg.body?.content ?? '');
+
+  const sentAt =
+    toInstant({ dateTime: msg.sentDateTime }) ??
+    toInstant({ dateTime: msg.receivedDateTime }) ??
+    new Date().toISOString();
+
+  return {
+    external_id: msg.id,
+    /* conversationId is Graph's thread. A message without one is its own
+       thread rather than being dropped into a shared null bucket. */
+    thread_external_id: msg.conversationId || msg.id,
+    direction: mine.has(from.email) ? 'outbound' : 'inbound',
+    from_name: from.name,
+    from_email: from.email,
+    to_emails: addressList(msg.toRecipients),
+    cc_emails: addressList(msg.ccRecipients),
+    subject: String(msg.subject ?? ''),
+    body_text: isHtml ? htmlToText(content) : content,
+    body_html: isHtml ? content : '',
+    sent_at: sentAt,
+    snippet: String(msg.bodyPreview ?? '').slice(0, 300),
+    is_read: msg.isRead !== false,
+    is_flagged: String(msg.flag?.flagStatus ?? '') === 'flagged',
+  };
+}
+
+/* Graph's well-known folder names, mapped to ours. */
+export function folderFromWellKnownName(name: string): string {
+  switch (String(name || '').toLowerCase()) {
+    case 'inbox': return 'inbox';
+    case 'sentitems': return 'sent';
+    case 'junkemail': return 'spam';
+    case 'deleteditems': return 'trash';
+    default: return 'archive';
+  }
+}
+
+export interface GraphEvent {
+  id: string;
+  subject?: string;
+  bodyPreview?: string;
+  start?: { dateTime?: string; timeZone?: string };
+  end?: { dateTime?: string; timeZone?: string };
+  isAllDay?: boolean;
+  isCancelled?: boolean;
+  showAs?: string;
+  location?: { displayName?: string };
+  onlineMeeting?: { joinUrl?: string };
+  attendees?: { emailAddress?: GraphAddress; status?: { response?: string } }[];
+}
+
+export interface EventRow {
+  external_id: string;
+  title: string;
+  detail: string | null;
+  location: string | null;
+  starts_at: string;
+  ends_at: string | null;
+  all_day: boolean;
+  kind: string;
+  status: string;
+  attendees: { name: string | null; email: string | null; response: string | null }[];
+}
+
+/* An event with someone from outside the studio on it is client work; one that
+ * is only us is internal; one with nobody is time you blocked out. A guess,
+ * and a useful one — it is what colours the agenda, and a person can change
+ * it. Returns null when the start cannot be trusted (see toInstant). */
+export function toEventRow(ev: GraphEvent, ownDomain: string): EventRow | null {
+  const startsAt = toInstant(ev.start);
+  if (!startsAt) return null;
+
+  const attendees = (ev.attendees ?? []).map((a) => ({
+    name: a.emailAddress?.name ?? null,
+    email: (a.emailAddress?.address ?? '').toLowerCase() || null,
+    response: a.status?.response ?? null,
+  }));
+
+  const domain = String(ownDomain || '').toLowerCase();
+  const outside = attendees.some((a) => a.email && !a.email.endsWith(`@${domain}`));
+
+  return {
+    external_id: ev.id,
+    title: String(ev.subject ?? '').trim() || '(no title)',
+    detail: ev.onlineMeeting?.joinUrl
+      ? (String(ev.bodyPreview ?? '').trim() || 'Online meeting')
+      : (String(ev.bodyPreview ?? '').trim() || null),
+    location: ev.location?.displayName?.trim() || null,
+    starts_at: startsAt,
+    ends_at: toInstant(ev.end),
+    all_day: ev.isAllDay === true,
+    kind: !attendees.length ? 'focus' : outside ? 'client' : 'team',
+    status: ev.isCancelled ? 'cancelled'
+      : String(ev.showAs ?? '').toLowerCase() === 'tentative' ? 'tentative'
+      : 'confirmed',
+    attendees,
+  };
+}

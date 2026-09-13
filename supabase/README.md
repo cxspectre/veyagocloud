@@ -1,5 +1,11 @@
 # Supabase setup — Veyago Journal + Wallpapers
 
+> **The workspace backend** (CRM, client projects, tickets, mail, agenda,
+> integrations) lives in migrations `0021`–`0028` and is documented separately
+> in [`docs/workspace-backend.md`](../docs/workspace-backend.md) — including how
+> to connect Gmail and Google Calendar. Run `npm run check:db` to verify its RLS
+> against the live database.
+
 Supabase is the **content store and authoring backend**. It is the *only* surface that
 talks to Supabase: the `/admin` pages (which are `noindex`). The **public website never
 calls Supabase** — `tools/build.js` reads published rows with the public anon key and
