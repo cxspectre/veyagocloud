@@ -4,8 +4,14 @@ The workspace is a second front end onto the **same** Supabase project as
 `/admin`, not a second database. Same auth, same `employees.role`, same anon
 key in the browser with RLS as the only boundary.
 
-Migrations `0021`–`0028`. Applied to the live project on 2026-09-11 and
-verified there — see [Tests](#tests).
+Migrations `0021`–`0037`. Applied to the live project and verified there —
+see [Tests](#tests).
+
+The front end is a separate repo, [`cxspectre/workspaceveyago`][repo], live at
+**<https://workspace.veyago.cloud>**. `veyago.cloud/login/` links straight to
+it; `veyago.cloud/workspace/` is a permanent redirect for old links.
+
+[repo]: https://github.com/cxspectre/workspaceveyago
 
 ---
 
