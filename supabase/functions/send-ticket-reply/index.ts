@@ -9,9 +9,9 @@
  * delivery stamp is written with the service role — the browser has no UPDATE
  * policy on ticket_messages and should not get one.
  *
- * Sends from the studio's connected Outlook mailbox when there is one, so the
- * reply lands in Sent and threads in the customer's client. Falls back to
- * Resend when no mailbox is connected.
+ * Sends from a connected STUDIO mailbox when there is one, so the reply lands
+ * in Sent and threads in the customer's client. Falls back to Resend when
+ * there is none — never to someone's personal mailbox (pickTicketMailbox).
  *
  * Deploy:  supabase functions deploy send-ticket-reply
  * Secrets: RESEND_API_KEY, EMAIL_FROM  (the fallback; already set)
@@ -20,7 +20,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { sendEmail } from '../_shared/email.ts';
-import { decideSend, ticketReplyEmail, ticketRef } from '../_shared/ticket-reply.ts';
+import { decideSend, pickTicketMailbox, ticketReplyEmail, ticketRef } from '../_shared/ticket-reply.ts';
 import { accessTokenFor } from '../_shared/graph-token.ts';
 import { sendMailPayload } from '../_shared/graph-write.ts';
 import { mailboxPath } from '../_shared/mailbox.ts';
@@ -159,23 +159,21 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    /* A studio mailbox (employee_id null) is preferred over a personal one:
-       support should come from the address the customer wrote to, not from
-       whoever happened to click reply. */
-    const { data: mailbox } = await admin
+    /* A studio mailbox or none. Support comes from the address the customer
+       wrote to, not from whichever personal inbox happens to be connected. */
+    const { data: studioMailboxes } = await admin
       .from('integration_connections')
-      .select('id, account_label, employee_id, external_id')
+      .select('id, account_label, employee_id, external_id, status')
       .eq('provider', 'microsoft_mail')
-      .eq('status', 'connected')
-      .order('employee_id', { ascending: true, nullsFirst: true })
-      .limit(1)
-      .maybeSingle();
+      .is('employee_id', null)
+      .eq('status', 'connected');
+    const mailbox = pickTicketMailbox(studioMailboxes);
 
     const html = wrap(mail.bodyHtml);
     let sent: { ok: boolean; error?: string; skipped?: boolean };
     let via: 'outlook' | 'resend';
 
-    if (mailbox?.id) {
+    if (mailbox) {
       via = 'outlook';
       sent = await sendViaGraph(admin, mailbox, contact!.email!, mail.subject, html);
       if (!sent.ok) {

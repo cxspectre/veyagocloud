@@ -62,18 +62,35 @@ Deno.serve(async (req) => {
     const accountLabel = String(body?.accountLabel || '').trim().toLowerCase();
     if (!accountLabel) return json({ error: 'accountLabel (the address to connect) is required' }, 400);
 
+    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    /* Reconnecting an existing mailbox — to grant a scope added since, say —
+       starts from what is already known about it. */
+    const { data: previous } = await admin
+      .from('integration_connections')
+      .select('employee_id, external_id')
+      .eq('provider', provider)
+      .eq('account_label', accountLabel)
+      .maybeSingle();
+
     /* employeeId null means a studio-wide mailbox that every staff member can
        read. Anything else is personal and stays private to that person — see
-       the 0025 migration header. The caller has to say which, deliberately. */
-    const employeeId = body?.employeeId ?? null;
+       the 0025 migration header. A new connection has to say which,
+       deliberately. A reconnect that does not mention it keeps what the
+       mailbox already is: defaulting to null there would quietly turn
+       someone's personal mailbox into one every member of staff can read. */
+    const saysWho = body && Object.prototype.hasOwnProperty.call(body, 'employeeId');
+    const employeeId = saysWho ? (body.employeeId ?? null) : (previous?.employee_id ?? null);
 
     /* Who will sit at the consent screen. For a personal mailbox that is the
        mailbox itself. For a SHARED one it is not — hello@veyago.cloud has no
        sign-in, so hinting it sends the person to a prompt that cannot succeed.
-       The consenting account is whoever has Full Access to it in Exchange. */
-    const consentAs = String(body?.consentAs || '').trim().toLowerCase() || accountLabel;
+       The consenting account is whoever has Full Access to it in Exchange,
+       which the callback recorded last time. */
+    const consentAs = String(body?.consentAs || '').trim().toLowerCase()
+      || String(previous?.external_id || '').trim().toLowerCase()
+      || accountLabel;
 
-    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data: conn, error: connErr } = await admin
       .from('integration_connections')
       .upsert(
@@ -81,7 +98,9 @@ Deno.serve(async (req) => {
           provider,
           account_label: accountLabel,
           employee_id: employeeId,
-          status: 'disconnected',
+          /* A mailbox that is working keeps working while someone is at the
+             consent screen; only a new one starts disconnected. */
+          ...(previous ? {} : { status: 'disconnected' }),
           scopes: provider === 'microsoft_mail' ? SCOPES.mail : SCOPES.calendar,
           last_error: null,
         },
