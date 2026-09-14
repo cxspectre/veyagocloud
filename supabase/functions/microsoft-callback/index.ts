@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
     if (connErr) return done(`Could not update the connection: ${connErr.message}`, false);
 
     return done(
-      `Connected${address ? ' as ' + address : ''}. You can close this tab and run a sync.`,
+      `Connected${address ? ' as ' + address : ''}. You can close this tab — mail syncs by itself within five minutes.`,
       true,
     );
   } catch (err) {
