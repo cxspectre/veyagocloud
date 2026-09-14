@@ -48,7 +48,7 @@ export function failureStatusOf(err: unknown): Status {
    whoever consented to reading it — mail that person sends TO the shared inbox
    is mail from outside it. Replies sent AS the mailbox, which land in a
    personal Sent folder, are caught by directionFor(); mail from any member of
-   staff is kept off tickets by route_mail_to_ticket() (0038). */
+   staff is kept off tickets by store_mail_batch()'s routing gate (0038). */
 export function ownAddresses(conn: { account_label: string; external_id?: string | null }): string[] {
   return [String(conn.account_label ?? '').trim().toLowerCase()].filter(Boolean);
 }
