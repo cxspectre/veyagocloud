@@ -504,15 +504,30 @@ Outlook did not get it.
 Every five minutes `pg_cron` sends **one request per connected mailbox** to
 `sync-mail-scheduled`, so a slow mailbox cannot use up the others' time. Each run
 follows Graph's **delta** for Inbox and Sent Items: new mail, and read and flag
-changes made in Outlook. The link Graph hands back is saved after every page
-(`sync_cursor`, one per folder), so a burst of changes bigger than one run —
-"mark all as read" on a busy inbox — carries on from exactly where it stopped
-instead of being re-read from the top. A folder's first round looks back three
-days; a link Graph has expired starts that folder's round again. A manual sync
-(`sync-outlook-mail`) never touches the cursor, so it cannot make the schedule
-skip anything. A per-mailbox lock (`claim_mail_sync`) keeps the schedule, a
-manual sync and a long run from overlapping. A message deleted or moved out of
-a synced folder in Outlook stays in the workspace.
+changes made in Outlook. The link Graph hands back is saved after every stored
+page, so a burst of changes bigger than one run — "mark all as read" on a busy
+inbox — carries on from exactly where it stopped instead of being re-read from
+the top. The loop is `_shared/delta-loop.ts`, tested in node.
+
+`sync_cursor` holds, per folder, the link and how many runs in a row it has
+failed, together with the mailbox path the links were made for. Links are only
+ever followed for that path, and every reconnect clears them: a connection that
+once read `/me` — before it knew who consented — must never keep reading that
+person's own inbox into a mailbox all staff can see.
+
+- A folder's first round looks back three days. A round that starts again after
+  time away — a mailbox waiting to be reconnected, a link Graph has expired —
+  reaches back to just before the last successful sync, at most 14 days; run a
+  manual sync for anything older.
+- A link Graph says has gone (410) starts the folder again at once. One it
+  refuses outright (400, 404) gets three runs first. An outage, a rate limit or
+  a database error never costs the link.
+- One folder failing does not stop the other.
+
+A manual sync (`sync-outlook-mail`) never touches the cursor, so it cannot make
+the schedule skip anything. A per-mailbox lock (`claim_mail_sync`) keeps the
+schedule, a manual sync and a long run from overlapping. A message deleted or
+taken out of a synced folder in Outlook stays in the workspace.
 
 Everything is stored through `store_mail_batch()`, one call per batch, which
 upserts the messages and brings each conversation in line with **every** message
@@ -522,16 +537,23 @@ while anything is flagged. Decided per batch in the function, those went wrong:
 overlapping runs wrote each other's stale state back, and a batch that did not
 happen to contain the unread message marked the thread read. Mail found in Sent
 is always ours, so a reply sent *as* hello@ from a personal mailbox is never
-filed onto a ticket as the customer's words.
+filed onto a ticket as the customer's words. Nor is mail **from** one of us,
+whichever mailbox it turns up in (`is_staff_address`: a member of staff, a
+connected mailbox, or whoever consented to one) — a colleague cc'ing hello@ on
+their reply would otherwise be shown on the ticket as the customer writing, and
+reopen it.
 
 The function is deployed `--no-verify-jwt` and checks an `x-sync-secret` header
 instead: a schedule has no user to sign in as, and should not be handed the
 service-role key. A failure marks a mailbox `needs_reauth` — which takes it off
 the schedule — only when a reconnect would fix it: Microsoft refusing the grant
-(`invalid_grant`, `interaction_required`) or credentials that are gone. A rate
-limit, Microsoft being briefly unavailable or a database hiccup is `error`,
-which the schedule retries. A run that finishes after someone disconnected the
-mailbox leaves it disconnected.
+(`invalid_grant`, `interaction_required`) or credentials that are gone. The
+refresh says which (`TokenRefreshError.permanent`); the wording of Microsoft's
+answer does not decide it. A rate limit, Microsoft being briefly unavailable or
+a database hiccup is `error`, which the schedule retries. An old grant failing
+while someone reconnects flags nothing, and its refreshed tokens never overwrite
+the new grant. A run that finishes after someone disconnected the mailbox leaves
+it disconnected.
 
 ### A mailbox keeps what it was connected as
 
@@ -539,16 +561,19 @@ Managers may write `integration_connections`, and that used to mean every
 column. Point a colleague's personal mailbox at yourself (`employee_id`) and
 `can_read_connection()` would hand you their mail — and now their sending. Clear
 `external_id` on the shared mailbox and the sync would read the consenting
-person's own mail into it, for all staff to see. 0038 adds a trigger: **from the
-browser a connection can only be disconnected**. Everything else about it is
-written by `microsoft-connect`, the callback and the sync, as the service role.
+person's own mail into it, for all staff to see. So in 0038, **from the browser
+a connection can only be disconnected**: the browser may update `status` and
+`last_error` and nothing else, insert nothing, and a trigger keeps `status` to
+`disconnected`. Everything else about a connection is written by
+`microsoft-connect`, the callback and the sync, as the service role.
 
 `microsoft-connect` refuses a different owner for a mailbox that already has a
 row, and two first connections of the same address at once cannot overwrite
 each other's owner. A manager deletes the studio's connections or their own,
 not a colleague's — the row takes the grant and every stored message with it.
 Handing a mailbox to someone else means removing the connection and connecting
-it fresh; disconnecting keeps the row, and its owner.
+it fresh; disconnecting keeps the row, and its owner. The workspace has no way to
+remove one yet, so for a colleague's personal mailbox that is the SQL editor.
 
 ### Going live
 
@@ -577,6 +602,11 @@ consent; until then `send-mail` answers 409 with `reconnect: true`. Add
 ID first. A reconnect keeps the mailbox's owner and consenting account, so
 `employeeId` no longer has to be repeated — leaving it out used to turn a
 personal mailbox into a shared one.
+
+**Only then ship the workspace's read and star change** (veyago-workspace
+`dist` v36). It calls `update-mail-state` and deliberately has no fallback to
+writing the thread row, so before the function is live those buttons fail with
+an error instead of quietly doing half the job.
 
 ## What is still not built
 

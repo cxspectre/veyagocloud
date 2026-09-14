@@ -232,6 +232,98 @@ from public.mail_messages m
 join public.mail_threads t on t.id = m.thread_id
 where t.connection_id = '55555555-5555-5555-5555-555555555555' and t.external_id = 'conv-b';
 
+-- Archived straight from the inbox: the path the test above does not take,
+-- because its copy had already been found in archive once.
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', jsonb_build_array(jsonb_build_object(
+  'external_id', 'd-in-1', 'thread_external_id', 'conv-d', 'internet_message_id', '<d-in-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'Sync Fixture Person', 'from_email', 'person@sync-fixture.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Straight to archive', 'body_text', 'Filed.', 'body_html', '', 'snippet', 'Filed.',
+  'sent_at', (now() - interval '3 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'archive', jsonb_build_array(jsonb_build_object(
+  'external_id', 'd-in-1-archived', 'thread_external_id', 'conv-d', 'internet_message_id', '<d-in-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'Sync Fixture Person', 'from_email', 'person@sync-fixture.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Straight to archive', 'body_text', 'Filed.', 'body_html', '', 'snippet', 'Filed.',
+  'sent_at', (now() - interval '3 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+
+insert into results(name, expected, actual, pass)
+select 'a message archived from the inbox keeps one copy, under its new id', '1 · d-in-1-archived · archive',
+       count(*)::text || ' · ' || coalesce(max(m.external_id), 'none') || ' · ' || coalesce(max(m.folder), 'none'),
+       count(*) = 1 and max(m.external_id) = 'd-in-1-archived' and max(m.folder) = 'archive'
+from public.mail_messages m
+join public.mail_threads t on t.id = m.thread_id
+where t.connection_id = '55555555-5555-5555-5555-555555555555' and t.external_id = 'conv-d';
+
+-- A message we send to our own mailbox: a copy in Sent and a copy in the inbox
+-- under one Message-ID, both ours. Two copies — and archiving the inbox copy
+-- gives that copy the new id, never the Sent one.
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'sent', jsonb_build_array(jsonb_build_object(
+  'external_id', 'e-sent', 'thread_external_id', 'conv-e', 'internet_message_id', '<e-1@sync-fixture.invalid>',
+  'direction', 'outbound', 'from_name', 'Sync Fixture', 'from_email', 'sync.fixture@example.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Note to self', 'body_text', 'Remember.', 'body_html', '', 'snippet', 'Remember.',
+  'sent_at', (now() - interval '4 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', jsonb_build_array(jsonb_build_object(
+  'external_id', 'e-in', 'thread_external_id', 'conv-e', 'internet_message_id', '<e-1@sync-fixture.invalid>',
+  'direction', 'outbound', 'from_name', 'Sync Fixture', 'from_email', 'sync.fixture@example.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Note to self', 'body_text', 'Remember.', 'body_html', '', 'snippet', 'Remember.',
+  'sent_at', (now() - interval '4 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'archive', jsonb_build_array(jsonb_build_object(
+  'external_id', 'e-archived', 'thread_external_id', 'conv-e', 'internet_message_id', '<e-1@sync-fixture.invalid>',
+  'direction', 'outbound', 'from_name', 'Sync Fixture', 'from_email', 'sync.fixture@example.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Note to self', 'body_text', 'Remember.', 'body_html', '', 'snippet', 'Remember.',
+  'sent_at', (now() - interval '4 hours')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+
+insert into results(name, expected, actual, pass)
+select 'mail to our own mailbox keeps both copies, each under its own id', '2 · e-archived,e-sent',
+       count(*)::text || ' · ' || coalesce(string_agg(m.external_id, ',' order by m.external_id), 'none'),
+       count(*) = 2 and string_agg(m.external_id, ',' order by m.external_id) = 'e-archived,e-sent'
+from public.mail_messages m
+join public.mail_threads t on t.id = m.thread_id
+where t.connection_id = '55555555-5555-5555-5555-555555555555' and t.external_id = 'conv-e';
+
+-- One of us writing on a ticket's thread is not the customer: a colleague who
+-- cc's the studio from their own mailbox stays mail. The customer's reply on
+-- the same thread still reaches the ticket, so the test cannot pass by routing
+-- nothing at all.
+insert into public.support_tickets (id, subject, company_id)
+values ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'Routing fixture', '11111111-1111-1111-1111-111111111111');
+
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', jsonb_build_array(jsonb_build_object(
+  'external_id', 'f-staff-1', 'thread_external_id', 'conv-f', 'internet_message_id', '<f-staff-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'A colleague',
+  'from_email', (select email from public.employees where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093'),
+  'to_emails', jsonb_build_array('person@sync-fixture.invalid'), 'cc_emails', jsonb_build_array('sync.fixture@example.invalid'),
+  'bcc_emails', '[]'::jsonb,
+  'subject', (select 'Re: [#VYG-' || number || '] Routing fixture' from public.support_tickets where id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'),
+  'body_text', 'Our side of it.', 'body_html', '', 'snippet', 'Our side of it.',
+  'sent_at', (now() - interval '50 minutes')::text, 'is_read', true, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', jsonb_build_array(jsonb_build_object(
+  'external_id', 'f-customer-1', 'thread_external_id', 'conv-f', 'internet_message_id', '<f-customer-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'Sync Fixture Person', 'from_email', 'person@sync-fixture.invalid',
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', (select 'Re: [#VYG-' || number || '] Routing fixture' from public.support_tickets where id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'),
+  'body_text', 'Thanks, all good.', 'body_html', '', 'snippet', 'Thanks, all good.',
+  'sent_at', (now() - interval '40 minutes')::text, 'is_read', false, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+
+insert into results(name, expected, actual, pass)
+select 'mail from staff is never filed on a ticket as the customer''s words', '1 · f-customer-1',
+       count(*)::text || ' · ' || coalesce(max(mm.external_id), 'none'),
+       count(*) = 1 and max(mm.external_id) = 'f-customer-1'
+from public.ticket_messages tm
+join public.mail_messages mm on mm.id = tm.mail_message_id
+where tm.ticket_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+
 insert into results(name, expected, actual, pass)
 select 'first seen in Sent is filed as sent; archive does not empty the inbox', 'sent · inbox',
        max(folder) filter (where external_id = 'conv-c') || ' · ' || max(folder) filter (where external_id = 'conv-b'),

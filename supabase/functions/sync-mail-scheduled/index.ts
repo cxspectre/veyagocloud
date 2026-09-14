@@ -4,12 +4,15 @@
  * mailbox, so a slow or stuck one cannot use up the time of the others.
  *
  * It follows Graph's delta for Inbox and Sent Items — new mail, and read and
- * flag changes made in Outlook. The link Graph hands back is saved after every
- * page, so a burst of changes bigger than one run ("mark all as read" on a busy
- * inbox) is carried on from exactly where it stopped. An earlier version paged
- * by lastModifiedDateTime and started each run a few minutes before the last
- * one's end — which, with more changes than a run takes all stamped in the
- * same few seconds, re-read the same page forever while new mail waited.
+ * flag changes made in Outlook — one folder at a time, through syncFolder()
+ * (_shared/delta-loop.ts), which saves the link to carry on from after every
+ * stored page. A burst of changes bigger than one run ("mark all as read" on a
+ * busy inbox) is worked through over several runs instead of being re-read
+ * from the top, and a folder that fails does not stop the other.
+ *
+ * The saved links are for one mailbox path (/me or /users/…). If the
+ * connection now reads a different one — a reconnect recorded who consented —
+ * they are not followed, and each folder starts a new round.
  *
  * A schedule has no user to sign in as, so this is deployed --no-verify-jwt
  * and checks a shared secret instead. It is not handed the service-role key:
@@ -25,10 +28,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { accessTokenFor } from '../_shared/graph-token.ts';
 import { timingSafeEqual } from '../_shared/oauth.ts';
-import { readCursors, withCursor } from '../_shared/mail-store.ts';
+import { mailboxPath } from '../_shared/mailbox.ts';
+import { readCursors, roundStart, withCursor } from '../_shared/mail-store.ts';
+import { syncFolder, type FolderResult } from '../_shared/delta-loop.ts';
 import {
-  GraphError, claimSync, fetchDeltaPage, markSyncedIfLive, recordSyncFailure, releaseSync, saveCursor,
-  storeMessages,
+  claimSync, fetchDeltaPage, markSyncedIfLive, recordSyncFailure, releaseSync, saveCursor, storeMessages,
 } from '../_shared/mail-sync.ts';
 
 const FOLDERS = ['inbox', 'sentitems'];
@@ -60,7 +64,7 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: conn, error } = await admin
     .from('integration_connections')
-    .select('id, provider, account_label, external_id, status, sync_cursor')
+    .select('id, provider, account_label, external_id, status, sync_cursor, last_synced_at')
     .eq('id', connectionId)
     .maybeSingle();
   if (error) return json({ error: error.message }, 500);
@@ -73,53 +77,40 @@ Deno.serve(async (req) => {
 
   try {
     const token = await accessTokenFor(admin, conn.id);
+    const mailbox = mailboxPath(conn);
+    const since = roundStart(Date.now(), conn.last_synced_at);
     let cursor: string = conn.sync_cursor ?? '';
-    let threads = 0, messages = 0, routedToTickets = 0, removed = 0;
-    let caughtUp = true;
+    let folders: Record<string, FolderResult> = {};
 
     for (const folder of FOLDERS) {
-      let from: string | null = readCursors(cursor)[folder] ?? null;
-      let restarted = false;
+      const result = await syncFolder(
+        readCursors(cursor, mailbox)[folder] ?? { link: null, failures: 0 },
+        {
+          fetchPage: (from) => fetchDeltaPage(conn, token, folder, from, since),
+          store: (items) => storeMessages(admin, conn, folder, items),
+          save: async (next) => {
+            const updated = withCursor(cursor, mailbox, folder, next);
+            await saveCursor(admin, conn.id, updated);
+            cursor = updated;
+          },
+        },
+        MAX_PAGES_PER_FOLDER,
+      );
+      folders = { ...folders, [folder]: result };
+    }
 
-      for (let page = 0; page < MAX_PAGES_PER_FOLDER; page++) {
-        let result;
-        try {
-          result = await fetchDeltaPage(conn, token, folder, from);
-        } catch (err) {
-          /* A link Graph no longer recognises — after long enough away — is
-             not a broken mailbox. Start that folder's round again, once. */
-          if (err instanceof GraphError && err.status === 410 && from && !restarted) {
-            restarted = true;
-            from = null;
-            cursor = withCursor(cursor, folder, null);
-            await saveCursor(admin, conn.id, cursor);
-            continue;
-          }
-          throw err;
-        }
-
-        const stored = await storeMessages(admin, conn, folder, result.items);
-        threads += stored.threads;
-        messages += stored.messages;
-        routedToTickets += stored.routedToTickets;
-        removed += result.removed;
-
-        /* Stored, so saved: a run that dies after this resumes on the next page. */
-        cursor = withCursor(cursor, folder, result.nextLink ?? result.deltaLink);
-        await saveCursor(admin, conn.id, cursor);
-
-        if (!result.nextLink) break;           // round done; the delta link waits for next run
-        from = result.nextLink;
-        if (page === MAX_PAGES_PER_FOLDER - 1) caughtUp = false;
-      }
+    const failed = FOLDERS.filter((folder) => folders[folder].error);
+    if (failed.length) {
+      const message = failed.map((folder) => `${folder}: ${folders[folder].error}`).join(' · ');
+      await recordSyncFailure(admin, conn.id, new Error(message));
+      return json({ ok: false, mailbox: conn.account_label, folders, error: message }, 500);
     }
 
     await markSyncedIfLive(admin, conn.id);
-    return json({ ok: true, mailbox: conn.account_label, threads, messages, routedToTickets, removed, caughtUp });
+    return json({ ok: true, mailbox: conn.account_label, folders });
   } catch (err) {
-    const message = String((err as Error).message || err);
-    await recordSyncFailure(admin, conn.id, message);
-    return json({ ok: false, mailbox: conn.account_label, error: message }, 500);
+    await recordSyncFailure(admin, conn.id, err);
+    return json({ ok: false, mailbox: conn.account_label, error: String((err as Error)?.message ?? err) }, 500);
   } finally {
     await releaseSync(admin, conn.id);
   }

@@ -139,15 +139,18 @@ create trigger integration_connections_browser_can_only_disconnect
   before update on public.integration_connections
   for each row execute function public.integration_connections_browser_can_only_disconnect();
 
+-- The trigger is the second lock. The first is what the browser may write at
+-- all: two columns, status and last_error, and no inserts. A row planted from
+-- the browser — say, after deleting the studio's own — could carry a
+-- sync_cursor or a sync lock of its choosing, and the next consent would pick
+-- it up as if it were real. Rows are made by microsoft-connect.
+revoke insert, update on public.integration_connections from anon, authenticated;
+grant update (status, last_error) on public.integration_connections to authenticated;
+
 -- A personal connection's row takes its grant and every stored message with
 -- it. A manager removes the studio's connections, or their own — not a
 -- colleague's. (0024's single "for all" policy is split to say so.)
 drop policy if exists "manager writes integration_connections" on public.integration_connections;
-
-drop policy if exists "manager inserts integration_connections" on public.integration_connections;
-create policy "manager inserts integration_connections"
-  on public.integration_connections for insert
-  with check (public.is_manager());
 
 drop policy if exists "manager updates integration_connections" on public.integration_connections;
 create policy "manager updates integration_connections"
@@ -280,6 +283,7 @@ declare
   v_routed   int := 0;
   v_mid      text;
   v_dir      text;
+  v_copies   uuid[];
 begin
   if p_folder not in ('inbox', 'sent', 'archive', 'spam', 'trash') then
     raise exception 'store_mail_batch: unknown folder %', p_folder;
@@ -299,19 +303,27 @@ begin
       end
     returning id into v_thread;
 
-    if v_mid is not null then
-      update public.mail_messages m
-      set external_id = v_row->>'external_id'
-      where m.thread_id = v_thread
-        and m.internet_message_id = v_mid
-        and m.direction = v_dir
-        and (m.folder = p_folder or (m.folder = 'inbox' and p_folder in ('archive', 'spam', 'trash')))
-        and m.external_id <> v_row->>'external_id'
-        and not exists (
-          select 1 from public.mail_messages x
-          where x.thread_id = v_thread and x.external_id = v_row->>'external_id')
-        and (select count(*) from public.mail_messages y
-             where y.thread_id = v_thread and y.internet_message_id = v_mid and y.direction = v_dir) = 1;
+    -- The stored copy this could be, under an older Graph id: same Message-ID,
+    -- same direction, and where it was — the same folder, or the inbox when it
+    -- now turns up in archive, spam or trash. Re-pointed only when there is
+    -- exactly one, so a message we sent to our own mailbox — a Sent copy and an
+    -- inbox copy under one Message-ID — never has one copy take the other's id.
+    if v_mid is not null and not exists (
+      select 1 from public.mail_messages x
+      where x.thread_id = v_thread and x.external_id = v_row->>'external_id'
+    ) then
+      select array_agg(c.id) into v_copies
+      from public.mail_messages c
+      where c.thread_id = v_thread
+        and c.internet_message_id = v_mid
+        and c.direction = v_dir
+        and (c.folder = p_folder or (c.folder = 'inbox' and p_folder in ('archive', 'spam', 'trash')));
+
+      if cardinality(v_copies) = 1 then
+        update public.mail_messages
+        set external_id = v_row->>'external_id'
+        where id = v_copies[1];
+      end if;
     end if;
 
     insert into public.mail_messages (
@@ -390,6 +402,109 @@ $$;
 
 comment on function public.store_mail_batch(uuid, text, jsonb) is
   'The one way the sync and send-mail store mail. Service role only.';
+
+-- Mail from one of us is not the customer's words, whichever mailbox it turns
+-- up in: a colleague cc'ing the studio on their reply to a ticket, or the
+-- person whose grant reads hello@ writing to it from their own mailbox. Filed
+-- onto the ticket, it would be shown as the customer writing, and reopen a
+-- resolved ticket. It stays mail; replies reach tickets through
+-- send-ticket-reply. "One of us" is a member of staff's address, or the
+-- address of any connected mailbox or of whoever consented to one.
+create or replace function public.is_staff_address(p_email text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(lower(trim(p_email)), '') <> '' and (
+    exists (select 1 from public.employees e where lower(trim(e.email)) = lower(trim(p_email)))
+    or exists (
+      select 1 from public.integration_connections c
+      where lower(trim(p_email)) in (c.account_label, lower(trim(coalesce(c.external_id, ''))))
+    )
+  );
+$$;
+
+revoke all on function public.is_staff_address(text) from public, anon, authenticated;
+grant execute on function public.is_staff_address(text) to service_role;
+
+-- 0035's route_mail_to_ticket, unchanged but for the staff check.
+create or replace function public.route_mail_to_ticket(p_mail_message_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m           record;
+  v_ref       int;
+  v_ticket    uuid;
+  v_existing  uuid;
+begin
+  select mm.id, mm.thread_id, mm.direction, mm.from_email, mm.subject, mm.body_text, mm.sent_at,
+         mt.ticket_id, mt.contact_id
+    into m
+  from public.mail_messages mm
+  join public.mail_threads mt on mt.id = mm.thread_id
+  where mm.id = p_mail_message_id;
+
+  if not found or m.direction <> 'inbound' then
+    return null;                       -- our own sent mail is already in the thread
+  end if;
+
+  if public.is_staff_address(m.from_email) then
+    return null;                       -- one of us writing; see is_staff_address
+  end if;
+
+  -- Already routed: nothing to do, and say which ticket it went to.
+  select ticket_id into v_existing
+  from public.ticket_messages where mail_message_id = p_mail_message_id;
+  if v_existing is not null then
+    return v_existing;
+  end if;
+
+  -- The thread's own link wins: once a human has attached a conversation to a
+  -- ticket, later replies follow it even if someone edits the subject line.
+  v_ticket := m.ticket_id;
+
+  if v_ticket is null then
+    v_ref := nullif(substring(coalesce(m.subject, '') from '#VYG-([0-9]+)'), '')::int;
+    if v_ref is not null then
+      select id into v_ticket
+      from public.support_tickets
+      where number = v_ref and deleted_at is null;
+    end if;
+  end if;
+
+  if v_ticket is null then
+    return null;                       -- no reference: it stays mail, by design
+  end if;
+
+  insert into public.ticket_messages
+    (ticket_id, author_contact_id, direction, body, mail_message_id, created_at)
+  values
+    (v_ticket, m.contact_id, 'inbound',
+     coalesce(nullif(trim(m.body_text), ''), '(no text in this message)'),
+     p_mail_message_id, coalesce(m.sent_at, now()));
+
+  -- Keep the thread pointing at the ticket, so the next reply skips the lookup
+  -- and the mail view can show the connection.
+  update public.mail_threads set ticket_id = v_ticket, updated_at = now()
+  where id = m.thread_id and ticket_id is distinct from v_ticket;
+
+  -- A customer who has replied is waiting on us again. Reopening a resolved
+  -- ticket is the whole point of matching the reference in the first place.
+  update public.support_tickets
+  set status = case when status in ('resolved','closed') then 'open' else status end,
+      updated_at = now()
+  where id = v_ticket;
+
+  return v_ticket;
+end;
+$$;
+
+revoke all on function public.route_mail_to_ticket(uuid) from public, anon, authenticated;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 7. One sync of a mailbox at a time.

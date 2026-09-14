@@ -9,6 +9,19 @@ import { mergeTokens, needsRefresh, refreshFailureIsPermanent, tokenUrl } from '
 // deno-lint-ignore no-explicit-any
 type Admin = any;
 
+/* A refresh that failed, saying whether it needs a person. The message keeps
+   Microsoft's error code for whoever reads last_error; `permanent` is what
+   decides the connection's status (failureStatusOf in mail-store.ts), so an
+   outage whose body mentions invalid_grant is still retried. */
+export class TokenRefreshError extends Error {
+  permanent: boolean;
+  constructor(message: string, permanent: boolean) {
+    super(message);
+    this.name = 'TokenRefreshError';
+    this.permanent = permanent;
+  }
+}
+
 export async function accessTokenFor(admin: Admin, connectionId: string): Promise<string> {
   const { data: secret, error } = await admin
     .from('integration_secrets')
@@ -23,7 +36,7 @@ export async function accessTokenFor(admin: Admin, connectionId: string): Promis
 
   if (!secret.refresh_token) {
     await markNeedsReauth(admin, connectionId, 'No refresh token stored');
-    throw new Error('That connection cannot refresh itself. Connect it again.');
+    throw new TokenRefreshError('That connection cannot refresh itself. Connect it again.', true);
   }
 
   const res = await fetch(tokenUrl(Deno.env.get('MICROSOFT_TENANT') ?? undefined), {
@@ -45,35 +58,56 @@ export async function accessTokenFor(admin: Admin, connectionId: string): Promis
   if (!res.ok) {
     const code = String(fresh?.error || `http_${res.status}`);
     const why = String(fresh?.error_description || fresh?.error || `HTTP ${res.status}`);
-    /* invalid_grant or interaction_required: the grant is gone — revoked, a
-       password changed, a conditional-access policy now refuses it — and no
-       retry brings it back, so the connection is flagged for a person. The
-       code goes in the message too: error_description ("AADSTS700082: …")
-       does not always say it, and failureStatus() reads the message. Anything
-       else is Microsoft having a moment, and the next run tries again. */
-    if (refreshFailureIsPermanent(res.status, fresh)) {
-      await markNeedsReauth(admin, connectionId, `${code}: ${why}`);
-      throw new Error(`Microsoft refused the refresh (${code}): ${why}`);
+
+    /* A 429, a 5xx, temporarily_unavailable: Microsoft having a moment. The
+       next run tries again. */
+    if (!refreshFailureIsPermanent(res.status, fresh)) {
+      throw new TokenRefreshError(`Microsoft could not refresh the token (${code}): ${why}`, false);
     }
-    throw new Error(`Microsoft could not refresh the token (${code}): ${why}`);
+
+    /* invalid_grant or interaction_required: this grant is gone — revoked, a
+       password changed, conditional access now refuses it. Unless someone has
+       reconnected while this ran: then it was the OLD grant that failed, and
+       flagging the mailbox would undo the reconnect. */
+    if (await grantReplaced(admin, connectionId, secret.refresh_token)) {
+      throw new TokenRefreshError('The mailbox was reconnected while this ran. Try again.', false);
+    }
+    await markNeedsReauth(admin, connectionId, `${code}: ${why}`);
+    throw new TokenRefreshError(`Microsoft refused the refresh (${code}): ${why}`, true);
   }
 
-  /* merge, not replace: a refresh response carries no refresh_token. */
+  /* merge, not replace: a refresh response carries no refresh_token. And only
+     over the grant this refreshed — a reconnect that stored a new grant in the
+     meantime, with the scopes it was reconnected for, must not be overwritten
+     by the old grant's refreshed tokens. */
   const merged = mergeTokens(secret, fresh);
   const { error: saveErr } = await admin
     .from('integration_secrets')
     .update(merged)
-    .eq('connection_id', connectionId);
+    .eq('connection_id', connectionId)
+    .eq('refresh_token', secret.refresh_token);
   if (saveErr) throw new Error(`Could not store the refreshed token: ${saveErr.message}`);
 
   return merged.access_token!;
 }
 
+async function grantReplaced(admin: Admin, connectionId: string, refreshToken: string): Promise<boolean> {
+  const { data } = await admin
+    .from('integration_secrets')
+    .select('refresh_token')
+    .eq('connection_id', connectionId)
+    .maybeSingle();
+  return Boolean(data?.refresh_token) && data.refresh_token !== refreshToken;
+}
+
+/* Never over a mailbox someone has switched off: a run already under way when
+   it was disconnected must not invite a reconnect of it. */
 export async function markNeedsReauth(admin: Admin, connectionId: string, why: string): Promise<void> {
   await admin
     .from('integration_connections')
     .update({ status: 'needs_reauth', last_error: why.slice(0, 500) })
-    .eq('id', connectionId);
+    .eq('id', connectionId)
+    .neq('status', 'disconnected');
 }
 
 export async function markSynced(admin: Admin, connectionId: string, cursor?: string | null): Promise<void> {

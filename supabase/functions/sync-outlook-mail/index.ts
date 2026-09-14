@@ -90,9 +90,8 @@ Deno.serve(async (req) => {
       windowDays: days,
     });
   } catch (err) {
-    const message = String((err as Error).message || err);
-    await recordSyncFailure(admin, connectionId, message);
-    return json({ error: message }, 500);
+    await recordSyncFailure(admin, connectionId, err);
+    return json({ error: String((err as Error)?.message ?? err) }, 500);
   } finally {
     await releaseSync(admin, conn.id);
   }

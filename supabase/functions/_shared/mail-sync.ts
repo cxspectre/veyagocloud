@@ -14,7 +14,7 @@
 import { MESSAGE_SELECT, folderFromWellKnownName, toMailRow } from './graph-message.ts';
 import { assertGraphCall } from './graph-guard.ts';
 import { markNeedsReauth } from './graph-token.ts';
-import { directionFor, failureStatus, firstSyncSince, ownAddresses } from './mail-store.ts';
+import { directionFor, failureStatusOf, ownAddresses } from './mail-store.ts';
 import { mailboxPath } from './mailbox.ts';
 
 export const GRAPH = 'https://graph.microsoft.com/v1.0';
@@ -126,20 +126,21 @@ export interface DeltaPage {
 }
 
 /* One page of a folder's changes — new mail, and read or flag changes made in
- * Outlook. `from` is the link to carry on from, or null to start a round,
- * which looks back FIRST_SYNC_DAYS rather than at the whole folder. Graph
- * encodes the query into the links it returns, so they are followed as they
- * are. Removals — a message deleted or moved out of the folder — are counted,
- * not acted on: the workspace keeps what it has. */
+ * Outlook. `from` is the link to carry on from, or null to start a round from
+ * `since` (roundStart in mail-store.ts) rather than from the beginning of the
+ * folder. Graph encodes the query into the links it returns, so they are
+ * followed as they are. Removals — a message deleted or taken out of the
+ * folder — are counted, not acted on: the workspace keeps what it has. */
 export async function fetchDeltaPage(
   conn: MailConnection,
   token: string,
   folder: string,
   from: string | null,
+  since: string,
 ): Promise<DeltaPage> {
   const start = new URLSearchParams({
     $select: MESSAGE_SELECT,
-    $filter: `receivedDateTime ge ${firstSyncSince(Date.now())}`,
+    $filter: `receivedDateTime ge ${since}`,
   });
   const href = from
     ?? `${GRAPH}${mailboxPath(conn)}/mailFolders/${encodeURIComponent(folder)}/messages/delta?${start}`;
@@ -238,11 +239,12 @@ export async function markSyncedIfLive(admin: Admin, connectionId: string): Prom
 
 /* A failed sync flags its connection, so the workspace can say which mailbox
  * is stuck and why — needs_reauth only for what a reconnect fixes (see
- * failureStatus), and never over a mailbox someone has disconnected meanwhile.
- * Reporting the failure must not replace it. */
-export async function recordSyncFailure(admin: Admin, connectionId: string, message: string): Promise<void> {
+ * failureStatusOf), and never over a mailbox someone has disconnected
+ * meanwhile. Reporting the failure must not replace it. */
+export async function recordSyncFailure(admin: Admin, connectionId: string, err: unknown): Promise<void> {
+  const message = String((err as Error)?.message ?? err ?? 'The sync failed');
   try {
-    if (failureStatus(message) === 'needs_reauth') {
+    if (failureStatusOf(err) === 'needs_reauth') {
       await markNeedsReauth(admin, connectionId, message);
     } else {
       await admin.from('integration_connections')

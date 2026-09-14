@@ -31,6 +31,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /* A thread with more messages to change than this is changed in Outlook as
    far as this goes; the database change is whole either way. */
 const MAX_MESSAGES = 50;
+/* Ids per database update, so a long conversation never makes a URL too long. */
+const ID_CHUNK = 100;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -45,6 +47,15 @@ function json(body: unknown, status = 200): Response {
 }
 
 interface StoredMessage { id: string; external_id: string; direction: string; is_flagged: boolean }
+
+// deno-lint-ignore no-explicit-any
+async function updateMessages(admin: any, ids: string[], change: Record<string, boolean>): Promise<string | null> {
+  for (let start = 0; start < ids.length; start += ID_CHUNK) {
+    const { error } = await admin.from('mail_messages').update(change).in('id', ids.slice(start, start + ID_CHUNK));
+    if (error) return error.message;
+  }
+  return null;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -68,24 +79,29 @@ Deno.serve(async (req) => {
     if (read === undefined && starred === undefined) return json({ error: 'Nothing to change' }, 400);
 
     /* Read as the caller: a thread they cannot see is a thread they cannot change. */
-    const { data: thread } = await asCaller
+    /* A read that failed is not "no such thread", nor "no messages": treated
+       so, the thread would change while its messages and Outlook did not. */
+    const { data: thread, error: threadErr } = await asCaller
       .from('mail_threads')
       .select('id, connection_id')
       .eq('id', threadId)
       .maybeSingle();
+    if (threadErr) return json({ error: threadErr.message }, 500);
     if (!thread) return json({ error: 'No such conversation' }, 404);
 
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const { data: conn } = await admin
+    const { data: conn, error: connErr } = await admin
       .from('integration_connections')
       .select('id, account_label, external_id, status')
       .eq('id', thread.connection_id)
       .maybeSingle();
-    const { data: stored } = await admin
+    if (connErr) return json({ error: connErr.message }, 500);
+    const { data: stored, error: storedErr } = await admin
       .from('mail_messages')
       .select('id, external_id, direction, is_flagged')
       .eq('thread_id', threadId)
       .order('sent_at', { ascending: false });
+    if (storedErr) return json({ error: storedErr.message }, 500);
     const messages: StoredMessage[] = stored ?? [];
     const inbound = messages.filter((m) => m.direction === 'inbound');
 
@@ -127,23 +143,18 @@ Deno.serve(async (req) => {
     }
 
     /* The stored messages, which the thread's state is derived from. The
-       browser has no write on mail_messages; this is the service role. */
-    /* By conversation, not by a list of ids: a long conversation's id list
-       makes a URL long enough to fail — after Outlook has already changed. */
-    if (read !== undefined) {
-      const { error } = await admin.from('mail_messages')
-        .update({ is_read: read }).eq('thread_id', threadId).eq('direction', 'inbound');
-      if (error) return json({ error: error.message }, 500);
-    }
-    if (starred === true && flagOn) {
-      const { error } = await admin.from('mail_messages')
-        .update({ is_flagged: true }).eq('id', flagOn.id);
-      if (error) return json({ error: error.message }, 500);
-    }
-    if (starred === false) {
-      const { error } = await admin.from('mail_messages')
-        .update({ is_flagged: false }).eq('thread_id', threadId);
-      if (error) return json({ error: error.message }, 500);
+       browser has no write on mail_messages; this is the service role. Only
+       the messages read above: one a sync stored since then has not been
+       changed in Outlook, and marking it here would leave the two disagreeing
+       where delta never looks again. */
+    const updates: Array<[string[], Record<string, boolean>]> = [
+      ...(read !== undefined ? [[inbound.map((m) => m.id), { is_read: read }]] : []),
+      ...(starred === true && flagOn ? [[[flagOn.id], { is_flagged: true }]] : []),
+      ...(starred === false ? [[messages.map((m) => m.id), { is_flagged: false }]] : []),
+    ] as Array<[string[], Record<string, boolean>]>;
+    for (const [ids, change] of updates) {
+      const failed = await updateMessages(admin, ids, change);
+      if (failed) return json({ error: failed }, 500);
     }
 
     /* The thread, as the caller: the column grant (0038) allows exactly these two. */

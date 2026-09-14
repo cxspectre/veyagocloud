@@ -29,9 +29,12 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-/* Disconnecting keeps the row, and with it the owner — so the way to hand a
-   mailbox to someone else is removing the connection, not disconnecting it. */
-const OWNER_KEPT = 'This mailbox is already connected for someone else. Remove the connection before connecting it for a different owner.';
+/* Disconnecting keeps the row, and with it the owner, so handing a mailbox to
+   someone else means removing the connection. The workspace has no way to do
+   that yet, and a manager may only remove the studio's connections or their
+   own (0038) — so the message says where it can be done, not what to click. */
+const OWNER_KEPT = 'This mailbox is already connected for someone else, and a connection keeps its owner. '
+  + 'To hand it over, its connection has to be removed first — for now, in the database.';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

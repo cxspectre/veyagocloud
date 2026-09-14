@@ -159,6 +159,11 @@ Deno.serve(async (req) => {
         ...(address ? { external_id: address } : {}),
         /* account_label is NOT overwritten. It is the mailbox being read, which
            for a shared one is not the account that authorised reading it. */
+        /* A new grant starts the scheduled sync afresh. Links saved under the
+           old one may read another mailbox path — /me, from before who
+           consented was known — and must not outlive it (readCursors in
+           mail-store.ts). A calendar re-reads its window, which is harmless. */
+        sync_cursor: null,
       })
       .eq('id', claims.connection);
     if (connErr) return done(`Could not update the connection: ${connErr.message}`, false);

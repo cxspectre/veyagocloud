@@ -187,6 +187,39 @@ insert into results(name, expected, actual, pass)
 select 'MAILBOX: a manager cannot delete a colleague''s personal mailbox', '0', count(*)::text, count(*) = 0
 from gone;
 
+-- …and can remove the studio's connections and their own: a policy that
+-- refused every delete would pass the test above too.
+reset role;
+insert into public.integration_connections (id, provider, account_label, employee_id, status)
+values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'microsoft_mail', 'fixture.studio-removable@example.invalid', null, 'disconnected'),
+       ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'microsoft_mail', 'fixture.own-removable@example.invalid',
+        (select id from public.employees where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093'), 'disconnected');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+
+with gone as (
+  delete from public.integration_connections
+  where id in ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'manager: can remove a studio connection and their own', '2', count(*)::text, count(*) = 2
+from gone;
+
+-- Rows are made by microsoft-connect, never from the browser: a planted row
+-- could carry a sync cursor, or a sync lock, of its own choosing.
+do $$
+begin
+  insert into public.integration_connections (provider, account_label, status, sync_cursor)
+  values ('microsoft_mail', 'fixture.planted@example.invalid', 'connected',
+          '{"mailbox":"/me","folders":{"inbox":{"link":"https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages/delta","failures":0}}}');
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: a manager cannot plant a connection', 'refused', 'PLANTED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: a manager cannot plant a connection', 'refused', 'refused', true);
+end $$;
+
 reset role;
 
 -- ── as an ordinary EMPLOYEE (staff, not manager) ────────────────────────────
