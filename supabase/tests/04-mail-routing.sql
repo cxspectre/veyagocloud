@@ -81,13 +81,20 @@ insert into public.mail_messages (id, thread_id, external_id, direction, from_em
   ('c0000000-0000-4000-a000-000000000008','c0000000-0000-4000-a000-000000000007','msg-n','inbound',
    'news@example.invalid','Your weekly newsletter','Ten things about CSS.', now());
 
+-- Counted against what was there before, not against an empty table: the live
+-- project has real tickets, and an unscoped count(*) was only ever right on an
+-- empty database.
+select set_config('fixture.tickets_before', (select count(*) from public.support_tickets)::text, true);
+
 insert into results(name, expected, actual, pass)
 select 'unreferenced mail is not routed', 'null',
        coalesce(public.route_mail_to_ticket('c0000000-0000-4000-a000-000000000008')::text,'null'),
        public.route_mail_to_ticket('c0000000-0000-4000-a000-000000000008') is null;
 
 insert into results(name, expected, actual, pass)
-select 'and no ticket was opened for it', '1', count(*)::text, count(*)=1
+select 'and no ticket was opened for it', '0 new',
+       (count(*) - current_setting('fixture.tickets_before')::int)::text || ' new',
+       count(*) = current_setting('fixture.tickets_before')::int
 from public.support_tickets;
 
 -- Our own outbound mail is already in the thread; routing it back would echo.
@@ -106,6 +113,9 @@ grant usage, select on sequence results_id_seq to authenticated;
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}',true);
 
+-- Counted as the person, who sees tickets the way the checks below do.
+select set_config('fixture.tickets_before_manual', (select count(*) from public.support_tickets)::text, true);
+
 select public.create_ticket_from_thread('c0000000-0000-4000-a000-000000000007','Kept') as opened;
 
 insert into results(name, expected, actual, pass)
@@ -119,7 +129,9 @@ from public.ticket_messages where mail_message_id='c0000000-0000-4000-a000-00000
 
 select public.create_ticket_from_thread('c0000000-0000-4000-a000-000000000007') as again;
 insert into results(name, expected, actual, pass)
-select 'doing it twice does not open a second ticket', '2', count(*)::text, count(*)=2
+select 'doing it twice does not open a second ticket', '1 new',
+       (count(*) - current_setting('fixture.tickets_before_manual')::int)::text || ' new',
+       count(*) = current_setting('fixture.tickets_before_manual')::int + 1
 from public.support_tickets;
 
 reset role;
