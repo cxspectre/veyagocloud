@@ -568,7 +568,8 @@ column. Point a colleague's personal mailbox at yourself (`employee_id`) and
 person's own mail into it, for all staff to see. So in 0038, **from the browser
 a connection can only be disconnected**: the browser may update `status` and
 `last_error` and nothing else, insert nothing, and a trigger keeps `status` to
-`disconnected`. Everything else about a connection is written by
+`disconnected`. A manager disconnects, as they remove, only the studio's
+connections or their own; a colleague's personal mailbox is theirs to switch off. Everything else about a connection is written by
 `microsoft-connect`, the callback and the sync, as the service role. The
 callback connects nothing when Microsoft does not say which account signed in:
 without that, a shared mailbox would be read as the consenting person's own.

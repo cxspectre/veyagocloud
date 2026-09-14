@@ -152,10 +152,14 @@ grant update (status, last_error) on public.integration_connections to authentic
 -- colleague's. (0024's single "for all" policy is split to say so.)
 drop policy if exists "manager writes integration_connections" on public.integration_connections;
 
+-- Disconnecting follows the same line as removing: the studio's connections, or
+-- the manager's own. A colleague's personal mailbox is theirs to switch off.
 drop policy if exists "manager updates integration_connections" on public.integration_connections;
-create policy "manager updates integration_connections"
+drop policy if exists "manager updates studio or own integration_connections" on public.integration_connections;
+create policy "manager updates studio or own integration_connections"
   on public.integration_connections for update
-  using (public.is_manager()) with check (public.is_manager());
+  using (public.is_manager() and (employee_id is null or employee_id = public.active_employee_id()))
+  with check (public.is_manager() and (employee_id is null or employee_id = public.active_employee_id()));
 
 drop policy if exists "manager deletes studio or own integration_connections" on public.integration_connections;
 create policy "manager deletes studio or own integration_connections"

@@ -201,6 +201,16 @@ values ('99999999-9999-9999-9999-999999999999', 'microsoft_mail', 'fixture.colle
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
 
+-- Nor switch it off: disconnecting follows the same line as removing.
+with switched_off as (
+  update public.integration_connections set status = 'disconnected'
+  where id = '99999999-9999-9999-9999-999999999999'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'MAILBOX: a manager cannot disconnect a colleague''s personal mailbox', '0', count(*)::text, count(*) = 0
+from switched_off;
+
 with gone as (
   delete from public.integration_connections
   where id = '99999999-9999-9999-9999-999999999999'
@@ -216,9 +226,18 @@ reset role;
 insert into public.integration_connections (id, provider, account_label, employee_id, status)
 values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'microsoft_mail', 'fixture.studio-removable@example.invalid', null, 'disconnected'),
        ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'microsoft_mail', 'fixture.own-removable@example.invalid',
-        (select id from public.employees where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093'), 'disconnected');
+        (select id from public.employees where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093'), 'connected');
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+
+with switched_off as (
+  update public.integration_connections set status = 'disconnected'
+  where id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'manager: can disconnect their own personal mailbox', '1', count(*)::text, count(*) = 1
+from switched_off;
 
 with gone as (
   delete from public.integration_connections
