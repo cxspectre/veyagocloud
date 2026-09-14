@@ -258,13 +258,14 @@ create policy "staff remove own mail attachments"
 --    In one statement per thread, so two overlapping runs cannot write each
 --    other's stale state back.
 --
---    A message that comes back under a new Graph id — moved within a folder,
---    or out of the inbox into archive, spam or trash — is re-pointed by its
---    Message-ID rather than stored twice. Only a copy going the same way: a
---    message we send to our own mailbox has an inbound and an outbound copy
---    under one Message-ID, and those stay two. New mail from outside is routed
---    to its ticket (0035) — once: not again for a copy of a message already
---    routed.
+--    A message that comes back under a new Graph id — found again in its
+--    folder, or taken out of the inbox into archive, spam or trash — is
+--    re-pointed by its Message-ID rather than stored twice, when exactly one
+--    stored copy matches its direction and folder: a message we send to our
+--    own mailbox has a Sent copy and an inbox copy under one Message-ID, and
+--    those stay two. New mail from outside is routed to its ticket (0035) —
+--    once, not again for a copy of a message already routed, and never mail
+--    from one of us (is_staff_address).
 -- ─────────────────────────────────────────────────────────────────────────────
 create or replace function public.store_mail_batch(p_connection uuid, p_folder text, p_rows jsonb)
 returns jsonb
@@ -359,9 +360,12 @@ begin
 
     v_messages := v_messages + 1;
 
-    -- A routing failure must not lose the batch: the mail is stored, and the
-    -- worst case is one reply someone files by hand.
+    -- New mail from outside goes to its ticket — once, and never mail from one
+    -- of us (is_staff_address, below). A routing failure must not lose the
+    -- batch: the mail is stored, and the worst case is one reply someone files
+    -- by hand.
     if v_inserted and v_dir = 'inbound'
+       and not public.is_staff_address(v_row->>'from_email')
        and not (v_mid is not null and exists (
          select 1 from public.mail_messages x
          where x.thread_id = v_thread and x.internet_message_id = v_mid
@@ -381,20 +385,7 @@ begin
     end if;
   end loop;
 
-  update public.mail_threads t set
-    is_read = not exists (
-      select 1 from public.mail_messages m
-      where m.thread_id = t.id and m.direction = 'inbound' and not m.is_read),
-    is_starred = exists (
-      select 1 from public.mail_messages m
-      where m.thread_id = t.id and m.is_flagged),
-    subject = coalesce((
-      select m.subject from public.mail_messages m
-      where m.thread_id = t.id order by m.sent_at desc limit 1), t.subject),
-    snippet = coalesce((
-      select m.preview from public.mail_messages m
-      where m.thread_id = t.id order by m.sent_at desc limit 1), t.snippet)
-  where t.id = any(v_ids);
+  perform public.refresh_mail_thread_state(v_ids);
 
   return jsonb_build_object('threads', v_threads, 'messages', v_messages, 'routed', v_routed);
 end;
@@ -405,11 +396,14 @@ comment on function public.store_mail_batch(uuid, text, jsonb) is
 
 -- Mail from one of us is not the customer's words, whichever mailbox it turns
 -- up in: a colleague cc'ing the studio on their reply to a ticket, or the
--- person whose grant reads hello@ writing to it from their own mailbox. Filed
--- onto the ticket, it would be shown as the customer writing, and reopen a
--- resolved ticket. It stays mail; replies reach tickets through
--- send-ticket-reply. "One of us" is a member of staff's address, or the
--- address of any connected mailbox or of whoever consented to one.
+-- person whose grant reads hello@ writing to it from their own mailbox. Routed
+-- automatically, it would be shown on the ticket as the customer writing, and
+-- reopen a resolved ticket — so store_mail_batch does not route it, and it
+-- stays mail. Opening a ticket from a conversation by hand
+-- (create_ticket_from_thread, 0035) still brings it along: a colleague
+-- forwarding a customer's email to hello@ is exactly what that is for.
+-- "One of us" is a member of staff's address, or the address of any connected
+-- mailbox or of whoever consented to one.
 create or replace function public.is_staff_address(p_email text)
 returns boolean
 language sql
@@ -429,88 +423,48 @@ $$;
 revoke all on function public.is_staff_address(text) from public, anon, authenticated;
 grant execute on function public.is_staff_address(text) to service_role;
 
--- 0035's route_mail_to_ticket, unchanged but for the staff check.
-create or replace function public.route_mail_to_ticket(p_mail_message_id uuid)
-returns uuid
-language plpgsql
+-- A conversation's read, starred, subject and snippet, worked out from every
+-- message it holds: unread while a message from outside is unread, starred
+-- while any message is flagged, subject and snippet from the newest. In one
+-- statement, so two overlapping writers cannot put back each other's stale
+-- state. store_mail_batch ends with it, and update-mail-state calls it after
+-- changing messages, so a thread is never written from a request that may
+-- already be out of date.
+create or replace function public.refresh_mail_thread_state(p_threads uuid[])
+returns setof public.mail_threads
+language sql
 security definer
 set search_path = public
 as $$
-declare
-  m           record;
-  v_ref       int;
-  v_ticket    uuid;
-  v_existing  uuid;
-begin
-  select mm.id, mm.thread_id, mm.direction, mm.from_email, mm.subject, mm.body_text, mm.sent_at,
-         mt.ticket_id, mt.contact_id
-    into m
-  from public.mail_messages mm
-  join public.mail_threads mt on mt.id = mm.thread_id
-  where mm.id = p_mail_message_id;
-
-  if not found or m.direction <> 'inbound' then
-    return null;                       -- our own sent mail is already in the thread
-  end if;
-
-  if public.is_staff_address(m.from_email) then
-    return null;                       -- one of us writing; see is_staff_address
-  end if;
-
-  -- Already routed: nothing to do, and say which ticket it went to.
-  select ticket_id into v_existing
-  from public.ticket_messages where mail_message_id = p_mail_message_id;
-  if v_existing is not null then
-    return v_existing;
-  end if;
-
-  -- The thread's own link wins: once a human has attached a conversation to a
-  -- ticket, later replies follow it even if someone edits the subject line.
-  v_ticket := m.ticket_id;
-
-  if v_ticket is null then
-    v_ref := nullif(substring(coalesce(m.subject, '') from '#VYG-([0-9]+)'), '')::int;
-    if v_ref is not null then
-      select id into v_ticket
-      from public.support_tickets
-      where number = v_ref and deleted_at is null;
-    end if;
-  end if;
-
-  if v_ticket is null then
-    return null;                       -- no reference: it stays mail, by design
-  end if;
-
-  insert into public.ticket_messages
-    (ticket_id, author_contact_id, direction, body, mail_message_id, created_at)
-  values
-    (v_ticket, m.contact_id, 'inbound',
-     coalesce(nullif(trim(m.body_text), ''), '(no text in this message)'),
-     p_mail_message_id, coalesce(m.sent_at, now()));
-
-  -- Keep the thread pointing at the ticket, so the next reply skips the lookup
-  -- and the mail view can show the connection.
-  update public.mail_threads set ticket_id = v_ticket, updated_at = now()
-  where id = m.thread_id and ticket_id is distinct from v_ticket;
-
-  -- A customer who has replied is waiting on us again. Reopening a resolved
-  -- ticket is the whole point of matching the reference in the first place.
-  update public.support_tickets
-  set status = case when status in ('resolved','closed') then 'open' else status end,
-      updated_at = now()
-  where id = v_ticket;
-
-  return v_ticket;
-end;
+  update public.mail_threads t set
+    is_read = not exists (
+      select 1 from public.mail_messages m
+      where m.thread_id = t.id and m.direction = 'inbound' and not m.is_read),
+    is_starred = exists (
+      select 1 from public.mail_messages m
+      where m.thread_id = t.id and m.is_flagged),
+    subject = coalesce((
+      select m.subject from public.mail_messages m
+      where m.thread_id = t.id order by m.sent_at desc limit 1), t.subject),
+    snippet = coalesce((
+      select m.preview from public.mail_messages m
+      where m.thread_id = t.id order by m.sent_at desc limit 1), t.snippet)
+  where t.id = any(p_threads)
+  returning t.*;
 $$;
 
-revoke all on function public.route_mail_to_ticket(uuid) from public, anon, authenticated;
+revoke all on function public.refresh_mail_thread_state(uuid[]) from public, anon, authenticated;
+grant execute on function public.refresh_mail_thread_state(uuid[]) to service_role;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 7. One sync of a mailbox at a time.
 -- ─────────────────────────────────────────────────────────────────────────────
 alter table public.integration_connections
-  add column if not exists sync_started_at timestamptz;
+  add column if not exists sync_started_at timestamptz,
+  -- When the scheduled sync last finished a whole run. A delta round that
+  -- starts again reaches back to here (roundStart in mail-store.ts); a manual
+  -- sync, which fills in one folder in part, does not move it.
+  add column if not exists delta_synced_at timestamptz;
 
 create or replace function public.claim_mail_sync(p_connection uuid, p_seconds int)
 returns boolean

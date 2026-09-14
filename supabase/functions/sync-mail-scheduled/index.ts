@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: conn, error } = await admin
     .from('integration_connections')
-    .select('id, provider, account_label, external_id, status, sync_cursor, last_synced_at')
+    .select('id, provider, account_label, external_id, status, sync_cursor, delta_synced_at')
     .eq('id', connectionId)
     .maybeSingle();
   if (error) return json({ error: error.message }, 500);
@@ -78,7 +78,9 @@ Deno.serve(async (req) => {
   try {
     const token = await accessTokenFor(admin, conn.id);
     const mailbox = mailboxPath(conn);
-    const since = roundStart(Date.now(), conn.last_synced_at);
+    /* From when this schedule last finished a whole run — not last_synced_at,
+       which a manual sync of one folder also moves. */
+    const since = roundStart(Date.now(), conn.delta_synced_at);
     let cursor: string = conn.sync_cursor ?? '';
     let folders: Record<string, FolderResult> = {};
 
@@ -106,7 +108,7 @@ Deno.serve(async (req) => {
       return json({ ok: false, mailbox: conn.account_label, folders, error: message }, 500);
     }
 
-    await markSyncedIfLive(admin, conn.id);
+    await markSyncedIfLive(admin, conn.id, { delta: true });
     return json({ ok: true, mailbox: conn.account_label, folders });
   } catch (err) {
     await recordSyncFailure(admin, conn.id, err);

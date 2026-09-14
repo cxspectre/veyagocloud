@@ -115,8 +115,12 @@ Deno.serve(async (req) => {
     let outlook = true;
     let reason: string | null = null;
     let moved = 0;
+    /* Switched off on purpose: no sync runs on it, so the change here stays —
+       and saying "reconnect" would invite undoing a deliberate disconnect. */
+    const switchedOff = new Error('mailbox disconnected');
     try {
-      if (!conn || !['connected', 'error'].includes(conn.status)) throw new GraphError(401, 'mailbox not connected');
+      if (!conn || conn.status === 'disconnected') throw switchedOff;
+      if (!['connected', 'error'].includes(conn.status)) throw new GraphError(401, 'mailbox not connected');
       const token = await accessTokenFor(admin, conn.id);
       const box = `${GRAPH}${mailboxPath(conn)}`;
       const patch = async (m: StoredMessage, change: unknown) => {
@@ -134,7 +138,10 @@ Deno.serve(async (req) => {
       }
       if (moved) reason = `${moved} message${moved === 1 ? ' has' : 's have'} moved in Outlook since the last sync.`;
     } catch (err) {
-      if (err instanceof GraphError && (err.status === 401 || err.status === 403)) {
+      if (err === switchedOff) {
+        outlook = false;
+        reason = 'This mailbox is disconnected, so the change stays in the workspace and does not reach Outlook.';
+      } else if (err instanceof GraphError && (err.status === 401 || err.status === 403)) {
         outlook = false;
         reason = 'Reconnect this mailbox for read and starred to reach Outlook — until then the next sync may undo it.';
       } else {
@@ -157,20 +164,18 @@ Deno.serve(async (req) => {
       if (failed) return json({ error: failed }, 500);
     }
 
-    /* The thread, as the caller: the column grant (0038) allows exactly these two. */
-    const changes = {
-      ...(read !== undefined ? { is_read: read } : {}),
-      ...(starred !== undefined ? { is_starred: starred } : {}),
-    };
-    const { data: updated, error: updateErr } = await asCaller
-      .from('mail_threads')
-      .update(changes)
-      .eq('id', threadId)
-      .select('id, is_read, is_starred')
-      .single();
-    if (updateErr) return json({ error: updateErr.message }, 403);
+    /* The thread, worked out again from its messages the way every sync does
+       it (refresh_mail_thread_state, 0038) — not written from this request.
+       A message a sync stored after the read above still counts, so the
+       thread stays unread for it instead of hiding it. The caller's right to
+       this thread was settled when it was read, as the caller. */
+    const { data: refreshed, error: refreshErr } = await admin
+      .rpc('refresh_mail_thread_state', { p_threads: [threadId] });
+    if (refreshErr) return json({ error: refreshErr.message }, 500);
+    const row = (refreshed ?? [])[0];
+    const state = row ? { id: row.id, is_read: row.is_read, is_starred: row.is_starred } : null;
 
-    return json({ ok: true, thread: updated, outlook, reason });
+    return json({ ok: true, thread: state, outlook, reason });
   } catch (err) {
     return json({ error: String((err as Error).message || err) }, 500);
   }

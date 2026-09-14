@@ -517,8 +517,9 @@ person's own inbox into a mailbox all staff can see.
 
 - A folder's first round looks back three days. A round that starts again after
   time away — a mailbox waiting to be reconnected, a link Graph has expired —
-  reaches back to just before the last successful sync, at most 14 days; run a
-  manual sync for anything older.
+  reaches back to just before the schedule last finished a whole run
+  (`delta_synced_at`, which a manual sync does not move), at most 14 days; run
+  a manual sync for anything older.
 - A link Graph says has gone (410) starts the folder again at once. One it
   refuses outright (400, 404) gets three runs first. An outage, a rate limit or
   a database error never costs the link.
@@ -537,11 +538,14 @@ while anything is flagged. Decided per batch in the function, those went wrong:
 overlapping runs wrote each other's stale state back, and a batch that did not
 happen to contain the unread message marked the thread read. Mail found in Sent
 is always ours, so a reply sent *as* hello@ from a personal mailbox is never
-filed onto a ticket as the customer's words. Nor is mail **from** one of us,
-whichever mailbox it turns up in (`is_staff_address`: a member of staff, a
-connected mailbox, or whoever consented to one) — a colleague cc'ing hello@ on
-their reply would otherwise be shown on the ticket as the customer writing, and
-reopen it.
+filed onto a ticket as the customer's words. Nor is mail **from** one of us
+routed automatically, whichever mailbox it turns up in (`is_staff_address`: a
+member of staff, a connected mailbox, or whoever consented to one) — a colleague
+cc'ing hello@ on their reply would otherwise be shown on the ticket as the
+customer writing, and reopen it. Opening a ticket from a conversation by hand
+still brings that mail along, so a forwarded customer email is not lost.
+`update-mail-state` works a thread's read and starred out again from its
+messages afterwards (`refresh_mail_thread_state`), the same way the sync does.
 
 The function is deployed `--no-verify-jwt` and checks an `x-sync-secret` header
 instead: a schedule has no user to sign in as, and should not be handed the
@@ -565,7 +569,9 @@ person's own mail into it, for all staff to see. So in 0038, **from the browser
 a connection can only be disconnected**: the browser may update `status` and
 `last_error` and nothing else, insert nothing, and a trigger keeps `status` to
 `disconnected`. Everything else about a connection is written by
-`microsoft-connect`, the callback and the sync, as the service role.
+`microsoft-connect`, the callback and the sync, as the service role. The
+callback connects nothing when Microsoft does not say which account signed in:
+without that, a shared mailbox would be read as the consenting person's own.
 
 `microsoft-connect` refuses a different owner for a mailbox that already has a
 row, and two first connections of the same address at once cannot overwrite
@@ -579,6 +585,11 @@ remove one yet, so for a colleague's personal mailbox that is the SQL editor.
 
 `0038` needs **Postgres 15 or later** (`unique nulls not distinct`). Check first,
 read-only: `show server_version;` in the SQL editor.
+
+None of 0038, nor the SQL tests written with it, has run anywhere yet. Before
+`db push`, dry-run both: apply 0038 and the `supabase/tests` suites inside one
+transaction that ends in `rollback`, or run them on a local stack
+(`supabase start`, which needs Docker).
 
 ```bash
 supabase db push                                   # 0038

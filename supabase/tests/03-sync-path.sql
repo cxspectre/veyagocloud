@@ -324,6 +324,30 @@ from public.ticket_messages tm
 join public.mail_messages mm on mm.id = tm.mail_message_id
 where tm.ticket_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
 
+-- Opening a ticket from a conversation by hand brings the conversation along —
+-- including a colleague forwarding a customer's email, which automatic routing
+-- leaves out.
+select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', jsonb_build_array(jsonb_build_object(
+  'external_id', 'g-forward-1', 'thread_external_id', 'conv-g', 'internet_message_id', '<g-forward-1@sync-fixture.invalid>',
+  'direction', 'inbound', 'from_name', 'A colleague',
+  'from_email', (select email from public.employees where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093'),
+  'to_emails', jsonb_build_array('sync.fixture@example.invalid'), 'cc_emails', '[]'::jsonb, 'bcc_emails', '[]'::jsonb,
+  'subject', 'Fwd: A customer question', 'body_text', 'Can we help them?', 'body_html', '', 'snippet', 'Can we help them?',
+  'sent_at', (now() - interval '30 minutes')::text, 'is_read', false, 'is_flagged', false,
+  'importance', 'normal', 'has_attachments', false)));
+
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+select set_config('fixture.forward_ticket', public.create_ticket_from_thread(
+  (select id from public.mail_threads
+   where connection_id = '55555555-5555-5555-5555-555555555555' and external_id = 'conv-g'))::text, true);
+reset role;
+
+insert into results(name, expected, actual, pass)
+select 'a ticket opened by hand keeps a colleague''s forward', '1', count(*)::text, count(*) = 1
+from public.ticket_messages
+where ticket_id = current_setting('fixture.forward_ticket')::uuid;
+
 insert into results(name, expected, actual, pass)
 select 'first seen in Sent is filed as sent; archive does not empty the inbox', 'sent · inbox',
        max(folder) filter (where external_id = 'conv-c') || ' · ' || max(folder) filter (where external_id = 'conv-b'),

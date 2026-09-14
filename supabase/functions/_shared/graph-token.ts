@@ -25,7 +25,7 @@ export class TokenRefreshError extends Error {
 export async function accessTokenFor(admin: Admin, connectionId: string): Promise<string> {
   const { data: secret, error } = await admin
     .from('integration_secrets')
-    .select('access_token, refresh_token, token_type, expires_at, extra')
+    .select('access_token, refresh_token, token_type, expires_at, extra, updated_at')
     .eq('connection_id', connectionId)
     .maybeSingle();
 
@@ -79,13 +79,15 @@ export async function accessTokenFor(admin: Admin, connectionId: string): Promis
   /* merge, not replace: a refresh response carries no refresh_token. And only
      over the grant this refreshed — a reconnect that stored a new grant in the
      meantime, with the scopes it was reconnected for, must not be overwritten
-     by the old grant's refreshed tokens. */
-  const merged = mergeTokens(secret, fresh);
+     by the old grant's refreshed tokens. Compared by updated_at, never by the
+     token itself: a filter travels in the request URL, and URLs are logged. */
+  const { updated_at: readAt, ...stored } = secret;
+  const merged = mergeTokens(stored, fresh);
   const { error: saveErr } = await admin
     .from('integration_secrets')
     .update(merged)
     .eq('connection_id', connectionId)
-    .eq('refresh_token', secret.refresh_token);
+    .eq('updated_at', readAt);
   if (saveErr) throw new Error(`Could not store the refreshed token: ${saveErr.message}`);
 
   return merged.access_token!;

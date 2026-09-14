@@ -12,6 +12,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { accessTokenFor, markNeedsReauth, markSynced } from '../_shared/graph-token.ts';
 import { toEventRow } from '../_shared/graph-message.ts';
+import { failureStatusOf } from '../_shared/mail-store.ts';
 
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
@@ -127,12 +128,16 @@ Deno.serve(async (req) => {
     if (connectionId && !/Managers only|Not signed in/.test(message)) {
       try {
         const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-        if (/refresh|invalid_grant|credentials/i.test(message)) {
+        /* Decided the way the mail sync decides it: a refresh says itself
+           whether it needs a person. Matching "refresh" in the wording took a
+           calendar off the schedule for a 503 from the token endpoint. */
+        if (failureStatusOf(err) === 'needs_reauth') {
           await markNeedsReauth(admin, connectionId, message);
         } else {
           await admin.from('integration_connections')
             .update({ status: 'error', last_error: message.slice(0, 500) })
-            .eq('id', connectionId);
+            .eq('id', connectionId)
+            .neq('status', 'disconnected');
         }
       } catch { /* reporting the failure must not replace it */ }
     }

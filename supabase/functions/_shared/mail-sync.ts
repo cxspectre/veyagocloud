@@ -230,9 +230,23 @@ export async function saveCursor(admin: Admin, connectionId: string, cursor: str
   if (error) throw new Error(`Could not save how far the sync got: ${error.message}`);
 }
 
-export async function markSyncedIfLive(admin: Admin, connectionId: string): Promise<void> {
+/* delta: the scheduled sync finished a whole run. delta_synced_at is how far
+   back a round that starts again reaches (roundStart). A manual sync — one
+   folder, a capped window — must not move it, or what it did not fill in
+   would be skipped. */
+export async function markSyncedIfLive(
+  admin: Admin,
+  connectionId: string,
+  options: { delta?: boolean } = {},
+): Promise<void> {
+  const now = new Date().toISOString();
   await admin.from('integration_connections')
-    .update({ status: 'connected', last_error: null, last_synced_at: new Date().toISOString() })
+    .update({
+      status: 'connected',
+      last_error: null,
+      last_synced_at: now,
+      ...(options.delta ? { delta_synced_at: now } : {}),
+    })
     .eq('id', connectionId)
     .in('status', LIVE);
 }

@@ -112,11 +112,18 @@ Deno.serve(async (req) => {
         headers: { Authorization: `Bearer ${tokens.access_token}` },
       });
       if (who.ok) {
-        const me = await who.json();
+        const me = await who.json().catch(() => ({}));
         /* `mail` is the real address; userPrincipalName is the sign-in name and
            is only the same thing by coincidence. Prefer mail, fall back. */
         address = String(me.mail || me.userPrincipalName || '').toLowerCase();
       }
+    }
+    /* Not knowing who consented is not a detail. Without it a shared mailbox is
+       read as /me — the consenting person's own inbox, copied into a mailbox
+       all staff can see — while this page says "Connected". Nothing has been
+       stored yet, so trying again starts clean. */
+    if (!address) {
+      return done('Microsoft did not say which account signed in, so nothing was connected. Try connecting again.', false);
     }
 
     const admin = createClient(

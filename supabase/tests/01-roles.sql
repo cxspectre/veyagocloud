@@ -124,6 +124,16 @@ exception when insufficient_privilege then
   values ('SYNC PATH: nor take the sync lock', 'denied', 'denied', true);
 end $$;
 
+do $$
+begin
+  perform public.refresh_mail_thread_state(array['77777777-7777-7777-7777-777777777777']::uuid[]);
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: nor rewrite a thread''s state', 'denied', 'ALLOWED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: nor rewrite a thread''s state', 'denied', 'denied', true);
+end $$;
+
 -- 0038: from the browser a connection can only be disconnected. Its address
 -- and who consented decide WHICH mail is read: clearing external_id on the
 -- shared mailbox would read the consenting person's own mail into it.
@@ -168,6 +178,19 @@ with disconnected as (
 insert into results(name, expected, actual, pass)
 select 'manager: can still disconnect a studio mailbox', '1', count(*)::text, count(*) = 1
 from disconnected;
+
+-- …but not switch it back on: status is one of the two columns the browser may
+-- write, so this is the trigger's refusal, not the grant's.
+do $$
+begin
+  update public.integration_connections set status = 'connected'
+  where id = '55555555-5555-5555-5555-555555555555';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor switch a mailbox back on without consent', 'refused', 'SWITCHED ON', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor switch a mailbox back on without consent', 'refused', 'refused', true);
+end $$;
 
 -- A colleague's personal mailbox takes its grant and every stored message with
 -- its row. Made here as the database owner; deleted, or not, as the manager.
