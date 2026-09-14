@@ -22,7 +22,11 @@ it; `veyago.cloud/workspace/` is a permanent redirect for old links.
 | Area | Tables | Notes |
 |---|---|---|
 | CRM | `crm_companies`, `crm_contacts` | `promote_enquiry_to_crm()` graduates a `/websites/` enquiry into both |
-| Client work | `client_projects`, `tasks.project_id` | **not** `public.projects`, which is the marketing site's research projects |
+| Client work | `client_projects`, `tasks.project_id` | **not** `public.projects`, which is the marketing site's research projects. `completed_at` is stamped by the database (0039) |
+| Project team | `project_members` | added and removed by the project's owner or an owner/admin; anyone may leave (0039) |
+| A project's client people | `project_contacts` | contacts of the project's own company only, each with a role; a project that changes company drops the old company's people (0039) |
+| Project files | `project_files`, Storage bucket `project-files` | private, `<project id>/<upload id>/<name>`; a record's size and type are read from storage, not taken from the browser (0039) |
+| Project budget | `project_budgets` | moved off `client_projects`, where every employee could read it (0039) |
 | Support | `support_tickets`, `ticket_messages` | numbered from 101, rendered `#VYG-142` |
 | Mail | `mail_threads`, `mail_messages` | written by the sync, never by the browser — except a thread's `is_read` / `is_starred`, the only columns a person may change (0038) |
 | Signatures | `mail_signatures` | one per person per mailbox, private to its owner (0038) |
@@ -51,12 +55,20 @@ Two helpers do the aggregate work so a screen is one round trip:
 | | anon | `employee` / `assistant` | `owner` / `admin` |
 |---|---|---|---|
 | CRM, projects, tickets | – | read + write | read + write, and delete |
+| Project files | – | projects they own or are a member of | everything |
+| Project budgets | – | – | everything |
 | Finance | – | – | everything |
 | Activity feed | – | `staff` rows only | all rows |
 | A studio mailbox | – | read | read |
 | A personal mailbox | – | only their own | **only their own** |
 | A mail signature | – | only their own | **only their own** |
 | `integration_secrets` | – | – | – |
+
+Since 0039, owning a project is a permission: its owner adds the members who
+can open its files. So only an owner/admin, or the project's current owner, can
+change `owner_id` (`guard_project_owner`); nobody but the database picks a
+project's `id`, which could otherwise be a deleted project's; and a project
+that has files is archived rather than deleted outright.
 
 Two of those deserve saying out loud:
 
