@@ -86,13 +86,23 @@ export function roundStart(nowMs: number, lastSyncedAt?: string | null): string 
 export interface FolderCursor {
   link: string | null;
   failures: number;
+  /* Runs in a row this page has been read again for removals Graph has not
+     confirmed yet (STILL_ASKING_RUNS in delta-loop.ts). Absent is none. */
+  asks?: number;
 }
 
-type StoredCursor = { link?: unknown; failures?: unknown } | null;
+type StoredCursor = { link?: unknown; failures?: unknown; asks?: unknown } | null;
 
 const isGraphLink = (link: unknown): boolean => typeof link === 'string' && link.startsWith(GRAPH_PREFIX);
-const failureCount = (value: unknown): number =>
+const countOf = (value: unknown): number =>
   Number.isInteger(value) && (value as number) >= 0 ? value as number : 0;
+
+/* A folder's place as it is kept: a count that is not a whole number is none,
+   and no asks is left out. */
+function placeAt(link: string, failures: unknown, asks: unknown): FolderCursor {
+  const asked = countOf(asks);
+  return { link, failures: countOf(failures), ...(asked > 0 ? { asks: asked } : {}) };
+}
 
 export function readCursors(raw: string | null | undefined, mailbox: string): Record<string, FolderCursor> {
   let parsed: unknown;
@@ -108,7 +118,7 @@ export function readCursors(raw: string | null | undefined, mailbox: string): Re
   return Object.fromEntries(
     Object.entries(folders as Record<string, StoredCursor>)
       .filter(([, cursor]) => cursor && isGraphLink(cursor.link))
-      .map(([folder, cursor]) => [folder, { link: cursor!.link as string, failures: failureCount(cursor!.failures) }]),
+      .map(([folder, cursor]) => [folder, placeAt(cursor!.link as string, cursor!.failures, cursor!.asks)]),
   );
 }
 
@@ -123,7 +133,7 @@ export function withCursor(
 ): string {
   const { [folder]: _previous, ...others } = readCursors(raw, mailbox);
   const folders = cursor && isGraphLink(cursor.link)
-    ? { ...others, [folder]: { link: cursor.link, failures: failureCount(cursor.failures) } }
+    ? { ...others, [folder]: placeAt(cursor.link as string, cursor.failures, cursor.asks) }
     : others;
   return JSON.stringify({ mailbox, folders });
 }

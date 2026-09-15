@@ -196,6 +196,7 @@ export interface GraphEvent {
   isAllDay?: boolean;
   isCancelled?: boolean;
   showAs?: string;
+  sensitivity?: string;
   location?: { displayName?: string };
   onlineMeeting?: { joinUrl?: string };
   attendees?: { emailAddress?: GraphAddress; status?: { response?: string } }[];
@@ -218,7 +219,11 @@ export interface EventRow {
  * is only us is internal; one with nobody is time you blocked out. A guess,
  * and a useful one — it is what colours the agenda, and a person can change
  * it. Returns null when the start cannot be trusted (see toInstant). */
-export function toEventRow(ev: GraphEvent, ownDomain: string): EventRow | null {
+/* hidePrivate: for a studio calendar, where every member of staff reads what is
+   stored. An event its organiser marked personal, private or confidential keeps
+   its time, so nobody double-books it, and nothing else (security review,
+   2026-09-14). */
+export function toEventRow(ev: GraphEvent, ownDomain: string, options: { hidePrivate?: boolean } = {}): EventRow | null {
   const startsAt = toInstant(ev.start);
   if (!startsAt) return null;
 
@@ -230,21 +235,24 @@ export function toEventRow(ev: GraphEvent, ownDomain: string): EventRow | null {
 
   const domain = String(ownDomain || '').toLowerCase();
   const outside = attendees.some((a) => a.email && !a.email.endsWith(`@${domain}`));
+  const hidden = Boolean(options.hidePrivate)
+    && ['personal', 'private', 'confidential'].includes(String(ev.sensitivity ?? '').toLowerCase());
 
   return {
     external_id: ev.id,
-    title: String(ev.subject ?? '').trim() || '(no title)',
-    detail: ev.onlineMeeting?.joinUrl
-      ? (String(ev.bodyPreview ?? '').trim() || 'Online meeting')
-      : (String(ev.bodyPreview ?? '').trim() || null),
-    location: ev.location?.displayName?.trim() || null,
+    title: hidden ? 'Private' : (String(ev.subject ?? '').trim() || '(no title)'),
+    detail: hidden ? null
+      : ev.onlineMeeting?.joinUrl
+        ? (String(ev.bodyPreview ?? '').trim() || 'Online meeting')
+        : (String(ev.bodyPreview ?? '').trim() || null),
+    location: hidden ? null : (ev.location?.displayName?.trim() || null),
     starts_at: startsAt,
     ends_at: toInstant(ev.end),
     all_day: ev.isAllDay === true,
-    kind: !attendees.length ? 'focus' : outside ? 'client' : 'team',
+    kind: hidden ? 'personal' : !attendees.length ? 'focus' : outside ? 'client' : 'team',
     status: ev.isCancelled ? 'cancelled'
       : String(ev.showAs ?? '').toLowerCase() === 'tentative' ? 'tentative'
       : 'confirmed',
-    attendees,
+    attendees: hidden ? [] : attendees,
   };
 }

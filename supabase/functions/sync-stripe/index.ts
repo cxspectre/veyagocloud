@@ -7,9 +7,14 @@
             (a RESTRICTED key with read-only Balance access is enough)
 
    Caller must be a manager. Pulls the last 90 days by default; pass
-   { "days": 365 } in the body for a deeper backfill. */
+   { "days": 365 } in the body for a deeper backfill.
+
+   Every row says what it is (kind), and each charge's fee is a row of its own
+   (_shared/stripe-kind.ts): a payout is not spending, and its deposit in the
+   bank is not income counted twice. Deploy after 0041, which adds the column. */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { stripeRows } from '../_shared/stripe-kind.ts';
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
@@ -83,6 +88,9 @@ Deno.serve(async (req) => {
 
     let txCount = 0;
     let startingAfter: string | null = null;
+    /* One run reads at most 40 pages. A window with more than that is not
+       stored whole, and whoever started the sync is told rather than left with a gap. */
+    let truncated = false;
 
     /* Balance transactions cover charges, refunds, fees, and payouts with
        amounts already signed from Stripe's perspective. Paginate to the cutoff. */
@@ -93,26 +101,26 @@ Deno.serve(async (req) => {
       const items = batch.data ?? [];
       if (!items.length) break;
 
-      const rows = items.map((t: any) => ({
-        account_id: acctRow.id,
-        external_id: t.id,
-        posted_at: new Date(t.created * 1000).toISOString().slice(0, 10),
-        description: t.description || t.reporting_category || t.type || 'Stripe transaction',
-        counterparty: null,
-        amount: t.amount / 100,                  // Stripe uses minor units
-        currency: String(t.currency || currency).toUpperCase(),
-        status: t.status === 'pending' ? 'pending' : 'posted',
-        source: 'stripe',
-      }));
+      // deno-lint-ignore no-explicit-any
+      const rows = items.flatMap((t: any) => stripeRows(t, acctRow.id, currency));
 
       const { error: txErr } = await admin
         .from('finance_transactions')
         .upsert(rows, { onConflict: 'account_id,external_id' });
       if (txErr) throw new Error('Transaction upsert failed: ' + txErr.message);
-      txCount += rows.length;
+      txCount += items.length;
 
       if (!batch.has_more) break;
       startingAfter = items[items.length - 1].id;
+      if (page === 39) truncated = true;
+    }
+
+    if (truncated) {
+      console.warn(`sync-stripe: stopped after ${txCount} transactions; the last ${days} days hold more.`);
+      return json({
+        ok: true, transactions: txCount, days, truncated: true,
+        warning: `Stripe holds more than ${txCount} transactions in the last ${days} days, and only the newest ${txCount} were stored. Sync again with fewer days, a stretch at a time.`,
+      });
     }
 
     return json({ ok: true, transactions: txCount, days });

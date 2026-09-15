@@ -10,6 +10,24 @@
  * failure leaves nothing behind rather than a local row pretending to be a
  * meeting. The caller falls back to a local-only insert when this returns 409.
  *
+ * Which calendar, and where in Graph: _shared/calendar-choice.ts picks the
+ * studio calendar for client work and the booker's own for the rest, and the
+ * event is written to the calendar the connection names — /users/{address} for
+ * a shared one (_shared/mailbox.ts). It used to write to /me for every
+ * connection, so an event booked "in the studio calendar" landed in the diary
+ * of whoever had connected it.
+ *
+ * Checked before anything is booked (security review, 2026-09-14): the
+ * project, company and contact named exist and the booker can see them, and
+ * the kind is one the agenda knows. Client work is what is linked to one of
+ * those — never guessed from the kind. A calendar that is not connected, that is
+ * a team member's own address in the studio's name, or whose grant lacks
+ * Calendars.ReadWrite.Shared for a shared calendar, is never booked into — and
+ * never swapped for another: client work is then booked in the workspace alone
+ * (409), and a private event is refused (503). So is one whose sign-in can no
+ * longer be refreshed. The booker is invited to a studio booking, so it is in
+ * their own diary too.
+ *
  * Deploy:  supabase functions deploy create-calendar-event
  * Body:    { title, startsAt, endsAt?, detail?, location?, allDay?, attendees?,
  *            projectId?, companyId?, contactId?, kind? }
@@ -17,11 +35,27 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { accessTokenFor } from '../_shared/graph-token.ts';
+import { accessTokenFor, markNeedsReauthIfUnchanged, storedGrant, TokenRefreshError } from '../_shared/graph-token.ts';
 import { eventPayload } from '../_shared/graph-write.ts';
 import { toEventRow } from '../_shared/graph-message.ts';
+import { calendarFor } from '../_shared/calendar-choice.ts';
+import { connectionProblem, grantCovers, grantProblem } from '../_shared/connection-rules.ts';
+import { isShared, mailboxPath } from '../_shared/mailbox.ts';
+import { teamAddresses } from '../_shared/team-lookup.ts';
 
 const GRAPH = 'https://graph.microsoft.com/v1.0';
+const SHARED_SCOPE = 'Calendars.ReadWrite.Shared';
+/* calendar_events.kind (0026). */
+const KINDS = ['team', 'client', 'internal', 'personal', 'focus'];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/* Which record each id names, and how the refusal names it. */
+const LINKS: [string, string, string][] = [
+  ['projectId', 'client_projects', 'project'],
+  ['companyId', 'crm_companies', 'company'],
+  ['contactId', 'crm_contacts', 'contact'],
+];
+const STUDIO_WAITING = 'The studio calendar needs reconnecting, so this is saved in the workspace only.';
+const OWN_WAITING = 'Your calendar needs reconnecting before events can be booked into it.';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -34,6 +68,14 @@ function json(body: unknown, status = 200): Response {
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   });
 }
+
+const addressOf = (attendee: unknown): string => String(
+  typeof attendee === 'string'
+    ? attendee
+    : (attendee as { email?: unknown; address?: unknown } | null)?.email
+      ?? (attendee as { address?: unknown } | null)?.address
+      ?? '',
+).trim().toLowerCase();
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -52,27 +94,79 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     if (!body?.title || !String(body.title).trim()) return json({ error: 'An event needs a title' }, 400);
     if (!body?.startsAt) return json({ error: 'An event needs a start time' }, 400);
+    const kind = body.kind == null || body.kind === '' ? null : String(body.kind);
+    if (kind !== null && !KINDS.includes(kind)) return json({ error: `An event's kind is one of ${KINDS.join(', ')}` }, 400);
+
+    /* Each record named must be one the booker can see — read as them, so RLS
+       answers — and what is stored is the id checked, not whatever else the
+       request carried. An id that is not one used to pick the studio calendar,
+       book the event in Outlook, and only then fail to store it. */
+    let linked: Record<string, string | null> = { projectId: null, companyId: null, contactId: null };
+    for (const [key, table, what] of LINKS) {
+      const raw = body[key];
+      if (raw == null || raw === '') continue;
+      const id = typeof raw === 'string' ? raw.trim() : '';
+      if (!UUID.test(id)) return json({ error: `That ${what} is not one you can book against.` }, 400);
+      const { data: found, error: findErr } = await asCaller.from(table).select('id').eq('id', id).maybeSingle();
+      if (findErr || !found) return json({ error: `That ${what} is not one you can book against.` }, 400);
+      linked = { ...linked, [key]: id };
+    }
 
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const { data: me } = await asCaller.rpc('active_employee_id');
+    const { data: me, error: meErr } = await asCaller.rpc('active_employee_id');
+    if (meErr) return json({ error: 'Could not tell who you are: ' + meErr.message }, 500);
 
-    /* A personal calendar is the person's own; a studio one is shared. Prefer
-       the caller's own, since an event they booked belongs in their diary. */
-    const { data: calendars } = await admin
+    const { data: rows, error: calErr } = await admin
       .from('integration_connections')
-      .select('id, account_label, employee_id')
+      .select('id, account_label, employee_id, external_id, status, updated_at')
       .eq('provider', 'microsoft_calendar')
-      .eq('status', 'connected');
+      .neq('status', 'disconnected');
+    if (calErr) return json({ error: 'Could not read the calendars: ' + calErr.message }, 500);
 
-    const calendar = (calendars ?? []).find((c) => c.employee_id === me)
-                  ?? (calendars ?? []).find((c) => c.employee_id === null)
-                  ?? null;
+    /* A calendar that fails the connection rules — or a studio calendar whose
+       grant was never checked against the directory — counts as one waiting to
+       be reconnected: never booked into, and never swapped for another. */
+    const owners = await teamAddresses(admin);
+    const calendars = await Promise.all((rows ?? []).map(async (c) => {
+      const problem = connectionProblem(c, owners.get(String(c.account_label).trim().toLowerCase()) ?? null)
+        ?? (c.employee_id === null ? grantProblem(c, (await storedGrant(admin, c.id))?.scope) : null);
+      return problem ? { ...c, status: 'needs_reauth' } : c;
+    }));
 
-    /* 409: nothing is connected. The caller inserts a local event itself —
-       it has an RLS policy for exactly that, and a round trip through here
-       would add nothing. */
-    if (!calendar) {
-      return json({ error: 'No calendar is connected', localOnly: true }, 409);
+    /* Client work is what is linked to a client — never a guess from the kind:
+       "Zoom meeting" on a private appointment put it in the studio calendar,
+       where every member of staff reads it. */
+    const clientWork = Boolean(linked.projectId || linked.companyId || linked.contactId);
+    const choice = calendarFor(calendars, { employeeId: typeof me === 'string' ? me : null, clientWork });
+    if (!choice.calendar) {
+      if (choice.reason === 'own-needs-reconnect') return json({ error: OWN_WAITING, reason: choice.reason }, 503);
+      /* 409: the caller books it in the workspace alone, where staff see it. */
+      return json({
+        error: choice.reason === 'studio-needs-reconnect' ? STUDIO_WAITING : 'No calendar is connected',
+        localOnly: true,
+        reason: choice.reason,
+      }, 409);
+    }
+    const calendar = choice.calendar;
+
+    if (isShared(calendar)) {
+      const grant = await storedGrant(admin, calendar.id);
+      if (!grant || !grantCovers(grant.scope, SHARED_SCOPE)) {
+        if (grant) {
+          await markNeedsReauthIfUnchanged(admin, calendar.id,
+            `Reconnect to book into the shared calendar: its grant does not include ${SHARED_SCOPE}.`, calendar.updated_at);
+        }
+        return calendar.employee_id === null
+          ? json({ error: STUDIO_WAITING, localOnly: true, reason: 'studio-needs-reconnect' }, 409)
+          : json({ error: OWN_WAITING, reason: 'own-needs-reconnect' }, 503);
+      }
+    }
+
+    /* The booker, invited to a studio booking, so it is in their own diary. */
+    const attendees = Array.isArray(body.attendees) ? [...body.attendees] : [];
+    const booker = String(userData.user.email ?? '').trim().toLowerCase();
+    if (calendar.employee_id === null && booker && !attendees.some((a) => addressOf(a) === booker)) {
+      attendees.push(booker);
     }
 
     let payload;
@@ -84,14 +178,29 @@ Deno.serve(async (req) => {
         detail: body.detail ?? null,
         location: body.location ?? null,
         allDay: body.allDay === true,
-        attendees: Array.isArray(body.attendees) ? body.attendees : [],
+        attendees,
       });
     } catch (err) {
       return json({ error: String((err as Error).message) }, 400);
     }
 
-    const token = await accessTokenFor(admin, calendar.id);
-    const res = await fetch(`${GRAPH}/me/events`, {
+    let token: string;
+    try {
+      token = await accessTokenFor(admin, calendar.id);
+    } catch (err) {
+      /* A sign-in that can no longer be refreshed — the consenting account lost
+         access, say — leaves a calendar waiting to be reconnected, as a missing
+         grant does above: client work is booked in the workspace alone, and a
+         private event is refused. One Microsoft could not refresh just now saves
+         nothing; booking again in a moment works. */
+      if (err instanceof TokenRefreshError && err.permanent) {
+        return calendar.employee_id === null
+          ? json({ error: STUDIO_WAITING, localOnly: true, reason: 'studio-needs-reconnect' }, 409)
+          : json({ error: OWN_WAITING, reason: 'own-needs-reconnect' }, 503);
+      }
+      throw err;
+    }
+    const res = await fetch(`${GRAPH}${mailboxPath(calendar)}/events`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -100,8 +209,21 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify(payload),
     });
+    /* A refusal is said, not turned into a reconnect: the stored grant, above,
+       decides that. A studio calendar Graph will not write to — its consenting
+       account lost access, say, while the calendar only reads as 'error' — books
+       client work in the workspace alone, as one waiting to be reconnected does,
+       rather than saving nothing. A private event is still refused. */
     if (!res.ok) {
-      return json({ error: `Graph refused the event: ${(await res.text()).slice(0, 200)}` }, 502);
+      const detail = (await res.text()).slice(0, 200);
+      if (calendar.employee_id === null && [401, 403, 404].includes(res.status)) {
+        return json({
+          error: `The studio calendar would not take the event (Graph ${res.status}), so it is saved in the workspace only. It may need reconnecting.`,
+          localOnly: true,
+          reason: 'studio-needs-reconnect',
+        }, 409);
+      }
+      return json({ error: `Graph refused the event (${res.status}): ${detail}` }, 502);
     }
     const created = await res.json();
 
@@ -126,13 +248,13 @@ Deno.serve(async (req) => {
         all_day: row.all_day,
         /* The caller's intent wins over the guess toEventRow makes from the
            attendee list — they said what this is for. */
-        kind: body.kind ?? row.kind,
+        kind: kind ?? row.kind,
         status: row.status,
         attendees: row.attendees,
-        project_id: body.projectId ?? null,
-        company_id: body.companyId ?? null,
-        contact_id: body.contactId ?? null,
-        created_by: me ?? null,
+        project_id: linked.projectId,
+        company_id: linked.companyId,
+        contact_id: linked.contactId,
+        created_by: typeof me === 'string' ? me : null,
       }, { onConflict: 'connection_id,calendar_id,external_id' })
       .select('id')
       .single();

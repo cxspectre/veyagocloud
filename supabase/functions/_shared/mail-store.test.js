@@ -113,6 +113,17 @@ test('a failure count that is not a small whole number counts as none', () => {
   }
 });
 
+test('the runs spent asking Graph about a page are kept with its link, and none is left out', () => {
+  const asking = m.withCursor(null, HELLO, 'inbox', { link: INBOX_LINK, failures: 1, asks: 3 });
+  assert.deepEqual(m.readCursors(asking, HELLO), { inbox: { link: INBOX_LINK, failures: 1, asks: 3 } });
+  const moved = m.withCursor(asking, HELLO, 'inbox', { link: INBOX_LINK, failures: 0, asks: 0 });
+  assert.equal(moved.includes('asks'), false, 'a place with no asks is kept as it always was');
+  const raw = (asks) => JSON.stringify({ mailbox: HELLO, folders: { inbox: { link: INBOX_LINK, failures: 0, asks } } });
+  for (const bad of [-1, 1.5, '3', null]) {
+    assert.deepEqual(m.readCursors(raw(bad), HELLO), { inbox: { link: INBOX_LINK, failures: 0 } }, `asks: ${bad}`);
+  }
+});
+
 const NOW = Date.parse('2026-09-13T12:00:00Z');
 
 test('a round starts three days back, or where the last sync left off, but never more than fourteen', () => {

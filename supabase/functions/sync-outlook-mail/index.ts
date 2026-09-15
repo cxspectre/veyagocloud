@@ -12,21 +12,30 @@
  * sent carries [#VYG-142] in the subject; route_mail_to_ticket() (0035) puts
  * that reply back on its ticket.
  *
+ * Only the studio's mailboxes and the caller's own (security review,
+ * 2026-09-14): a colleague's personal mailbox is answered as no mailbox at all,
+ * and a studio connection that is a team member's own address, records no
+ * consenter, or was never checked against the directory is not read
+ * (_shared/connection-check.ts).
+ *
  * Deploy:  supabase functions deploy sync-outlook-mail
  * Body:    { "connectionId": "...", "days": 30, "max": 200, "folder": "inbox" | "sentitems" | "archive" }
  * Caller must be a manager.
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { accessTokenFor } from '../_shared/graph-token.ts';
+import { accessTokenFor, markNeedsReauthIfUnchanged } from '../_shared/graph-token.ts';
 import {
   claimSync, fetchFolder, markSyncedIfLive, recordSyncFailure, releaseSync, storeMessages,
 } from '../_shared/mail-sync.ts';
 import { isShared } from '../_shared/mailbox.ts';
+import { mayActOn } from '../_shared/connection-rules.ts';
+import { connectionCheck } from '../_shared/connection-check.ts';
 
 /* Graph's well-known names for the folders the workspace shows. Anything else
    is refused rather than passed into a URL. */
 const FOLDERS = ['inbox', 'sentitems', 'archive'];
+const LIVE = ['connected', 'error'];
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -52,6 +61,8 @@ Deno.serve(async (req) => {
   if (userErr || !userData?.user) return json({ error: 'Not signed in' }, 401);
   const { data: isManager } = await asCaller.rpc('is_manager');
   if (!isManager) return json({ error: 'Managers only' }, 403);
+  const { data: me, error: meErr } = await asCaller.rpc('active_employee_id');
+  if (meErr) return json({ error: 'Could not tell who you are: ' + meErr.message }, 500);
 
   const body = await req.json().catch(() => ({}));
   const connectionId = String(body?.connectionId || '');
@@ -64,11 +75,27 @@ Deno.serve(async (req) => {
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const { data: conn, error: connErr } = await admin
     .from('integration_connections')
-    .select('id, provider, account_label, external_id')
+    .select('id, provider, account_label, external_id, employee_id, status, updated_at')
     .eq('id', connectionId)
     .maybeSingle();
-  if (connErr || !conn) return json({ error: 'No such connection' }, 404);
+  /* A colleague's personal mailbox is answered as no mailbox: nothing about it,
+     not even that it exists. */
+  if (connErr || !conn || !mayActOn(conn, typeof me === 'string' ? me : null)) {
+    return json({ error: 'No such connection' }, 404);
+  }
   if (conn.provider !== 'microsoft_mail') return json({ error: 'That connection is not a mailbox' }, 400);
+  if (!LIVE.includes(conn.status)) return json({ error: 'That mailbox is not connected. Reconnect it first.' }, 409);
+
+  let problem: string | null;
+  try {
+    problem = await connectionCheck(admin, conn);
+  } catch (err) {
+    return json({ error: String((err as Error)?.message ?? err) }, 500);
+  }
+  if (problem) {
+    await markNeedsReauthIfUnchanged(admin, conn.id, problem, conn.updated_at);
+    return json({ error: problem }, 409);
+  }
 
   if (!(await claimSync(admin, conn.id))) {
     return json({ error: 'This mailbox is already syncing. Try again in a few minutes.' }, 409);

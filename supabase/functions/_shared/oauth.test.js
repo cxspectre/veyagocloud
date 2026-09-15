@@ -80,6 +80,8 @@ test('mail scopes read, send and manage mail, on the shared mailbox too', () => 
   assert.deepEqual(m.SCOPES.calendar, [
     'offline_access',
     'https://graph.microsoft.com/Calendars.ReadWrite',
+    /* A studio calendar is not the calendar of whoever consents. */
+    'https://graph.microsoft.com/Calendars.ReadWrite.Shared',
   ]);
 
   /* Mail.ReadWrite used to be refused here, because it carries permanent
@@ -92,6 +94,8 @@ test('mail scopes read, send and manage mail, on the shared mailbox too', () => 
   assert.ok(all.some((s) => /Mail\.ReadWrite\.Shared/.test(s)),
     'without the .Shared variant, drafts from hello@veyago.cloud fail with 403');
   assert.ok(all.some((s) => /Calendars\.ReadWrite/.test(s)), 'the diary has to be writable');
+  assert.ok(all.some((s) => /Calendars\.ReadWrite\.Shared/.test(s)),
+    'without the .Shared variant, the studio calendar is refused at /users/{address}');
 });
 
 test('expires_in becomes an absolute timestamp', () => {

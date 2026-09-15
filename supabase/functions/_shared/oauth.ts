@@ -27,6 +27,11 @@ export const SCOPES = {
    *                       attachments over 3 MB, and read/flag state that
    *                       reaches Outlook instead of living on a mirror
    *   Calendars.ReadWrite read the diary and put things in it
+   *   Calendars.ReadWrite.Shared  the same for a studio calendar, which is a
+   *                       shared mailbox's diary, not the consenting person's
+   *   User.ReadBasic.All  look a connected address up in the directory, so a
+   *                       studio connection cannot be someone's own mailbox
+   *                       under a sign-in name the team does not store
    *
    * Mail.ReadWrite also permits deleting mail; Graph offers nothing narrower
    * that does the rest. It was held back for that reason until 2026-09-13,
@@ -53,8 +58,17 @@ export const SCOPES = {
   calendar: [
     'offline_access',
     'https://graph.microsoft.com/Calendars.ReadWrite',
+    /* A studio calendar belongs to a shared mailbox, like hello@veyago.cloud's
+       mail, and is read and written at /users/{address}. That needs the
+       .Shared variant; without it the functions used /me and wrote into the
+       consenting person's own diary. A calendar connected before this was
+       added has to be reconnected. */
+    'https://graph.microsoft.com/Calendars.ReadWrite.Shared',
   ],
-  identity: ['openid', 'email', 'profile', 'https://graph.microsoft.com/User.Read']
+  identity: [
+    'openid', 'email', 'profile', 'https://graph.microsoft.com/User.Read',
+    'https://graph.microsoft.com/User.ReadBasic.All',
+  ]
 };
 
 export function tokenUrl(tenant?: string): string {

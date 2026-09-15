@@ -93,6 +93,44 @@ export async function accessTokenFor(admin: Admin, connectionId: string): Promis
   return merged.access_token!;
 }
 
+/* The grant as stored: the scopes Microsoft granted, and when it was stored. A
+   function decides from this whether a reconnect is needed, rather than from
+   what Graph answers an old token while someone is reconnecting. */
+export async function storedGrant(
+  admin: Admin,
+  connectionId: string,
+): Promise<{ scope: string; updatedAt: string | null } | null> {
+  const { data, error } = await admin
+    .from('integration_secrets')
+    .select('extra, updated_at')
+    .eq('connection_id', connectionId)
+    .maybeSingle();
+  if (error) throw new Error(`Could not read the credentials: ${error.message}`);
+  return data ? { scope: String(data.extra?.scope ?? ''), updatedAt: data.updated_at ?? null } : null;
+}
+
+/* needs_reauth — unless the connection has changed since it was read
+   (`seenUpdatedAt`, its updated_at then): a reconnect in between is what would
+   be flagged. One statement, so nothing can land between the check and the
+   write. Answers whether it flagged. */
+export async function markNeedsReauthIfUnchanged(
+  admin: Admin,
+  connectionId: string,
+  why: string,
+  seenUpdatedAt: string | null | undefined,
+): Promise<boolean> {
+  if (!seenUpdatedAt) return false;
+  const { data, error } = await admin
+    .from('integration_connections')
+    .update({ status: 'needs_reauth', last_error: why.slice(0, 500) })
+    .eq('id', connectionId)
+    .eq('updated_at', seenUpdatedAt)
+    .neq('status', 'disconnected')
+    .select('id');
+  if (error) throw new Error(`Could not flag the connection: ${error.message}`);
+  return Array.isArray(data) && data.length > 0;
+}
+
 async function grantReplaced(admin: Admin, connectionId: string, refreshToken: string): Promise<boolean> {
   const { data } = await admin
     .from('integration_secrets')

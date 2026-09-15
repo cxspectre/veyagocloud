@@ -1,7 +1,7 @@
 /* microsoft-connect — step 1 of connecting an Outlook mailbox or calendar.
  *
  * Creates the integration_connections row (or finds the existing one) and
- * returns the Microsoft consent URL to send the manager to. Nothing is
+ * returns the Microsoft consent URL to send the person to. Nothing is
  * authorised yet; the tokens arrive in microsoft-callback.
  *
  * Deploy:  supabase functions deploy microsoft-connect
@@ -18,23 +18,25 @@
  * AADSTS50011 redirect_uri_mismatch. The secret is created under Certificates
  * & secrets, and Azure shows its VALUE exactly once.
  *
- * Managers only: connecting a mailbox to the studio is not an everyday edit. */
+ * Who may do what (_shared/connection-rules.ts, security review 2026-09-14):
+ * owners and admins connect a new mailbox or calendar — saying whose it is —
+ * and reconnect the studio's; anyone on staff reconnects their own. Nobody
+ * reconnects a colleague's: consenting to it as someone else would put another
+ * mailbox behind it. A studio connection cannot be a team member's own
+ * address, and a personal one cannot be a colleague's. A row that never got as
+ * far as a grant — consent abandoned, or refused by the callback — holds
+ * nothing, and an owner or admin starts it again with the owner they name. */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { SCOPES, buildConsentUrl, signState } from '../_shared/oauth.ts';
+import { OWNER_KEPT, REMOVE_FIRST, connectRefusal, labelProblem } from '../_shared/connection-rules.ts';
+import { employeeByAddress } from '../_shared/team-lookup.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-
-/* Disconnecting keeps the row, and with it the owner, so handing a mailbox to
-   someone else means removing the connection. The workspace has no way to do
-   that yet, and a manager may only remove the studio's connections or their
-   own (0038) — so the message says where it can be done, not what to click. */
-const OWNER_KEPT = 'This mailbox is already connected for someone else, and a connection keeps its owner. '
-  + 'To hand it over, its connection has to be removed first — for now, in the database.';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -61,8 +63,11 @@ Deno.serve(async (req) => {
     });
     const { data: userData, error: userErr } = await asCaller.auth.getUser();
     if (userErr || !userData?.user) return json({ error: 'Not signed in' }, 401);
+    const { data: isStaff } = await asCaller.rpc('is_staff');
+    if (!isStaff) return json({ error: 'Staff only' }, 403);
     const { data: isManager } = await asCaller.rpc('is_manager');
-    if (!isManager) return json({ error: 'Managers only' }, 403);
+    const { data: me, error: meErr } = await asCaller.rpc('active_employee_id');
+    if (meErr) return json({ error: 'Could not tell who you are: ' + meErr.message }, 500);
 
     const body = await req.json().catch(() => ({}));
     const provider = body?.provider === 'microsoft_calendar' ? 'microsoft_calendar' : 'microsoft_mail';
@@ -76,7 +81,7 @@ Deno.serve(async (req) => {
        "there is none": treating it so would create or reassign the wrong row. */
     const { data: previous, error: previousErr } = await admin
       .from('integration_connections')
-      .select('id, employee_id, external_id')
+      .select('id, employee_id, external_id, status, last_synced_at')
       .eq('provider', provider)
       .eq('account_label', accountLabel)
       .maybeSingle();
@@ -85,18 +90,46 @@ Deno.serve(async (req) => {
     /* employeeId null means a studio-wide mailbox that every staff member can
        read. Anything else is personal and stays private to that person — see
        the 0025 migration header. A new connection has to say which,
-       deliberately. A reconnect that does not mention it keeps what the
-       mailbox already is: defaulting to null there would quietly turn
-       someone's personal mailbox into one every member of staff can read. */
+       deliberately: leaving it out used to make it a studio one. A reconnect
+       that does not mention it keeps what the mailbox already is: defaulting
+       to null there would quietly turn someone's personal mailbox into one
+       every member of staff can read. */
     const saysWho = body && Object.prototype.hasOwnProperty.call(body, 'employeeId');
     const employeeId = saysWho ? (body.employeeId ?? null) : (previous?.employee_id ?? null);
 
     /* A connected mailbox keeps its owner. Reassigning one — with the grant
        still stored — would hand a colleague's personal mailbox, its reading
-       and its sending, to whoever asked. Changing hands means disconnecting and
-       connecting fresh. The database refuses the same change from the
-       browser (0038). */
-    if (previous && (previous.employee_id ?? null) !== employeeId) return json({ error: OWNER_KEPT }, 409);
+       and its sending, to whoever asked; changing hands means disconnecting
+       and connecting fresh, and the database refuses the same change from the
+       browser (0038). Only its owner — or, for the studio's, an owner or
+       admin — reconnects it. */
+    /* A row that never got as far as a grant — no consenter recorded, never
+       synced, still disconnected — holds no grant and no mail. Told it keeps
+       an owner it never used, nobody could connect that address the right way
+       after the callback refused it, or after a consent was abandoned. An owner
+       or admin starts it again as a new connection: with the owner they name,
+       or the one it already has when they name none. */
+    const neverConnected = Boolean(previous) && previous!.status === 'disconnected'
+      && !previous!.external_id && !previous!.last_synced_at;
+    const restarting = neverConnected && isManager === true;
+
+    const refusal = connectRefusal({
+      manager: isManager === true,
+      callerEmployeeId: typeof me === 'string' ? me : null,
+      previous: restarting ? null : previous ?? null,
+      saysWho: saysWho || restarting,
+      employeeId,
+    });
+    if (refusal) return json({ error: refusal.message }, refusal.status);
+
+    /* Whose address this is: never a team member's own in the studio's name,
+       or a colleague's in someone else's. Nothing connected yet is simply
+       connected as theirs; a connection that exists has to be removed first. */
+    const wrongAddress = labelProblem(employeeId, await employeeByAddress(admin, accountLabel));
+    if (wrongAddress) {
+      const advice = previous && !neverConnected ? REMOVE_FIRST : 'Connect it as theirs instead.';
+      return json({ error: `${wrongAddress} ${advice}` }, 409);
+    }
 
     /* Who will sit at the consent screen. For a personal mailbox that is the
        mailbox itself. For a SHARED one it is not — hello@veyago.cloud has no
@@ -113,12 +146,17 @@ Deno.serve(async (req) => {
     if (previous) {
       /* A reconnect changes what is asked for — never whose mailbox it is,
          and never its status: a working mailbox keeps working while someone
-         is at the consent screen. */
-      const { error } = await admin
+         is at the consent screen. A row never connected takes its new owner
+         only while it still has never connected: a grant stored meanwhile
+         keeps the owner it was stored for. */
+      let update = admin
         .from('integration_connections')
-        .update({ scopes, last_error: null })
+        .update({ scopes, last_error: null, ...(restarting ? { employee_id: employeeId } : {}) })
         .eq('id', previous.id);
+      if (restarting) update = update.eq('status', 'disconnected').is('external_id', null).is('last_synced_at', null);
+      const { data: updated, error } = await update.select('id');
       if (error) return json({ error: error.message }, 500);
+      if (restarting && !updated?.length) return json({ error: OWNER_KEPT }, 409);
       connectionId = previous.id;
     } else {
       /* A new connection. If another request made the same row a moment ago,

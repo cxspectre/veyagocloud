@@ -23,7 +23,8 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { accessTokenFor } from '../_shared/graph-token.ts';
+import { accessTokenFor, markNeedsReauthIfUnchanged } from '../_shared/graph-token.ts';
+import { connectionCheck } from '../_shared/connection-check.ts';
 import { mailboxPath } from '../_shared/mailbox.ts';
 import { GRAPH, GraphError, graphRequest } from '../_shared/mail-sync.ts';
 
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data: conn, error: connErr } = await admin
       .from('integration_connections')
-      .select('id, account_label, external_id, status')
+      .select('id, account_label, external_id, employee_id, status, updated_at')
       .eq('id', thread.connection_id)
       .maybeSingle();
     if (connErr) return json({ error: connErr.message }, 500);
@@ -118,9 +119,28 @@ Deno.serve(async (req) => {
     /* Switched off on purpose: no sync runs on it, so the change here stays —
        and saying "reconnect" would invite undoing a deliberate disconnect. */
     const switchedOff = new Error('mailbox disconnected');
+    /* Waiting for a reconnect: no sync runs on it either, so the change here
+       stays as it is until then. */
+    const waiting = new Error('mailbox waiting for a reconnect');
+    /* Whose mailbox this is could not be checked just now. Outlook is left
+       alone, and the change is still kept here rather than lost. */
+    const unchecked = new Error('mailbox not checked');
     try {
       if (!conn || conn.status === 'disconnected') throw switchedOff;
-      if (!['connected', 'error'].includes(conn.status)) throw new GraphError(401, 'mailbox not connected');
+      if (!['connected', 'error'].includes(conn.status)) throw waiting;
+      /* A studio mailbox that is really someone's own would change that
+         person's Outlook (connection-check.ts): the change stays here, and the
+         mailbox waits for a reconnect. */
+      let problem: string | null;
+      try {
+        problem = await connectionCheck(admin, conn);
+      } catch {
+        throw unchecked;
+      }
+      if (problem) {
+        await markNeedsReauthIfUnchanged(admin, conn.id, problem, conn.updated_at).catch(() => false);
+        throw waiting;
+      }
       const token = await accessTokenFor(admin, conn.id);
       const box = `${GRAPH}${mailboxPath(conn)}`;
       const patch = async (m: StoredMessage, change: unknown) => {
@@ -141,6 +161,12 @@ Deno.serve(async (req) => {
       if (err === switchedOff) {
         outlook = false;
         reason = 'This mailbox is disconnected, so the change stays in the workspace and does not reach Outlook.';
+      } else if (err === waiting) {
+        outlook = false;
+        reason = 'This mailbox needs reconnecting, so the change stays in the workspace only — and a sync after reconnecting may undo it.';
+      } else if (err === unchecked) {
+        outlook = false;
+        reason = 'Outlook could not be updated just now, so the next sync may undo this.';
       } else if (err instanceof GraphError && (err.status === 401 || err.status === 403)) {
         outlook = false;
         reason = 'Reconnect this mailbox for read and starred to reach Outlook — until then the next sync may undo it.';

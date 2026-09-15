@@ -51,6 +51,16 @@ export function ticketRef(ticket: TicketLike): string {
   return `#VYG-${ticket.number}`;
 }
 
+/* The PostgREST filter for replies the rate limit did not refuse: those with
+   no delivery_error, or a different one. The message is quoted, with its own
+   quotes and backslashes escaped, so a comma, period or parenthesis in it stays
+   part of it. A filter that stopped parsing would lift the limit without a
+   word: the count fails open by design. */
+export function notRefusedBy(message: string): string {
+  const quoted = String(message).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `delivery_error.is.null,delivery_error.neq."${quoted}"`;
+}
+
 /* The subject carries the reference so a reply threads back to the right
  * ticket even in a mail client that ignores In-Reply-To — and so that a person
  * forwarding it internally can still tell what it is about. "Re:" is not added

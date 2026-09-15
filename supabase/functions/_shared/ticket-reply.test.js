@@ -18,6 +18,14 @@ test.before(async () => {
 
 const ticket = { number: 142, subject: 'Subscription not restoring on new device' };
 
+test('the rate limit\'s filter quotes its message, so what is in it stays in it', () => {
+  assert.equal(m.notRefusedBy('More than 20 replies in 5 minutes. Wait a few minutes before sending more.'),
+    'delivery_error.is.null,delivery_error.neq."More than 20 replies in 5 minutes. Wait a few minutes before sending more."');
+  assert.equal(m.notRefusedBy('Too many (20), "slow down" \\ please'),
+    'delivery_error.is.null,delivery_error.neq."Too many (20), \\"slow down\\" \\\\ please"',
+    'a quote or a backslash is escaped, and a comma or parenthesis stays inside the quotes');
+});
+
 test('an internal note is never sent, whatever else is true', () => {
   const d = m.decideSend({ direction: 'internal', body: 'Receipt looks valid.', toEmail: 'a@b.com' });
   assert.equal(d.send, false);

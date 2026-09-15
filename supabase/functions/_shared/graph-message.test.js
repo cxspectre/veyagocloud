@@ -192,3 +192,25 @@ test('an event whose start cannot be trusted is skipped, not misplaced', () => {
   const bad = { ...event, start: { dateTime: '2026-09-11T14:00:00', timeZone: 'Romance Standard Time' } };
   assert.equal(m.toEventRow(bad, 'veyago.cloud'), null);
 });
+
+test('an event marked private in a studio calendar keeps its time and nothing else', () => {
+  const secret = { ...event, sensitivity: 'private' };
+  const hidden = m.toEventRow(secret, 'veyago.cloud', { hidePrivate: true });
+  assert.equal(hidden.title, 'Private');
+  assert.equal(hidden.detail, null);
+  assert.equal(hidden.location, null);
+  assert.deepEqual(hidden.attendees, []);
+  assert.equal(hidden.kind, 'personal');
+  assert.equal(hidden.starts_at, '2026-09-11T14:00:00.000Z', 'when it is still shows, so nobody double-books it');
+  assert.equal(m.toEventRow({ ...event, sensitivity: 'confidential' }, 'veyago.cloud', { hidePrivate: true }).title, 'Private');
+  assert.equal(m.toEventRow(secret, 'veyago.cloud').title, 'Northline design review',
+    'a person\'s own calendar shows them everything');
+  assert.equal(m.toEventRow({ ...event, sensitivity: 'normal' }, 'veyago.cloud', { hidePrivate: true }).title,
+    'Northline design review');
+});
+
+test('an event marked personal is hidden in a studio calendar too', () => {
+  const row = m.toEventRow({ ...event, sensitivity: 'personal' }, 'veyago.cloud', { hidePrivate: true });
+  assert.equal(row.title, 'Private');
+  assert.equal(row.location, null);
+});

@@ -22,7 +22,8 @@
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { accessTokenFor } from '../_shared/graph-token.ts';
+import { accessTokenFor, markNeedsReauthIfUnchanged } from '../_shared/graph-token.ts';
+import { connectionCheck } from '../_shared/connection-check.ts';
 import { assertUploadCall } from '../_shared/graph-guard.ts';
 import { MESSAGE_SELECT } from '../_shared/graph-message.ts';
 import { draftMessagePayload, fileAttachmentPayload, uploadRanges, uploadSessionPayload } from '../_shared/graph-write.ts';
@@ -224,7 +225,7 @@ Deno.serve(async (req) => {
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data: conn } = await admin
       .from('integration_connections')
-      .select('id, provider, account_label, external_id, status')
+      .select('id, provider, account_label, external_id, employee_id, status, updated_at')
       .eq('id', request.connectionId)
       .maybeSingle();
     if (!conn || conn.provider !== 'microsoft_mail') return json({ error: 'That is not a mailbox' }, 400);
@@ -232,6 +233,20 @@ Deno.serve(async (req) => {
        stored grant, and sending on it would bypass whoever disconnected it. */
     if (!['connected', 'error'].includes(conn.status)) {
       return json({ error: 'This mailbox needs reconnecting before it can send.', reconnect: true }, 409);
+    }
+    /* A studio mailbox that is really someone's own, records no consenter, or
+       was never checked against the directory would send as that person
+       (connection-check.ts): refused here as the syncs refuse to read it, and
+       flagged for a reconnect. */
+    let problem: string | null;
+    try {
+      problem = await connectionCheck(admin, conn);
+    } catch (err) {
+      return json({ error: String((err as Error).message || err) }, 500);
+    }
+    if (problem) {
+      await markNeedsReauthIfUnchanged(admin, conn.id, problem, conn.updated_at);
+      return json({ error: problem, reconnect: true }, 409);
     }
 
     /* Checked against the caller, never taken from the request — then read
