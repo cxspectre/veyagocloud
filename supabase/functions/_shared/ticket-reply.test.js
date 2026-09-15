@@ -18,6 +18,14 @@ test.before(async () => {
 
 const ticket = { number: 142, subject: 'Subscription not restoring on new device' };
 
+test('the rate limit\'s filter quotes its message, so what is in it stays in it', () => {
+  assert.equal(m.notRefusedBy('More than 20 replies in 5 minutes. Wait a few minutes before sending more.'),
+    'delivery_error.is.null,delivery_error.neq."More than 20 replies in 5 minutes. Wait a few minutes before sending more."');
+  assert.equal(m.notRefusedBy('Too many (20), "slow down" \\ please'),
+    'delivery_error.is.null,delivery_error.neq."Too many (20), \\"slow down\\" \\\\ please"',
+    'a quote or a backslash is escaped, and a comma or parenthesis stays inside the quotes');
+});
+
 test('an internal note is never sent, whatever else is true', () => {
   const d = m.decideSend({ direction: 'internal', body: 'Receipt looks valid.', toEmail: 'a@b.com' });
   assert.equal(d.send, false);
@@ -95,6 +103,24 @@ test('a nameless contact still gets a sensible greeting', () => {
   const mail = m.ticketReplyEmail({ ticket, body: 'Hello.' });
   assert.match(mail.bodyHtml, /Hi,/);
   assert.match(mail.bodyHtml, /Veyago/);
+});
+
+const studio = { id: 's', account_label: 'hello@veyago.cloud', employee_id: null, status: 'connected' };
+const personal = { id: 'p', account_label: 'cassian@veyago.cloud', employee_id: 'e1', status: 'connected' };
+
+test('a support reply leaves from a studio mailbox, never from a person\'s own', () => {
+  assert.equal(m.pickTicketMailbox([personal, studio]).id, 's');
+  assert.equal(m.pickTicketMailbox([personal]), null,
+    'better Resend from the studio address than a customer answered from a private inbox');
+  assert.equal(m.pickTicketMailbox([{ ...studio, status: 'needs_reauth' }]), null);
+  assert.equal(m.pickTicketMailbox([]), null);
+  assert.equal(m.pickTicketMailbox(undefined), null);
+});
+
+test('with two studio mailboxes the choice does not depend on row order', () => {
+  const support = { ...studio, id: 'a', account_label: 'support@veyago.cloud' };
+  assert.equal(m.pickTicketMailbox([support, studio]).id, 's');
+  assert.equal(m.pickTicketMailbox([studio, support]).id, 's');
 });
 
 test('a contact name that is markup cannot break out of the greeting', () => {

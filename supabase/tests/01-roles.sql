@@ -32,10 +32,15 @@ values ('55555555-5555-5555-5555-555555555555', 'ACCESS-TOKEN-SHOULD-NEVER-LEAK'
 insert into public.mail_threads (id, connection_id, external_id, subject)
 values ('77777777-7777-7777-7777-777777777777', '55555555-5555-5555-5555-555555555555', 't1', 'Shared thread'),
        ('88888888-8888-8888-8888-888888888888', '66666666-6666-6666-6666-666666666666', 't2', 'Private thread');
+-- The OWNER's signature, which nobody else may read (0038).
+insert into public.mail_signatures (employee_id, connection_id, html)
+select id, null, '<p>OWNER SIGNATURE</p>' from public.employees
+where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093'
+on conflict (employee_id, connection_id) do update set html = excluded.html;
 
 -- ── as the OWNER (manager) ──────────────────────────────────────────────────
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'manager: is_manager()', 'true', public.is_manager()::text, public.is_manager() = true;
@@ -72,11 +77,196 @@ select 'manager: overview revenue is a number', 'true',
        (public.workspace_overview() -> 'revenue_month' <> 'null'::jsonb)::text,
        public.workspace_overview() -> 'revenue_month' <> 'null'::jsonb;
 
+-- 0038: "personal means personal" holds against the manager too. Reassigning
+-- a colleague's mailbox would hand over its reading and, with send-mail, its
+-- sending.
+do $$
+begin
+  update public.integration_connections
+  set employee_id = (select id from public.employees where user_id = '21fc20c1-50e8-4764-9a11-71031d2f8f2c')
+  where id = '66666666-6666-6666-6666-666666666666';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX OWNER: a manager cannot reassign a personal mailbox', 'refused', 'REASSIGNED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX OWNER: a manager cannot reassign a personal mailbox', 'refused', 'refused', true);
+end $$;
+
+do $$
+begin
+  update public.integration_connections set employee_id = null
+  where id = '66666666-6666-6666-6666-666666666666';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX OWNER: nor make it shared with everyone', 'refused', 'SHARED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX OWNER: nor make it shared with everyone', 'refused', 'refused', true);
+end $$;
+
+-- The sync's own functions are the service role's alone.
+do $$
+begin
+  perform public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', '[]'::jsonb);
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: a signed-in person cannot write mail through store_mail_batch', 'denied', 'ALLOWED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: a signed-in person cannot write mail through store_mail_batch', 'denied', 'denied', true);
+end $$;
+
+do $$
+begin
+  perform public.claim_mail_sync('55555555-5555-5555-5555-555555555555', 240);
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: nor take the sync lock', 'denied', 'ALLOWED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: nor take the sync lock', 'denied', 'denied', true);
+end $$;
+
+do $$
+begin
+  perform public.refresh_mail_thread_state(array['77777777-7777-7777-7777-777777777777']::uuid[]);
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: nor rewrite a thread''s state', 'denied', 'ALLOWED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('SYNC PATH: nor rewrite a thread''s state', 'denied', 'denied', true);
+end $$;
+
+-- 0038: from the browser a connection can only be disconnected. Its address
+-- and who consented decide WHICH mail is read: clearing external_id on the
+-- shared mailbox would read the consenting person's own mail into it.
+do $$
+begin
+  update public.integration_connections set external_id = null
+  where id = '55555555-5555-5555-5555-555555555555';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: a manager cannot change who consented', 'refused', 'CHANGED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: a manager cannot change who consented', 'refused', 'refused', true);
+end $$;
+
+do $$
+begin
+  update public.integration_connections set account_label = 'someone.else@example.invalid'
+  where id = '55555555-5555-5555-5555-555555555555';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor which mailbox it reads', 'refused', 'CHANGED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor which mailbox it reads', 'refused', 'refused', true);
+end $$;
+
+do $$
+begin
+  update public.integration_connections set sync_started_at = now() + interval '1 year'
+  where id = '55555555-5555-5555-5555-555555555555';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor stall its sync', 'refused', 'STALLED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor stall its sync', 'refused', 'refused', true);
+end $$;
+
+with disconnected as (
+  update public.integration_connections set status = 'disconnected'
+  where id = '55555555-5555-5555-5555-555555555555'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'manager: can still disconnect a studio mailbox', '1', count(*)::text, count(*) = 1
+from disconnected;
+
+-- …but not switch it back on: status is one of the two columns the browser may
+-- write, so this is the trigger's refusal, not the grant's.
+do $$
+begin
+  update public.integration_connections set status = 'connected'
+  where id = '55555555-5555-5555-5555-555555555555';
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor switch a mailbox back on without consent', 'refused', 'SWITCHED ON', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: nor switch a mailbox back on without consent', 'refused', 'refused', true);
+end $$;
+
+-- A colleague's personal mailbox takes its grant and every stored message with
+-- its row. Made here as the database owner; deleted, or not, as the manager.
+reset role;
+insert into public.integration_connections (id, provider, account_label, employee_id, status)
+values ('99999999-9999-9999-9999-999999999999', 'microsoft_mail', 'fixture.colleague@example.invalid',
+        (select id from public.employees where user_id = '21fc20c1-50e8-4764-9a11-71031d2f8f2c'), 'connected');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}', true);
+
+-- Nor switch it off: disconnecting follows the same line as removing.
+with switched_off as (
+  update public.integration_connections set status = 'disconnected'
+  where id = '99999999-9999-9999-9999-999999999999'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'MAILBOX: a manager cannot disconnect a colleague''s personal mailbox', '0', count(*)::text, count(*) = 0
+from switched_off;
+
+with gone as (
+  delete from public.integration_connections
+  where id = '99999999-9999-9999-9999-999999999999'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'MAILBOX: a manager cannot delete a colleague''s personal mailbox', '0', count(*)::text, count(*) = 0
+from gone;
+
+-- …and can remove the studio's connections and their own: a policy that
+-- refused every delete would pass the test above too.
+reset role;
+insert into public.integration_connections (id, provider, account_label, employee_id, status)
+values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'microsoft_mail', 'fixture.studio-removable@example.invalid', null, 'disconnected'),
+       ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'microsoft_mail', 'fixture.own-removable@example.invalid',
+        (select id from public.employees where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093'), 'connected');
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}', true);
+
+with switched_off as (
+  update public.integration_connections set status = 'disconnected'
+  where id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'manager: can disconnect their own personal mailbox', '1', count(*)::text, count(*) = 1
+from switched_off;
+
+with gone as (
+  delete from public.integration_connections
+  where id in ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb')
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'manager: can remove a studio connection and their own', '2', count(*)::text, count(*) = 2
+from gone;
+
+-- Rows are made by microsoft-connect, never from the browser: a planted row
+-- could carry a sync cursor, or a sync lock, of its own choosing.
+do $$
+begin
+  insert into public.integration_connections (provider, account_label, status, sync_cursor)
+  values ('microsoft_mail', 'fixture.planted@example.invalid', 'connected',
+          '{"mailbox":"/me","folders":{"inbox":{"link":"https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages/delta","failures":0}}}');
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: a manager cannot plant a connection', 'refused', 'PLANTED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('MAILBOX IDENTITY: a manager cannot plant a connection', 'refused', 'refused', true);
+end $$;
+
 reset role;
 
 -- ── as an ordinary EMPLOYEE (staff, not manager) ────────────────────────────
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal2"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'employee: is_staff() yes, is_manager() no', 'true/false',
@@ -109,6 +299,78 @@ insert into results(name, expected, actual, pass)
 select 'MAIL PRIVACY: and not a colleague''s personal one', 'hidden',
        case when count(*) = 0 then 'hidden' else 'VISIBLE' end, count(*) = 0
 from public.mail_threads where id = '88888888-8888-8888-8888-888888888888';
+
+-- 0038: a signature is its owner's alone.
+insert into results(name, expected, actual, pass)
+select 'SIGNATURE PRIVACY: employee cannot read the owner''s signature', 'hidden',
+       case when count(*) = 0 then 'hidden' else 'VISIBLE' end, count(*) = 0
+from public.mail_signatures where html = '<p>OWNER SIGNATURE</p>';
+
+do $$
+begin
+  insert into public.mail_signatures (employee_id, connection_id, html)
+  values (public.active_employee_id(), '55555555-5555-5555-5555-555555555555', '<p>Mine</p>');
+  insert into results(name, expected, actual, pass)
+  values ('employee: keeps a signature for the studio mailbox', 'saved', 'saved', true);
+exception when others then
+  insert into results(name, expected, actual, pass)
+  values ('employee: keeps a signature for the studio mailbox', 'saved', sqlerrm, false);
+end $$;
+
+do $$
+begin
+  insert into public.mail_signatures (employee_id, connection_id, html)
+  values (public.active_employee_id(), '66666666-6666-6666-6666-666666666666', '<p>Not my mailbox</p>');
+  insert into results(name, expected, actual, pass)
+  values ('SIGNATURE: not for a mailbox the employee cannot read', 'refused', 'SAVED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('SIGNATURE: not for a mailbox the employee cannot read', 'refused', 'refused', true);
+end $$;
+
+do $$
+begin
+  insert into public.mail_signatures (employee_id, connection_id, html)
+  select id, '55555555-5555-5555-5555-555555555555', '<p>Forged</p>'
+  from public.employees where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093';
+  insert into results(name, expected, actual, pass)
+  values ('SIGNATURE: nobody writes a colleague''s', 'refused', 'SAVED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('SIGNATURE: nobody writes a colleague''s', 'refused', 'refused', true);
+end $$;
+
+-- 0038: a person marks read and stars; nothing else on a thread is theirs.
+do $$
+begin
+  update public.mail_threads set subject = 'rewritten'
+  where id = '77777777-7777-7777-7777-777777777777';
+  insert into results(name, expected, actual, pass)
+  values ('THREAD COLUMNS: employee cannot rewrite a subject', 'denied', 'ALLOWED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('THREAD COLUMNS: employee cannot rewrite a subject', 'denied', 'denied', true);
+end $$;
+
+do $$
+begin
+  update public.mail_threads set connection_id = '66666666-6666-6666-6666-666666666666'
+  where id = '77777777-7777-7777-7777-777777777777';
+  insert into results(name, expected, actual, pass)
+  values ('THREAD COLUMNS: nor move a studio thread into a personal mailbox', 'denied', 'ALLOWED', false);
+exception when insufficient_privilege then
+  insert into results(name, expected, actual, pass)
+  values ('THREAD COLUMNS: nor move a studio thread into a personal mailbox', 'denied', 'denied', true);
+end $$;
+
+with changed as (
+  update public.mail_threads set is_read = true, is_starred = true
+  where id = '77777777-7777-7777-7777-777777777777'
+  returning 1
+)
+insert into results(name, expected, actual, pass)
+select 'employee: marks a studio thread read and starred', '1', count(*)::text, count(*) = 1
+from changed;
 
 do $$
 declare n int;

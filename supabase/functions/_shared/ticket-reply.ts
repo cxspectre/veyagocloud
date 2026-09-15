@@ -51,6 +51,16 @@ export function ticketRef(ticket: TicketLike): string {
   return `#VYG-${ticket.number}`;
 }
 
+/* The PostgREST filter for replies the rate limit did not refuse: those with
+   no delivery_error, or a different one. The message is quoted, with its own
+   quotes and backslashes escaped, so a comma, period or parenthesis in it stays
+   part of it. A filter that stopped parsing would lift the limit without a
+   word: the count fails open by design. */
+export function notRefusedBy(message: string): string {
+  const quoted = String(message).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `delivery_error.is.null,delivery_error.neq."${quoted}"`;
+}
+
 /* The subject carries the reference so a reply threads back to the right
  * ticket even in a mail client that ignores In-Reply-To — and so that a person
  * forwarding it internally can still tell what it is about. "Re:" is not added
@@ -118,4 +128,25 @@ export function ticketReplyEmail(opts: {
       `Veyago · ${ticketRef(opts.ticket)}\n\n` +
       `Reply to this email and it lands back on ${ticketRef(opts.ticket)}.`,
   };
+}
+
+export interface MailboxRow {
+  id: string;
+  account_label: string;
+  employee_id: string | null;
+  status: string;
+  external_id?: string | null;
+}
+
+/* Which connected mailbox a support reply leaves from: a studio mailbox, or
+ * none. It used to be "any connected mailbox, studio first" — so with the
+ * studio mailbox disconnected, a customer was answered from whichever personal
+ * inbox happened to be connected, under that person's private address and
+ * into their own Sent. Resend from the studio address is the better failure.
+ * Sorted by address, so two studio mailboxes cannot swap places between calls. */
+export function pickTicketMailbox(rows: MailboxRow[] | null | undefined): MailboxRow | null {
+  const studio = (rows ?? [])
+    .filter((r) => !r.employee_id && r.status === 'connected')
+    .sort((a, b) => String(a.account_label).localeCompare(String(b.account_label)));
+  return studio[0] ?? null;
 }

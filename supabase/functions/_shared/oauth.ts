@@ -15,43 +15,60 @@
 export const AUTHORITY = 'https://login.microsoftonline.com';
 
 export const SCOPES = {
-  /* WHAT IS ASKED FOR, AND WHAT IS DELIBERATELY NOT.
+  /* WHAT IS ASKED FOR, AND WHY.
    *
    * The workspace is meant to replace opening Outlook, not to be a read-only
-   * window onto it — so it sends mail and writes the diary.
+   * window onto it — so it reads, sends and manages mail and writes the diary.
    *
    *   Mail.Read           read the inbox
-   *   Mail.Send           send a reply from the studio mailbox, so it lands in
-   *                       Sent and threads properly in the customer's client
+   *   Mail.Send           send from the mailbox, so it lands in Sent and
+   *                       threads properly in the other person's client
+   *   Mail.ReadWrite      drafts (a reply is created, edited, then sent),
+   *                       attachments over 3 MB, and read/flag state that
+   *                       reaches Outlook instead of living on a mirror
    *   Calendars.ReadWrite read the diary and put things in it
+   *   Calendars.ReadWrite.Shared  the same for a studio calendar, which is a
+   *                       shared mailbox's diary, not the consenting person's
+   *   User.ReadBasic.All  look a connected address up in the directory, so a
+   *                       studio connection cannot be someone's own mailbox
+   *                       under a sign-in name the team does not store
    *
-   * NOT Mail.ReadWrite. Graph has no "read and mark-as-read but not delete"
-   * delegated scope — ReadWrite is the granularity on offer, and it carries
-   * permanent delete of client correspondence. The only thing it would buy is
-   * syncing read/flag state back to Outlook, which the workspace can live
-   * without: it keeps that state on its own mirror. A bug in a young codebase
-   * that can only fail to mark something read is a very different class of
-   * problem from one that can empty a mailbox.
+   * Mail.ReadWrite also permits deleting mail; Graph offers nothing narrower
+   * that does the rest. It was held back for that reason until 2026-09-13,
+   * when the owner chose it. The line the grant cannot draw is drawn in the
+   * code instead: mail-safety.test.js fails if any function deletes, purges,
+   * moves or copies a message.
    *
    * offline_access is what makes a refresh token come back at all. */
   mail: [
     'offline_access',
     'https://graph.microsoft.com/Mail.Read',
     'https://graph.microsoft.com/Mail.Send',
+    'https://graph.microsoft.com/Mail.ReadWrite',
     /* A SHARED mailbox (hello@veyago.cloud) is not the mailbox of whoever
-       consents. Delegated access to one needs the .Shared pair, and the person
-       consenting must already have Full Access to it in Exchange — Graph will
-       not grant what Exchange has not. Requested always: asking for them on a
-       personal mailbox costs nothing, and discovering they are missing means
-       going back through consent. */
+       consents. Delegated access to one needs the .Shared variants, and the
+       person consenting must already have Full Access to it in Exchange —
+       Graph will not grant what Exchange has not. Requested always: asking for
+       them on a personal mailbox costs nothing, and discovering they are
+       missing means going back through consent. */
     'https://graph.microsoft.com/Mail.Read.Shared',
     'https://graph.microsoft.com/Mail.Send.Shared',
+    'https://graph.microsoft.com/Mail.ReadWrite.Shared',
   ],
   calendar: [
     'offline_access',
     'https://graph.microsoft.com/Calendars.ReadWrite',
+    /* A studio calendar belongs to a shared mailbox, like hello@veyago.cloud's
+       mail, and is read and written at /users/{address}. That needs the
+       .Shared variant; without it the functions used /me and wrote into the
+       consenting person's own diary. A calendar connected before this was
+       added has to be reconnected. */
+    'https://graph.microsoft.com/Calendars.ReadWrite.Shared',
   ],
-  identity: ['openid', 'email', 'profile', 'https://graph.microsoft.com/User.Read']
+  identity: [
+    'openid', 'email', 'profile', 'https://graph.microsoft.com/User.Read',
+    'https://graph.microsoft.com/User.ReadBasic.All',
+  ]
 };
 
 export function tokenUrl(tenant?: string): string {
@@ -126,6 +143,17 @@ export function mergeTokens(
     token_type: fresh.token_type ?? stored.token_type ?? 'Bearer',
     expires_at: expiryFrom(fresh.expires_in, nowMs)
   };
+}
+
+/* Whether a failed refresh needs a person to reconnect. Only Microsoft saying
+   the grant itself is gone does: invalid_grant (revoked, expired, password
+   changed) or interaction_required (new consent, MFA, conditional access).
+   A 429, a 5xx or temporarily_unavailable is Microsoft having a moment, and
+   must not take a mailbox off the schedule; invalid_request is our own bug. */
+export function refreshFailureIsPermanent(status: number, body: { error?: string } | null | undefined): boolean {
+  if (status === 429 || status >= 500) return false;
+  const code = String(body?.error ?? '').toLowerCase();
+  return code === 'invalid_grant' || code === 'interaction_required';
 }
 
 /* state carries the connection's identity through Microsoft and back. It is

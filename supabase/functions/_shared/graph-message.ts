@@ -34,6 +34,10 @@ export interface GraphMessage {
   sentDateTime?: string;
   isRead?: boolean;
   flag?: { flagStatus?: string };
+  internetMessageId?: string;
+  bccRecipients?: GraphRecipient[];
+  importance?: string;
+  hasAttachments?: boolean;
 }
 
 export function address(r: GraphRecipient | undefined): { name: string; email: string } {
@@ -91,14 +95,33 @@ export function toInstant(when: { dateTime?: string; timeZone?: string } | undef
   return isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+/* Every field toMailRow reads. The sync and send-mail both $select this, so
+ * a field added to the row cannot be forgotten in one of the requests. */
+export const MESSAGE_SELECT = [
+  'id', 'conversationId', 'internetMessageId', 'subject', 'bodyPreview', 'body',
+  'from', 'sender', 'toRecipients', 'ccRecipients', 'bccRecipients',
+  'receivedDateTime', 'sentDateTime', 'isRead', 'flag', 'importance', 'hasAttachments',
+  /* Not stored, but what an incremental sync pages by: it changes when a
+     message is read or flagged in Outlook, not only when one arrives. */
+  'lastModifiedDateTime',
+].join(',');
+
+export type Importance = 'low' | 'normal' | 'high';
+
 export interface MailRow {
   external_id: string;
   thread_external_id: string;
+  /* RFC 2822 Message-ID. Unlike `external_id` it survives a move between
+     folders — a draft's id changes when it is sent, this does not — so it is
+     how a sent copy is recognised as the message we just sent. */
+  internet_message_id: string | null;
   direction: 'inbound' | 'outbound';
   from_name: string;
   from_email: string;
   to_emails: string[];
   cc_emails: string[];
+  /* Only ever present on our own sent copies: a recipient cannot see Bcc. */
+  bcc_emails: string[];
   subject: string;
   body_text: string;
   body_html: string;
@@ -106,6 +129,13 @@ export interface MailRow {
   snippet: string;
   is_read: boolean;
   is_flagged: boolean;
+  importance: Importance;
+  has_attachments: boolean;
+}
+
+function importanceOf(value: unknown): Importance {
+  const v = String(value ?? '').toLowerCase();
+  return v === 'low' || v === 'high' ? v : 'normal';
 }
 
 /* `ownAddresses` decides direction: a message we sent is one whose From is the
@@ -127,11 +157,13 @@ export function toMailRow(msg: GraphMessage, ownAddresses: string[] = []): MailR
     /* conversationId is Graph's thread. A message without one is its own
        thread rather than being dropped into a shared null bucket. */
     thread_external_id: msg.conversationId || msg.id,
+    internet_message_id: msg.internetMessageId ? String(msg.internetMessageId) : null,
     direction: mine.has(from.email) ? 'outbound' : 'inbound',
     from_name: from.name,
     from_email: from.email,
     to_emails: addressList(msg.toRecipients),
     cc_emails: addressList(msg.ccRecipients),
+    bcc_emails: addressList(msg.bccRecipients),
     subject: String(msg.subject ?? ''),
     body_text: isHtml ? htmlToText(content) : content,
     body_html: isHtml ? content : '',
@@ -139,6 +171,8 @@ export function toMailRow(msg: GraphMessage, ownAddresses: string[] = []): MailR
     snippet: String(msg.bodyPreview ?? '').slice(0, 300),
     is_read: msg.isRead !== false,
     is_flagged: String(msg.flag?.flagStatus ?? '') === 'flagged',
+    importance: importanceOf(msg.importance),
+    has_attachments: msg.hasAttachments === true,
   };
 }
 
@@ -162,6 +196,7 @@ export interface GraphEvent {
   isAllDay?: boolean;
   isCancelled?: boolean;
   showAs?: string;
+  sensitivity?: string;
   location?: { displayName?: string };
   onlineMeeting?: { joinUrl?: string };
   attendees?: { emailAddress?: GraphAddress; status?: { response?: string } }[];
@@ -184,7 +219,11 @@ export interface EventRow {
  * is only us is internal; one with nobody is time you blocked out. A guess,
  * and a useful one — it is what colours the agenda, and a person can change
  * it. Returns null when the start cannot be trusted (see toInstant). */
-export function toEventRow(ev: GraphEvent, ownDomain: string): EventRow | null {
+/* hidePrivate: for a studio calendar, where every member of staff reads what is
+   stored. An event its organiser marked personal, private or confidential keeps
+   its time, so nobody double-books it, and nothing else (security review,
+   2026-09-14). */
+export function toEventRow(ev: GraphEvent, ownDomain: string, options: { hidePrivate?: boolean } = {}): EventRow | null {
   const startsAt = toInstant(ev.start);
   if (!startsAt) return null;
 
@@ -196,21 +235,24 @@ export function toEventRow(ev: GraphEvent, ownDomain: string): EventRow | null {
 
   const domain = String(ownDomain || '').toLowerCase();
   const outside = attendees.some((a) => a.email && !a.email.endsWith(`@${domain}`));
+  const hidden = Boolean(options.hidePrivate)
+    && ['personal', 'private', 'confidential'].includes(String(ev.sensitivity ?? '').toLowerCase());
 
   return {
     external_id: ev.id,
-    title: String(ev.subject ?? '').trim() || '(no title)',
-    detail: ev.onlineMeeting?.joinUrl
-      ? (String(ev.bodyPreview ?? '').trim() || 'Online meeting')
-      : (String(ev.bodyPreview ?? '').trim() || null),
-    location: ev.location?.displayName?.trim() || null,
+    title: hidden ? 'Private' : (String(ev.subject ?? '').trim() || '(no title)'),
+    detail: hidden ? null
+      : ev.onlineMeeting?.joinUrl
+        ? (String(ev.bodyPreview ?? '').trim() || 'Online meeting')
+        : (String(ev.bodyPreview ?? '').trim() || null),
+    location: hidden ? null : (ev.location?.displayName?.trim() || null),
     starts_at: startsAt,
     ends_at: toInstant(ev.end),
     all_day: ev.isAllDay === true,
-    kind: !attendees.length ? 'focus' : outside ? 'client' : 'team',
+    kind: hidden ? 'personal' : !attendees.length ? 'focus' : outside ? 'client' : 'team',
     status: ev.isCancelled ? 'cancelled'
       : String(ev.showAs ?? '').toLowerCase() === 'tentative' ? 'tentative'
       : 'confirmed',
-    attendees,
+    attendees: hidden ? [] : attendees,
   };
 }

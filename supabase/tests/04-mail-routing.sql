@@ -29,11 +29,11 @@ insert into public.mail_threads (id, connection_id, external_id, subject, contac
    'Re: Subscription not restoring [#VYG-' ||
      (select number from public.support_tickets where id='c0000000-0000-4000-a000-000000000004') || ']',
    'c0000000-0000-4000-a000-000000000002');
-insert into public.mail_messages (id, thread_id, external_id, direction, from_email, subject, body_text, sent_at) values
+insert into public.mail_messages (id, thread_id, external_id, direction, from_email, subject, body_text, sent_at, folder) values
   ('c0000000-0000-4000-a000-000000000006','c0000000-0000-4000-a000-000000000005','msg-r','inbound',
    'p@route.invalid',
    (select subject from public.mail_threads where id='c0000000-0000-4000-a000-000000000005'),
-   'Still not working, sorry.', now());
+   'Still not working, sorry.', now(), 'inbox');
 
 -- Its own statement. See the note above.
 select public.route_mail_to_ticket('c0000000-0000-4000-a000-000000000006') as routed_to;
@@ -77,9 +77,14 @@ from public.ticket_messages where mail_message_id='c0000000-0000-4000-a000-00000
 insert into public.mail_threads (id, connection_id, external_id, subject) values
   ('c0000000-0000-4000-a000-000000000007','c0000000-0000-4000-a000-000000000003','thr-n',
    'Your weekly newsletter');
-insert into public.mail_messages (id, thread_id, external_id, direction, from_email, subject, body_text, sent_at) values
+insert into public.mail_messages (id, thread_id, external_id, direction, from_email, subject, body_text, sent_at, folder) values
   ('c0000000-0000-4000-a000-000000000008','c0000000-0000-4000-a000-000000000007','msg-n','inbound',
-   'news@example.invalid','Your weekly newsletter','Ten things about CSS.', now());
+   'news@example.invalid','Your weekly newsletter','Ten things about CSS.', now(), 'inbox');
+
+-- Counted against what was there before, not against an empty table: the live
+-- project has real tickets, and an unscoped count(*) was only ever right on an
+-- empty database.
+select set_config('fixture.tickets_before', (select count(*) from public.support_tickets)::text, true);
 
 insert into results(name, expected, actual, pass)
 select 'unreferenced mail is not routed', 'null',
@@ -87,13 +92,15 @@ select 'unreferenced mail is not routed', 'null',
        public.route_mail_to_ticket('c0000000-0000-4000-a000-000000000008') is null;
 
 insert into results(name, expected, actual, pass)
-select 'and no ticket was opened for it', '1', count(*)::text, count(*)=1
+select 'and no ticket was opened for it', '0 new',
+       (count(*) - current_setting('fixture.tickets_before')::int)::text || ' new',
+       count(*) = current_setting('fixture.tickets_before')::int
 from public.support_tickets;
 
 -- Our own outbound mail is already in the thread; routing it back would echo.
-insert into public.mail_messages (id, thread_id, external_id, direction, from_email, subject, body_text, sent_at) values
+insert into public.mail_messages (id, thread_id, external_id, direction, from_email, subject, body_text, sent_at, folder) values
   ('c0000000-0000-4000-a000-000000000009','c0000000-0000-4000-a000-000000000005','msg-o','outbound',
-   'fixture.inbox@example.invalid','Re: Subscription not restoring','We are on it.', now());
+   'fixture.inbox@example.invalid','Re: Subscription not restoring','We are on it.', now(), 'sent');
 
 insert into results(name, expected, actual, pass)
 select 'our own sent mail is not echoed back', 'null',
@@ -104,7 +111,10 @@ select 'our own sent mail is not echoed back', 'null',
 grant all on results to authenticated;
 grant usage, select on sequence results_id_seq to authenticated;
 set local role authenticated;
-select set_config('request.jwt.claims','{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}',true);
+
+-- Counted as the person, who sees tickets the way the checks below do.
+select set_config('fixture.tickets_before_manual', (select count(*) from public.support_tickets)::text, true);
 
 select public.create_ticket_from_thread('c0000000-0000-4000-a000-000000000007','Kept') as opened;
 
@@ -119,7 +129,9 @@ from public.ticket_messages where mail_message_id='c0000000-0000-4000-a000-00000
 
 select public.create_ticket_from_thread('c0000000-0000-4000-a000-000000000007') as again;
 insert into results(name, expected, actual, pass)
-select 'doing it twice does not open a second ticket', '2', count(*)::text, count(*)=2
+select 'doing it twice does not open a second ticket', '1 new',
+       (count(*) - current_setting('fixture.tickets_before_manual')::int)::text || ' new',
+       count(*) = current_setting('fixture.tickets_before_manual')::int + 1
 from public.support_tickets;
 
 reset role;

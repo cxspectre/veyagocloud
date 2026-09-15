@@ -9,9 +9,9 @@
  * delivery stamp is written with the service role — the browser has no UPDATE
  * policy on ticket_messages and should not get one.
  *
- * Sends from the studio's connected Outlook mailbox when there is one, so the
- * reply lands in Sent and threads in the customer's client. Falls back to
- * Resend when no mailbox is connected.
+ * Sends from a connected STUDIO mailbox when there is one, so the reply lands
+ * in Sent and threads in the customer's client. Falls back to Resend when
+ * there is none — never to someone's personal mailbox (pickTicketMailbox).
  *
  * Deploy:  supabase functions deploy send-ticket-reply
  * Secrets: RESEND_API_KEY, EMAIL_FROM  (the fallback; already set)
@@ -20,12 +20,38 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { sendEmail } from '../_shared/email.ts';
-import { decideSend, ticketReplyEmail, ticketRef } from '../_shared/ticket-reply.ts';
+import { decideSend, notRefusedBy, pickTicketMailbox, ticketReplyEmail, ticketRef } from '../_shared/ticket-reply.ts';
 import { accessTokenFor } from '../_shared/graph-token.ts';
 import { sendMailPayload } from '../_shared/graph-write.ts';
 import { mailboxPath } from '../_shared/mailbox.ts';
+import { GRAPH, graphRequest } from '../_shared/mail-sync.ts';
+import { connectionCheck } from '../_shared/connection-check.ts';
 
-const GRAPH = 'https://graph.microsoft.com/v1.0';
+type MailboxCandidate = { id: string; account_label: string; employee_id: string | null; external_id?: string | null };
+
+/* Replies one person may send in RATE_WINDOW_MINUTES: plenty for a busy
+   morning, and a ceiling on what a stolen session can send in the studio's
+   name. Counted from the replies stored, which are stored before they are
+   sent. */
+const RATE_LIMIT = 20;
+const RATE_WINDOW_MINUTES = 5;
+
+/* The studio mailboxes a reply may leave from: those that pass the connection
+   checks. One that is really someone's own would send the customer's reply
+   from that person's mailbox. When they cannot be checked there are none, and
+   the reply goes by Resend from the studio address — the better failure — with
+   the reason logged. */
+// deno-lint-ignore no-explicit-any
+async function usableMailboxes<T extends MailboxCandidate>(admin: any, rows: T[]): Promise<{ usable: T[]; unchecked: boolean }> {
+  try {
+    const problems = await Promise.all(rows.map((row) => connectionCheck(admin, row)));
+    return { usable: rows.filter((_, i) => !problems[i]), unchecked: false };
+  } catch (err) {
+    console.warn('[send-ticket-reply] the studio mailboxes could not be checked, so no reply leaves from them:',
+      String((err as Error)?.message ?? err));
+    return { usable: [], unchecked: true };
+  }
+}
 
 /* Sending from the studio's own mailbox beats sending through Resend for a
  * support reply: it lands in Sent where anyone can see it was answered, and
@@ -45,18 +71,17 @@ async function sendViaGraph(
     const replyTo = Deno.env.get('SUPPORT_REPLY_TO');
     /* Sent through the shared mailbox's own path, so it leaves as
        hello@veyago.cloud rather than as whoever's grant is being used — and
-       lands in THAT mailbox's Sent items, where the team can see it. */
-    const res = await fetch(`${GRAPH}${mailboxPath(connection)}/sendMail`, {
+       lands in THAT mailbox's Sent items, where the team can see it. Through
+       graphRequest, like every other Graph call for mail, so the guard sees it.
+       Graph answers 202 Accepted with an empty body on success. */
+    await graphRequest(`${GRAPH}${mailboxPath(connection)}/sendMail`, token, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(sendMailPayload({
+      body: sendMailPayload({
         to: [to], subject, html,
         ...(replyTo ? { replyTo: [replyTo] } : {}),
-      })),
+      }),
     });
-    /* Graph answers 202 Accepted with an empty body on success. */
-    if (res.status === 202 || res.ok) return { ok: true };
-    return { ok: false, error: `Graph sendMail → ${res.status}: ${(await res.text()).slice(0, 200)}` };
+    return { ok: true };
   } catch (err) {
     return { ok: false, error: String((err as Error).message || err) };
   }
@@ -110,6 +135,38 @@ Deno.serve(async (req) => {
     if (!ticketId) return json({ error: 'ticketId is required' }, 400);
     if (!body) return json({ error: 'The reply is empty' }, 400);
 
+    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: me } = await asCaller.rpc('active_employee_id');
+
+    const tooMany = `More than ${RATE_LIMIT} replies in ${RATE_WINDOW_MINUTES} minutes. Wait a few minutes before sending more.`;
+
+    /* This person's replies stored in the last RATE_WINDOW_MINUTES, or null
+       when they cannot be counted — which does not stop the reply: this is a
+       ceiling, not a permission. A reply this ceiling refused is not counted,
+       or a burst of refused requests would keep it shut for five more minutes. */
+    const recentReplies = async (): Promise<number | null> => {
+      if (typeof me !== 'string') return null;
+      const since = new Date(Date.now() - RATE_WINDOW_MINUTES * 60_000).toISOString();
+      const { count, error: countErr } = await admin
+        .from('ticket_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('author_employee_id', me)
+        .eq('direction', 'outbound')
+        .gte('created_at', since)
+        .or(notRefusedBy(tooMany));
+      if (countErr) {
+        console.warn('[send-ticket-reply] could not count recent replies:', countErr.message);
+        return null;
+      }
+      return count ?? 0;
+    };
+
+    /* Checked before anything is saved, so a reply refused here is not stored
+       as one that was never sent. */
+    if (!internal && ((await recentReplies()) ?? 0) >= RATE_LIMIT) {
+      return json({ error: `${tooMany} Nothing was saved.` }, 429);
+    }
+
     /* Read through the caller's own session: a ticket they cannot see is a
        ticket they cannot reply to, and RLS is what decides that. */
     const { data: ticket, error: ticketErr } = await asCaller
@@ -119,8 +176,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (ticketErr) return json({ error: ticketErr.message }, 500);
     if (!ticket) return json({ error: 'No such ticket' }, 404);
-
-    const { data: me } = await asCaller.rpc('active_employee_id');
 
     const { data: message, error: insertErr } = await asCaller
       .from('ticket_messages')
@@ -133,6 +188,15 @@ Deno.serve(async (req) => {
       .select('id')
       .single();
     if (insertErr) return json({ error: insertErr.message }, 403);
+
+    /* Counted again now this one is stored: requests sent all at once each see
+       the others only once they are stored, so a burst past the limit may be
+       refused whole. One refused here stays in the conversation, marked as not
+       sent, goes nowhere, and stops counting towards the limit. */
+    if (!internal && ((await recentReplies()) ?? 0) > RATE_LIMIT) {
+      await admin.from('ticket_messages').update({ delivery_error: tooMany }).eq('id', message.id);
+      return json({ ok: false, messageId: message.id, sent: false, error: `${tooMany} This one was saved, not sent.` }, 429);
+    }
 
     const contact = (ticket as { contact?: { full_name?: string; email?: string } }).contact;
     const decision = decideSend({
@@ -157,25 +221,24 @@ Deno.serve(async (req) => {
       contactName: contact?.full_name ?? null,
     });
 
-    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-
-    /* A studio mailbox (employee_id null) is preferred over a personal one:
-       support should come from the address the customer wrote to, not from
-       whoever happened to click reply. */
-    const { data: mailbox } = await admin
+    /* A studio mailbox or none. Support comes from the address the customer
+       wrote to, not from whichever personal inbox happens to be connected. */
+    const { data: studioMailboxes } = await admin
       .from('integration_connections')
-      .select('id, account_label, employee_id, external_id')
+      .select('id, account_label, employee_id, external_id, status')
       .eq('provider', 'microsoft_mail')
-      .eq('status', 'connected')
-      .order('employee_id', { ascending: true, nullsFirst: true })
-      .limit(1)
-      .maybeSingle();
+      .is('employee_id', null)
+      .eq('status', 'connected');
+    const studio = studioMailboxes ?? [];
+    const { usable, unchecked } = await usableMailboxes(admin, studio);
+    const mailbox = pickTicketMailbox(usable);
 
     const html = wrap(mail.bodyHtml);
     let sent: { ok: boolean; error?: string; skipped?: boolean };
     let via: 'outlook' | 'resend';
+    let outlookError: string | null = null;
 
-    if (mailbox?.id) {
+    if (mailbox) {
       via = 'outlook';
       sent = await sendViaGraph(admin, mailbox, contact!.email!, mail.subject, html);
       if (!sent.ok) {
@@ -183,6 +246,7 @@ Deno.serve(async (req) => {
            reply, and keep Graph's reason — a needs_reauth connection is the
            likely cause and it is already flagged by accessTokenFor(). */
         console.warn('[send-ticket-reply] Outlook send failed, falling back:', sent.error);
+        outlookError = sent.error ?? 'Outlook refused it';
         via = 'resend';
         sent = await sendEmail({
           to: contact!.email!, subject: mail.subject, html, text: mail.text,
@@ -197,10 +261,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    /* With email not configured, Resend could not stand in: why no mailbox sent
+       it is the reason — "no mailbox is connected" was said when one was. */
+    const unsentBecause = outlookError
+      ? `Outlook would not send it (${outlookError})`
+      : studio.length
+        ? (unchecked ? 'The studio mailbox could not be checked just now' : 'The studio mailbox needs reconnecting')
+        : 'No mailbox is connected';
+    const failure = sent.ok ? null
+      : sent.skipped ? `${unsentBecause}, and email is not configured`
+      : (sent.error ?? 'Send failed');
+
     await admin.from('ticket_messages').update(
       sent.ok
         ? { delivered_at: new Date().toISOString(), delivery_error: null }
-        : { delivery_error: (sent.error ?? 'Send failed').slice(0, 500) },
+        : { delivery_error: String(failure).slice(0, 500) },
     ).eq('id', message.id);
 
     await admin.from('email_log').insert({
@@ -217,7 +292,7 @@ Deno.serve(async (req) => {
       return json({
         ok: false, messageId: message.id, sent: false,
         error: sent.skipped
-          ? 'No mailbox is connected and email is not configured, so the reply was saved but not sent.'
+          ? `${failure}, so the reply was saved but not sent.`
           : `The reply was saved but could not be sent: ${sent.error}`,
       }, 502);
     }

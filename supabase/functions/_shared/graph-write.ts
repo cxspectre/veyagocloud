@@ -66,6 +66,66 @@ export function sendMailPayload(o: SendMailOptions) {
   };
 }
 
+export type Importance = 'low' | 'normal' | 'high';
+const IMPORTANCE: string[] = ['low', 'normal', 'high'];
+
+export interface DraftOptions {
+  to?: (Recipient | string)[];
+  cc?: (Recipient | string)[];
+  bcc?: (Recipient | string)[];
+  subject?: string;
+  html?: string;
+  importance?: string;
+}
+
+/* A draft, or the changes to one. Only what is given is sent: a reply draft
+ * arrives from createReply with its recipients already filled in, and
+ * PATCHing `toRecipients: []` because the caller said nothing would quietly
+ * address the reply to nobody. An explicit empty list IS sent — that is how
+ * someone removing everyone from Cc sticks. */
+export function draftMessagePayload(o: DraftOptions) {
+  if (o.importance !== undefined && !IMPORTANCE.includes(o.importance)) {
+    throw new Error(`Unknown importance "${o.importance}" — low, normal or high`);
+  }
+  return {
+    ...(o.subject !== undefined ? { subject: o.subject } : {}),
+    ...(o.html !== undefined ? { body: { contentType: 'HTML', content: o.html } } : {}),
+    ...(o.to !== undefined ? { toRecipients: recipients(o.to) } : {}),
+    ...(o.cc !== undefined ? { ccRecipients: recipients(o.cc) } : {}),
+    ...(o.bcc !== undefined ? { bccRecipients: recipients(o.bcc) } : {}),
+    ...(o.importance !== undefined ? { importance: o.importance } : {}),
+  };
+}
+
+/* A file small enough to POST in one request — under 3 MB. */
+export function fileAttachmentPayload(o: { name: string; contentType?: string | null; contentBase64: string }) {
+  return {
+    '@odata.type': '#microsoft.graph.fileAttachment',
+    name: o.name,
+    contentType: o.contentType || 'application/octet-stream',
+    contentBytes: o.contentBase64,
+  };
+}
+
+/* Anything from 3 MB up goes through an upload session instead. */
+export function uploadSessionPayload(o: { name: string; size: number }) {
+  return { AttachmentItem: { attachmentType: 'file', name: o.name, size: o.size } };
+}
+
+/* Graph asks for upload pieces under 4 MB; 3 MiB leaves headroom. */
+export const UPLOAD_CHUNK = 3 * 1024 * 1024;
+
+/* The inclusive byte ranges of an upload, in order. Every byte once: a gap is
+ * a corrupt attachment, and an overlap is a 416 halfway through. */
+export function uploadRanges(size: number, chunk = UPLOAD_CHUNK): { start: number; end: number }[] {
+  const total = Math.max(0, Math.floor(Number(size) || 0));
+  const step = Math.max(1, Math.floor(chunk));
+  return Array.from({ length: Math.ceil(total / step) }, (_, i) => ({
+    start: i * step,
+    end: Math.min(total, (i + 1) * step) - 1,
+  }));
+}
+
 export interface EventOptions {
   title: string;
   startsAt: string | Date;

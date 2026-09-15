@@ -109,6 +109,39 @@ test('a plain-text body is not run through the html stripper', () => {
   assert.equal(row.body_html, '');
 });
 
+test('priority, attachments, the internet message id and bcc come across', () => {
+  const row = m.toMailRow({
+    ...message,
+    importance: 'high',
+    hasAttachments: true,
+    internetMessageId: '<abc123@mail.northline.example>',
+    bccRecipients: [{ emailAddress: { address: 'Boss@Veyago.cloud' } }],
+  });
+  assert.equal(row.importance, 'high');
+  assert.equal(row.has_attachments, true);
+  assert.equal(row.internet_message_id, '<abc123@mail.northline.example>');
+  assert.deepEqual(row.bcc_emails, ['boss@veyago.cloud']);
+});
+
+test('no priority, or one Graph does not define, is normal; no message id is null', () => {
+  const row = m.toMailRow(message);
+  assert.equal(row.importance, 'normal');
+  assert.equal(row.has_attachments, false);
+  assert.equal(row.internet_message_id, null);
+  assert.deepEqual(row.bcc_emails, []);
+  assert.equal(m.toMailRow({ ...message, importance: 'URGENT' }).importance, 'normal');
+  assert.equal(m.toMailRow({ ...message, importance: 'Low' }).importance, 'low');
+});
+
+test('the sync asks Graph for every field the row is built from', () => {
+  const fields = m.MESSAGE_SELECT.split(',');
+  for (const f of ['id', 'conversationId', 'internetMessageId', 'subject', 'body', 'from',
+    'toRecipients', 'ccRecipients', 'bccRecipients', 'sentDateTime', 'receivedDateTime',
+    'isRead', 'flag', 'importance', 'hasAttachments']) {
+    assert.ok(fields.includes(f), `${f} is missing from $select`);
+  }
+});
+
 test('folders map to ours', () => {
   assert.equal(m.folderFromWellKnownName('inbox'), 'inbox');
   assert.equal(m.folderFromWellKnownName('sentitems'), 'sent');
@@ -158,4 +191,26 @@ test('cancelled and tentative come through', () => {
 test('an event whose start cannot be trusted is skipped, not misplaced', () => {
   const bad = { ...event, start: { dateTime: '2026-09-11T14:00:00', timeZone: 'Romance Standard Time' } };
   assert.equal(m.toEventRow(bad, 'veyago.cloud'), null);
+});
+
+test('an event marked private in a studio calendar keeps its time and nothing else', () => {
+  const secret = { ...event, sensitivity: 'private' };
+  const hidden = m.toEventRow(secret, 'veyago.cloud', { hidePrivate: true });
+  assert.equal(hidden.title, 'Private');
+  assert.equal(hidden.detail, null);
+  assert.equal(hidden.location, null);
+  assert.deepEqual(hidden.attendees, []);
+  assert.equal(hidden.kind, 'personal');
+  assert.equal(hidden.starts_at, '2026-09-11T14:00:00.000Z', 'when it is still shows, so nobody double-books it');
+  assert.equal(m.toEventRow({ ...event, sensitivity: 'confidential' }, 'veyago.cloud', { hidePrivate: true }).title, 'Private');
+  assert.equal(m.toEventRow(secret, 'veyago.cloud').title, 'Northline design review',
+    'a person\'s own calendar shows them everything');
+  assert.equal(m.toEventRow({ ...event, sensitivity: 'normal' }, 'veyago.cloud', { hidePrivate: true }).title,
+    'Northline design review');
+});
+
+test('an event marked personal is hidden in a studio calendar too', () => {
+  const row = m.toEventRow({ ...event, sensitivity: 'personal' }, 'veyago.cloud', { hidePrivate: true });
+  assert.equal(row.title, 'Private');
+  assert.equal(row.location, null);
 });
