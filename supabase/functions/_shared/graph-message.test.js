@@ -214,3 +214,61 @@ test('an event marked personal is hidden in a studio calendar too', () => {
   assert.equal(row.title, 'Private');
   assert.equal(row.location, null);
 });
+
+/* ── Who organised it, its meeting link, and the zone it was booked in ──── */
+
+test('the organiser is kept, lower-cased by address', () => {
+  const organized = { ...event, organizer: { emailAddress: { name: 'Dana Reyes', address: 'Dana@Northline.example' } } };
+  const row = m.toEventRow(organized, 'veyago.cloud');
+  assert.equal(row.organizer_name, 'Dana Reyes');
+  assert.equal(row.organizer_email, 'dana@northline.example');
+});
+
+test('an event with no organizer field keeps null, not empty strings mistaken for one', () => {
+  const row = m.toEventRow(event, 'veyago.cloud');
+  assert.equal(row.organizer_name, null);
+  assert.equal(row.organizer_email, null);
+});
+
+test('a hidden event keeps no organiser either: that is still something else about it', () => {
+  const secret = { ...event, sensitivity: 'private', organizer: { emailAddress: { name: 'Dana Reyes', address: 'dana@northline.example' } } };
+  const row = m.toEventRow(secret, 'veyago.cloud', { hidePrivate: true });
+  assert.equal(row.organizer_name, null);
+  assert.equal(row.organizer_email, null);
+});
+
+test('an https join link is kept; anything else is thrown away rather than trusted', () => {
+  const withLink = { ...event, onlineMeeting: { joinUrl: 'https://teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(withLink, 'veyago.cloud').meeting_url, 'https://teams.microsoft.com/l/meetup-join/abc');
+
+  const http = { ...event, onlineMeeting: { joinUrl: 'http://teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(http, 'veyago.cloud').meeting_url, null, 'http:// is not accepted, only https://');
+
+  const javascriptUri = { ...event, onlineMeeting: { joinUrl: 'javascript:alert(1)' } };
+  assert.equal(m.toEventRow(javascriptUri, 'veyago.cloud').meeting_url, null);
+
+  const noScheme = { ...event, onlineMeeting: { joinUrl: 'teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(noScheme, 'veyago.cloud').meeting_url, null);
+
+  assert.equal(m.toEventRow(event, 'veyago.cloud').meeting_url, null, 'no onlineMeeting at all is simply none');
+});
+
+test('the detail still says "Online meeting" when there is a link and nothing else to preview, only for a link that is kept', () => {
+  const noPreview = { ...event, bodyPreview: '', onlineMeeting: { joinUrl: 'https://teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(noPreview, 'veyago.cloud').detail, 'Online meeting');
+  const rejectedLink = { ...event, bodyPreview: '', onlineMeeting: { joinUrl: 'http://not-https.example' } };
+  assert.equal(m.toEventRow(rejectedLink, 'veyago.cloud').detail, null,
+    'a link that was thrown away must not still switch the detail to "Online meeting"');
+});
+
+test('a hidden event keeps no meeting link either', () => {
+  const secret = { ...event, sensitivity: 'confidential', onlineMeeting: { joinUrl: 'https://teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(secret, 'veyago.cloud', { hidePrivate: true }).meeting_url, null);
+});
+
+test('the organiser\'s own zone is kept for context, trimmed, and blank reads as none', () => {
+  const zoned = { ...event, originalStartTimeZone: 'Europe/Amsterdam' };
+  assert.equal(m.toEventRow(zoned, 'veyago.cloud').time_zone, 'Europe/Amsterdam');
+  assert.equal(m.toEventRow(event, 'veyago.cloud').time_zone, null);
+  assert.equal(m.toEventRow({ ...event, originalStartTimeZone: '  ' }, 'veyago.cloud').time_zone, null);
+});

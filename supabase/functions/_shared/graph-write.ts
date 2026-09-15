@@ -136,6 +136,63 @@ export interface EventOptions {
   attendees?: (Recipient | string)[];
 }
 
+/* What update-calendar-event sends Graph for a change to an already-booked
+ * event — a PATCH, so only what changed is sent, the same "only what is
+ * given is sent" rule draftMessagePayload keeps for a mail draft. `changes`
+ * carries our own field names (as actions.js's updateEvent already checks
+ * them): title, detail, location, starts_at, ends_at. A bare `null` clears
+ * detail or location; `starts_at`/`ends_at` go through graphDateTime()
+ * together so a moved start never reaches Graph without its end, which
+ * Graph reads as still the old length rather than the new one. */
+export interface EventChanges {
+  title?: string;
+  detail?: string | null;
+  location?: string | null;
+  starts_at?: string;
+  ends_at?: string | null;
+}
+
+/* Sending only a new start would leave Graph's end where it was — quietly
+ * stretching or shrinking the meeting, since nothing here refuses that on its
+ * own. `current` is the event's start and end as Graph has them right now
+ * (read back just before the PATCH, in update-calendar-event): when a start
+ * moves with no matching end in `changes`, the same length is kept, moved
+ * along with it — as event-edit.js's own keepLength() already does in the
+ * dialog, for a hand-made event. Anything else passes through untouched. */
+export function keptDuration(
+  changes: EventChanges,
+  current: { starts_at: string; ends_at: string | null },
+): EventChanges {
+  if (changes.starts_at === undefined || changes.ends_at !== undefined) return changes;
+  if (!current.ends_at) return changes;
+  const length = new Date(current.ends_at).getTime() - new Date(current.starts_at).getTime();
+  if (!(length > 0)) return changes;
+  return { ...changes, ends_at: new Date(new Date(changes.starts_at).getTime() + length).toISOString() };
+}
+
+export function eventUpdatePayload(changes: EventChanges) {
+  const out: Record<string, unknown> = {};
+  if (changes.title !== undefined) {
+    if (!changes.title.trim()) throw new Error('An event needs a title');
+    out.subject = changes.title.trim();
+  }
+  if (changes.detail !== undefined) {
+    out.body = { contentType: 'Text', content: changes.detail ?? '' };
+  }
+  if (changes.location !== undefined) {
+    out.location = { displayName: changes.location ?? '' };
+  }
+  if (changes.starts_at !== undefined) out.start = graphDateTime(changes.starts_at);
+  if (changes.ends_at !== undefined && changes.ends_at !== null) out.end = graphDateTime(changes.ends_at);
+  if (
+    out.start && out.end &&
+    new Date((out.end as { dateTime: string }).dateTime) < new Date((out.start as { dateTime: string }).dateTime)
+  ) {
+    throw new Error('An event cannot end before it starts');
+  }
+  return out;
+}
+
 export function eventPayload(o: EventOptions) {
   if (!o.title || !o.title.trim()) throw new Error('An event needs a title');
 
