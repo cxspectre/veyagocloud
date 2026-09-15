@@ -21,7 +21,7 @@ insert into public.integration_connections (id, provider, account_label, status)
 values ('55555555-5555-5555-5555-555555555555','microsoft_mail','fixture.inbox@example.invalid','connected');
 
 set local role authenticated;
-select set_config('request.jwt.claims','{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal2"}',true);
 
 -- 1. An assignee may advance their task…
 update public.tasks set status='in_progress' where id='99999999-9999-9999-9999-999999999999';
@@ -167,7 +167,7 @@ values ('ticket','44444444-4444-4444-4444-444444444444',
         'the owner wrote this');
 
 set local role authenticated;
-select set_config('request.jwt.claims','{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal2"}',true);
 
 insert into results(name, expected, actual, pass)
 select 'NOTES: staff read everyone''s notes', '2', count(*)::text, count(*) = 2
@@ -262,7 +262,7 @@ begin
 end $$;
 
 set local role authenticated;
-select set_config('request.jwt.claims','{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated"}',true);
+select set_config('request.jwt.claims','{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal2"}',true);
 
 -- 11. Project progress is computed from its tasks.
 insert into results(name, expected, actual, pass)

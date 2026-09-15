@@ -40,7 +40,7 @@ on conflict (employee_id, connection_id) do update set html = excluded.html;
 
 -- ── as the OWNER (manager) ──────────────────────────────────────────────────
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'manager: is_manager()', 'true', public.is_manager()::text, public.is_manager() = true;
@@ -199,7 +199,7 @@ insert into public.integration_connections (id, provider, account_label, employe
 values ('99999999-9999-9999-9999-999999999999', 'microsoft_mail', 'fixture.colleague@example.invalid',
         (select id from public.employees where user_id = '21fc20c1-50e8-4764-9a11-71031d2f8f2c'), 'connected');
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}', true);
 
 -- Nor switch it off: disconnecting follows the same line as removing.
 with switched_off as (
@@ -228,7 +228,7 @@ values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'microsoft_mail', 'fixture.studi
        ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'microsoft_mail', 'fixture.own-removable@example.invalid',
         (select id from public.employees where user_id = 'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093'), 'connected');
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}', true);
 
 with switched_off as (
   update public.integration_connections set status = 'disconnected'
@@ -266,7 +266,7 @@ reset role;
 
 -- ── as an ordinary EMPLOYEE (staff, not manager) ────────────────────────────
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal2"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'employee: is_staff() yes, is_manager() no', 'true/false',

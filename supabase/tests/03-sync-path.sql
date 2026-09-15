@@ -40,16 +40,16 @@ select 'thread upsert is idempotent', '1', count(*)::text, count(*) = 1
 from public.mail_threads where external_id = 'thr-1';
 
 insert into public.mail_messages (thread_id, external_id, direction, from_name, from_email,
-                                  to_emails, subject, body_text, sent_at)
+                                  to_emails, subject, body_text, sent_at, folder)
 select id,'msg-1','inbound','Sync Fixture Person','person@sync-fixture.invalid',
-       array['sync.fixture@example.invalid'],'A few thoughts on the homepage','Hi Cassian, looks great.',now()
+       array['sync.fixture@example.invalid'],'A few thoughts on the homepage','Hi Cassian, looks great.',now(),'inbox'
 from public.mail_threads where external_id='thr-1'
 on conflict (thread_id, external_id) do update set body_text = excluded.body_text;
 
 insert into public.mail_messages (thread_id, external_id, direction, from_name, from_email,
-                                  to_emails, subject, body_text, sent_at)
+                                  to_emails, subject, body_text, sent_at, folder)
 select id,'msg-1','inbound','Sync Fixture Person','person@sync-fixture.invalid',
-       array['sync.fixture@example.invalid'],'A few thoughts on the homepage','Hi Cassian, looks great. (edited)',now()
+       array['sync.fixture@example.invalid'],'A few thoughts on the homepage','Hi Cassian, looks great. (edited)',now(),'inbox'
 from public.mail_threads where external_id='thr-1'
 on conflict (thread_id, external_id) do update set body_text = excluded.body_text;
 
@@ -99,9 +99,9 @@ from public.calendar_events where external_id is null and title like 'Local %';
 -- 0038: a sent copy carries its Message-ID, Bcc and priority, and priority is
 -- only ever what Graph has.
 insert into public.mail_messages (thread_id, external_id, direction, from_email, to_emails, bcc_emails,
-                                  subject, body_text, sent_at, internet_message_id, importance, has_attachments)
+                                  subject, body_text, sent_at, internet_message_id, importance, has_attachments, folder)
 select id, 'msg-sent-1', 'outbound', 'sync.fixture@example.invalid', array['person@sync-fixture.invalid'],
-       array['boss@example.invalid'], 'Re: A few thoughts', 'Thanks!', now(), '<sent-1@example.invalid>', 'high', true
+       array['boss@example.invalid'], 'Re: A few thoughts', 'Thanks!', now(), '<sent-1@example.invalid>', 'high', true, 'sent'
 from public.mail_threads where external_id = 'thr-1'
 on conflict (thread_id, external_id) do update set importance = excluded.importance;
 
@@ -197,8 +197,9 @@ from public.mail_messages m
 join public.mail_threads t on t.id = m.thread_id
 where t.connection_id = '55555555-5555-5555-5555-555555555555' and t.external_id = 'conv-b';
 
--- A conversation first seen in Sent is filed as sent; an archive sync does not
--- pull a conversation with mail from outside out of the inbox.
+-- A conversation first seen in Sent is filed as sent. An archive sync that takes
+-- over a conversation's last inbox copy takes it out of the inbox — to Sent, as
+-- it holds a reply of ours (0045).
 select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'sent', jsonb_build_array(jsonb_build_object(
   'external_id', 'c-out-1', 'thread_external_id', 'conv-c', 'internet_message_id', '<c-out-1@sync-fixture.invalid>',
   'direction', 'outbound', 'from_name', 'Sync Fixture', 'from_email', 'sync.fixture@example.invalid',
@@ -337,7 +338,7 @@ select public.store_mail_batch('55555555-5555-5555-5555-555555555555', 'inbox', 
   'importance', 'normal', 'has_attachments', false)));
 
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}', true);
 select set_config('fixture.forward_ticket', public.create_ticket_from_thread(
   (select id from public.mail_threads
    where connection_id = '55555555-5555-5555-5555-555555555555' and external_id = 'conv-g'))::text, true);
@@ -349,9 +350,10 @@ from public.ticket_messages
 where ticket_id = current_setting('fixture.forward_ticket')::uuid;
 
 insert into results(name, expected, actual, pass)
-select 'first seen in Sent is filed as sent; archive does not empty the inbox', 'sent · inbox',
+select 'first seen in Sent is filed as sent; archived in full, a conversation holding our reply is filed under Sent (0045)',
+       'sent · sent',
        max(folder) filter (where external_id = 'conv-c') || ' · ' || max(folder) filter (where external_id = 'conv-b'),
-       max(folder) filter (where external_id = 'conv-c') = 'sent' and max(folder) filter (where external_id = 'conv-b') = 'inbox'
+       max(folder) filter (where external_id = 'conv-c') = 'sent' and max(folder) filter (where external_id = 'conv-b') = 'sent'
 from public.mail_threads where connection_id = '55555555-5555-5555-5555-555555555555';
 
 -- The ON CONFLICT target compose uses for a signature — including the

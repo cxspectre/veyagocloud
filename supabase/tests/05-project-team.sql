@@ -150,7 +150,7 @@ where id = 'c5000000-0000-4000-a000-000000000021';
 -- ── The assistant, a stranger to the OWNER's project ─────────────────────
 
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal2"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'FILES: records hidden from a non-member', '0 records', count(*) || ' records', count(*) = 0
@@ -254,7 +254,7 @@ insert into storage.objects (bucket_id, name, owner_id, metadata) values
    'd7d1bedb-fd7d-48b0-aa82-4fcae1cfb093', '{"size": 512, "mimetype": "application/pdf"}');
 
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal2"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'FILES: a member sees the records', '1 record', count(*) || ' record', count(*) = 1
@@ -342,7 +342,7 @@ reset role;
 -- ── The OWNER, a manager ─────────────────────────────────────────────────
 
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal2"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'BUDGET: a manager sees it', '1 row', count(*) || ' row', count(*) = 1
