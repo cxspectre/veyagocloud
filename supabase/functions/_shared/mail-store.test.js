@@ -135,3 +135,31 @@ test('a round starts three days back, or where the last sync left off, but never
   assert.equal(m.roundStart(NOW, '2026-08-01T00:00:00Z'), '2026-08-30T12:00:00.000Z',
     'away for weeks: fourteen days, and a manual sync for the rest');
 });
+
+/* ── What a round could not reach ─────────────────────────────────────── */
+
+test('never synced, or synced within the fourteen days a round can reach, is not a gap', () => {
+  assert.equal(m.missedRange(NOW, null), null, 'never synced: nothing to have missed yet');
+  assert.equal(m.missedRange(NOW, 'not a date'), null);
+  assert.equal(m.missedRange(NOW, '2026-09-13T11:55:00Z'), null, 'synced a moment ago');
+  assert.equal(m.missedRange(NOW, '2026-09-06T12:00:00Z'), null,
+    'a week away is still inside the fourteen days roundStart reaches back to on its own');
+});
+
+test('away long enough that a round has to clamp: the skipped days are named, not dropped', () => {
+  assert.deepEqual(m.missedRange(NOW, '2026-08-01T00:00:00Z'), {
+    from: '2026-07-31T23:50:00.000Z',
+    to: '2026-08-30T12:00:00.000Z',
+  }, 'from just before the last sync (roundStart\'s own overlap) to the fourteen-day cap roundStart actually used');
+  assert.equal(m.missedRange(NOW, '2026-08-01T00:00:00Z').to, m.roundStart(NOW, '2026-08-01T00:00:00Z'),
+    'a manual sync reaching back to "from" is exactly what fills in what roundStart\'s cap left out');
+});
+
+test('right at the fourteen-day edge: a minute inside it is not a gap, a minute past it is', () => {
+  assert.equal(m.missedRange(NOW, '2026-08-30T12:10:00Z'), null,
+    'the overlap brings this exactly to the cap, which counts as reached, not missed');
+  assert.deepEqual(m.missedRange(NOW, '2026-08-30T12:09:00Z'), {
+    from: '2026-08-30T11:59:00.000Z',
+    to: '2026-08-30T12:00:00.000Z',
+  }, 'one minute further away and the round would have to clamp by one minute');
+});

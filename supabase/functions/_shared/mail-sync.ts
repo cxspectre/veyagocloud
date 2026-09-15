@@ -11,7 +11,10 @@
  * Every Graph call goes through graphRequest(), which asks graph-guard.ts
  * first: nothing here can delete, move or copy mail, whatever builds the URL.
  */
-import { MESSAGE_SELECT, folderFromWellKnownName, toMailRow } from './graph-message.ts';
+import {
+  ATTACHMENT_SELECT, MESSAGE_SELECT, folderFromWellKnownName, toAttachmentRow, toMailRow,
+  type AttachmentRow, type MailRow,
+} from './graph-message.ts';
 import { assertGraphCall } from './graph-guard.ts';
 import { markNeedsReauth } from './graph-token.ts';
 import { directionFor, failureStatusOf, ownAddresses } from './mail-store.ts';
@@ -40,6 +43,11 @@ const LIVE = ['connected', 'error'];
 const SWEEP_PAGE_SIZE = 250;
 const SWEEP_PAGES = 12;
 const HOUR_MS = 3600_000;
+/* Attachment lists asked for at once, the same caution as inbox-sweep.ts's
+   ASK_AT_ONCE: one call per message with hasAttachments true, and a busy
+   folder full of them must not queue hundreds of requests on top of the mail
+   fetch that is already the point of the run. */
+const ATTACHMENTS_AT_ONCE = 3;
 
 // deno-lint-ignore no-explicit-any
 type Admin = any;
@@ -191,17 +199,58 @@ function chunks(rows: any[]): any[][] {
   }, []).map((chunk: { rows: unknown[] }) => chunk.rows);
 }
 
+/* One message's attachments, metadata only (ATTACHMENT_SELECT never asks for
+ * content — see its comment in graph-message.ts). Only called for a message
+ * Graph already said hasAttachments, so a mailbox with none costs nothing
+ * extra. Whatever goes wrong here — the message moved, Graph had a moment —
+ * is not worth losing the page of mail it arrived with over: the message is
+ * still stored, without its attachment list, and a later sync that touches it
+ * again (read, flagged) gets another chance. */
+async function fetchAttachments(conn: MailConnection, token: string, messageId: string): Promise<AttachmentRow[]> {
+  const box = `${GRAPH}${mailboxPath(conn)}`;
+  try {
+    const page = await graphRequest(
+      `${box}/messages/${encodeURIComponent(messageId)}/attachments?$select=${ATTACHMENT_SELECT}`, token);
+    return (page?.value ?? []).map(toAttachmentRow);
+  } catch (err) {
+    console.warn(`[mail-sync] could not list attachments for ${messageId}:`, (err as Error)?.message ?? err);
+    return [];
+  }
+}
+
+type StorableRow = MailRow & { attachments?: AttachmentRow[] };
+
+/* Rows built fresh, never the ones handed in: a row that already has
+ * attachments keeps them unchanged, one that needs them gets a new object
+ * with the list added, and ATTACHMENTS_AT_ONCE caps how many of those run at
+ * once — the same caution as inbox-sweep.ts's ASK_AT_ONCE, so a folder full of
+ * signature logos does not turn one page into a hundred serial round trips. */
+async function withAttachmentLists(rows: StorableRow[], conn: MailConnection, token: string): Promise<StorableRow[]> {
+  const withFiles = rows
+    .map((row, index) => ({ row, index }))
+    .filter(({ row }) => row.has_attachments);
+  const lists = new Map<number, AttachmentRow[]>();
+  for (let start = 0; start < withFiles.length; start += ATTACHMENTS_AT_ONCE) {
+    const batch = withFiles.slice(start, start + ATTACHMENTS_AT_ONCE);
+    const fetched = await Promise.all(batch.map(({ row }) => fetchAttachments(conn, token, row.external_id)));
+    batch.forEach(({ index }, i) => lists.set(index, fetched[i]));
+  }
+  return rows.map((row, index) => (lists.has(index) ? { ...row, attachments: lists.get(index) } : row));
+}
+
 export async function storeMessages(
   admin: Admin,
   conn: MailConnection,
   graphFolder: string,
   items: GraphItem[],
+  token: string,
 ): Promise<StoreResult> {
   const own = ownAddresses(conn);
-  const rows = items.map((raw) => {
+  const bare = items.map((raw) => {
     const row = toMailRow(raw, own);
     return { ...row, direction: directionFor(graphFolder, row.direction) };
   });
+  const rows = await withAttachmentLists(bare, conn, token);
 
   let threadIds = new Map<string, string>();
   let messages = 0;
@@ -495,6 +544,25 @@ async function clearUnconfirmedNote(admin: Admin, connectionId: string): Promise
   if (error) console.warn('[mail-sync] could not clear the note about unconfirmed mail:', error.message);
 }
 
+/* What begins a mailbox's last_error when a round's fourteen-day cap had to
+   skip real days of mail (missedRange in mail-store.ts) — a mailbox left
+   disconnected, or waiting to be reconnected, for longer than that. Written so
+   the mailbox list in Mail can show it, and kept the same way UNCONFIRMED_NOTE
+   is: markSyncedIfLive's ordinary clearing leaves it alone, since the round
+   that detects the gap is also the round that moves delta_synced_at forward
+   and would otherwise make the very next run decide there is nothing to
+   report any more. Cleared only by clearSyncGapNote — a manual sync
+   (sync-outlook-mail) reaching back into the mailbox, which is the actual fix. */
+export const SYNC_GAP_NOTE = 'A sync gap was not filled in automatically: ';
+
+export async function clearSyncGapNote(admin: Admin, connectionId: string): Promise<void> {
+  const { error } = await admin.from('integration_connections')
+    .update({ last_error: null })
+    .eq('id', connectionId)
+    .like('last_error', `${SYNC_GAP_NOTE}%`);
+  if (error) console.warn('[mail-sync] could not clear the note about a sync gap:', error.message);
+}
+
 /* delta: the scheduled sync caught up on every folder. delta_synced_at is how
    far back a round that starts again reaches (roundStart). A manual sync — one
    folder, a capped window — must not move it, or what it did not fill in would
@@ -522,7 +590,8 @@ export async function markSyncedIfLive(
     .update({ last_error: null })
     .eq('id', connectionId)
     .in('status', LIVE)
-    .not('last_error', 'like', `${UNCONFIRMED_NOTE}%`);
+    .not('last_error', 'like', `${UNCONFIRMED_NOTE}%`)
+    .not('last_error', 'like', `${SYNC_GAP_NOTE}%`);
 }
 
 /* A failed sync flags its connection, so the workspace can say which mailbox

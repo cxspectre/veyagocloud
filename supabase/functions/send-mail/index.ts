@@ -184,7 +184,7 @@ async function storeSentCopy(admin: Admin, conn: MailConnection, token: string, 
       `${GRAPH}${mailboxPath(conn)}/mailFolders/sentitems/messages?${query}`, token).catch(() => null);
     const item = page?.value?.[0];
     if (item) {
-      const stored = await storeMessages(admin, conn, 'sentitems', [item]);
+      const stored = await storeMessages(admin, conn, 'sentitems', [item], token);
       return stored.threadIds.get(item.conversationId || item.id) ?? null;
     }
   }

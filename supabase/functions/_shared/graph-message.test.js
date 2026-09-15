@@ -133,6 +133,43 @@ test('no priority, or one Graph does not define, is normal; no message id is nul
   assert.equal(m.toMailRow({ ...message, importance: 'Low' }).importance, 'low');
 });
 
+test('an attachment carries its name, kind, size and — for an inline image — its cid', () => {
+  const row = m.toAttachmentRow({
+    id: 'AAMk-1', name: 'invoice.pdf', contentType: 'application/pdf', size: 2048, isInline: false,
+  });
+  assert.deepEqual(row, {
+    external_id: 'AAMk-1', name: 'invoice.pdf', content_type: 'application/pdf',
+    size: 2048, is_inline: false, content_id: null,
+  });
+
+  const inline = m.toAttachmentRow({
+    id: 'AAMk-2', name: 'logo.png', contentType: 'image/png', size: 512, isInline: true, contentId: 'logo123',
+  });
+  assert.equal(inline.is_inline, true);
+  assert.equal(inline.content_id, 'logo123');
+});
+
+test('an attachment missing a name, type or size is stored anyway, never as something untrue', () => {
+  assert.equal(m.toAttachmentRow({ id: 'x' }).name, 'attachment', 'nameless is labelled, not blank');
+  assert.equal(m.toAttachmentRow({ id: 'x', name: '  ' }).name, 'attachment', 'whitespace is still nameless');
+  assert.equal(m.toAttachmentRow({ id: 'x' }).content_type, 'application/octet-stream');
+  for (const size of [undefined, null, -4, 1.5, NaN, 'nine']) {
+    assert.equal(m.toAttachmentRow({ id: 'x', size }).size, 0, `size: ${size}`);
+  }
+  assert.equal(m.toAttachmentRow({ id: 'x', size: 0 }).size, 0, 'a genuinely empty file is not confused with "unknown"');
+  assert.equal(m.toAttachmentRow({ id: 'x', isInline: 'yes' }).is_inline, false, 'only Graph\'s own true counts');
+  assert.equal(m.toAttachmentRow({ id: 'x', contentId: '' }).content_id, null);
+});
+
+test('the attachment list is asked for as metadata only — never $expand, never the bytes', () => {
+  const fields = m.ATTACHMENT_SELECT.split(',');
+  for (const f of ['id', 'name', 'contentType', 'size', 'isInline', 'contentId']) {
+    assert.ok(fields.includes(f), `${f} is missing from the attachment $select`);
+  }
+  assert.ok(!m.ATTACHMENT_SELECT.toLowerCase().includes('contentbytes'),
+    'contentBytes would pull the whole file into the sync for every attachment, every run');
+});
+
 test('the sync asks Graph for every field the row is built from', () => {
   const fields = m.MESSAGE_SELECT.split(',');
   for (const f of ['id', 'conversationId', 'internetMessageId', 'subject', 'body', 'from',
