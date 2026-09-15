@@ -328,6 +328,17 @@ create policy "read attachments of a readable message"
 -- mailbox holds and never edits it, the same as mail_messages itself (0025).
 revoke insert, update, delete on public.mail_attachments from anon, authenticated;
 
+-- A table added after 0040 is not swept by its one-time loop over every RLS
+-- table that existed then — layer 2 (a verified second factor, not just a
+-- role) has to be added with it, or a session that hasn't entered its code
+-- still reads attachment metadata through the select policy above, layer 1
+-- alone.
+drop policy if exists "second factor required" on public.mail_attachments;
+create policy "second factor required"
+  on public.mail_attachments as restrictive for all to authenticated
+  using ((select public.second_factor_met()))
+  with check ((select public.second_factor_met()));
+
 comment on table public.mail_attachments is
   'Attachment metadata for a stored message. Content stays at Graph until a '
   'download path fetches it on demand — not built yet. Written only by '

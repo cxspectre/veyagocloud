@@ -180,9 +180,11 @@ end
 $$;
 
 insert into results(name, expected, actual, pass)
-select 'POLICIES: notification_dismissals carries only its own select and insert', 'staff dismiss own notifications, staff read own notification_dismissals',
+select 'POLICIES: notification_dismissals carries its own select and insert, plus second factor required',
+       'second factor required, staff dismiss own notifications, staff read own notification_dismissals',
        coalesce(string_agg(policyname, ', ' order by policyname), 'none'),
-       count(*) = 2 and bool_and(policyname in ('staff dismiss own notifications', 'staff read own notification_dismissals'))
+       count(*) = 3 and bool_and(policyname in
+         ('staff dismiss own notifications', 'staff read own notification_dismissals', 'second factor required'))
 from pg_policies
 where schemaname = 'public' and tablename = 'notification_dismissals';
 

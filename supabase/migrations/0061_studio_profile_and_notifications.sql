@@ -94,6 +94,15 @@ create policy "staff dismiss own notifications"
   on public.notification_dismissals for insert to authenticated
   with check (employee_id = public.active_employee_id());
 
+-- A table added after 0040 is not swept by its one-time loop over every RLS
+-- table that existed then — layer 2 (a verified second factor) has to be
+-- added with it, the same shape 0040 gave every earlier table.
+drop policy if exists "second factor required" on public.notification_dismissals;
+create policy "second factor required"
+  on public.notification_dismissals as restrictive for all to authenticated
+  using ((select public.second_factor_met()))
+  with check ((select public.second_factor_met()));
+
 comment on table public.notification_dismissals is
   'Which attention items (shellModel.attention() keys, e.g. "ticket:<uuid>") a '
   'person has dismissed from the bell. Read and written straight from the '
@@ -115,8 +124,8 @@ begin
   end if;
 
   if (select count(*) from pg_policies
-      where schemaname = 'public' and tablename = 'notification_dismissals') <> 2 then
-    raise exception '0061: notification_dismissals should carry exactly its own select and insert policies';
+      where schemaname = 'public' and tablename = 'notification_dismissals') <> 3 then
+    raise exception '0061: notification_dismissals should carry its own select and insert policies, plus second factor required';
   end if;
 end
 $$;

@@ -529,6 +529,15 @@ create policy "manager writes ticket_response_targets"
   on public.ticket_response_targets for update
   using (public.is_manager()) with check (public.is_manager());
 
+-- A table added after 0040 is not swept by its one-time loop over every RLS
+-- table that existed then — layer 2 (a verified second factor) has to be
+-- added with it, the same shape 0040 gave every earlier table.
+drop policy if exists "second factor required" on public.ticket_response_targets;
+create policy "second factor required"
+  on public.ticket_response_targets as restrictive for all to authenticated
+  using ((select public.second_factor_met()))
+  with check ((select public.second_factor_met()));
+
 comment on table public.ticket_response_targets is
   'How long a first reply and a resolution should take, by priority — read by '
   'support_tickets_set_due_by() and shown on a ticket''s page. Exactly one row '
@@ -702,6 +711,14 @@ drop policy if exists "manager or uploader removes ticket attachment record" on 
 create policy "manager or uploader removes ticket attachment record"
   on public.ticket_attachments for delete to authenticated
   using (public.is_staff() and (public.is_manager() or uploaded_by = public.active_employee_id()));
+
+-- Same reason as ticket_response_targets' own: a table added after 0040
+-- needs this policy added with it, not inherited from the one-time loop.
+drop policy if exists "second factor required" on public.ticket_attachments;
+create policy "second factor required"
+  on public.ticket_attachments as restrictive for all to authenticated
+  using ((select public.second_factor_met()))
+  with check ((select public.second_factor_met()));
 
 revoke insert, update on public.ticket_attachments from anon, authenticated;
 grant insert (ticket_id, storage_path, name, size_bytes, content_type)
