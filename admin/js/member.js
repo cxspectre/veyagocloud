@@ -19,6 +19,8 @@
   var progress     = {};     // item_id → onboarding_progress row
   var openTasks    = [];
   var isSelf       = false;  // viewing your own record
+  var callerRole   = null;   // the signed-in person's own role
+  var privateLoaded = false; // phone and notes were read (0043)
 
   var FIELDS = ['full_name', 'title', 'phone', 'start_date', 'role', 'status', 'notes'];
   var TABS   = ['profile', 'onboarding', 'tasks'];
@@ -145,14 +147,17 @@
   async function load() {
     isManager    = await window.adminRoles.isManager();
     selfEmployee = await window.adminRoles.employee();
+    callerRole   = await window.adminRoles.role();
 
     if (!memberId || !UUID_RE.test(memberId)) {
       showMissing('No team member was specified. Pick someone from the Team directory.');
       return;
     }
 
+    /* Not phone or notes: they are not in the team directory (0043), and
+       loadPrivate() asks for them. */
     var res = await window.sb.from('employees')
-      .select('id,email,full_name,role,title,status,start_date,phone,notes,user_id,created_at')
+      .select('id,email,full_name,role,title,status,start_date,user_id,created_at')
       .eq('id', memberId).maybeSingle();
     if (res.error) { stopLoading(); setMsg('Could not load this member: ' + res.error.message, 'err'); return; }
     if (!res.data) {
@@ -162,6 +167,7 @@
 
     member = res.data;
     isSelf = !!(selfEmployee && selfEmployee.id === member.id);
+    await loadPrivate();
     document.title = member.full_name + ' · Veyago Admin';
     stopLoading();
     document.getElementById('m-body').hidden = false;
@@ -172,6 +178,31 @@
     renderDanger();
     renderWelcome();
     await Promise.all([loadOnboarding(), loadTasks()]);
+  }
+
+  /* Phone and notes are not in the team directory (0043): owners, admins and
+     the person themself ask employee_private() for them, and it answers the
+     notes to owners and admins only. A database from before 0043 has no such
+     function (PGRST202) and still lets the row be read, so the page and the
+     database can go live in either order. */
+  async function loadPrivate() {
+    privateLoaded = false;
+    if (!isManager && !isSelf) return;
+    var res = await window.sb.rpc('employee_private', { p_employee_id: member.id });
+    if (res.error && res.error.code === 'PGRST202') {
+      var legacy = await window.sb.from('employees').select('phone,notes').eq('id', member.id).maybeSingle();
+      res = legacy.error ? legacy : { data: legacy.data ? [legacy.data] : [], error: null };
+    }
+    if (res.error) {
+      setMsg('Could not load their phone number and notes: ' + res.error.message, 'err');
+      return;
+    }
+    var row = (res.data || [])[0] || {};
+    member = Object.assign({}, member, {
+      phone: row.phone == null ? null : row.phone,
+      notes: row.notes == null ? null : row.notes
+    });
+    privateLoaded = true;
   }
 
   /* ── Handoff panel (#welcome) ────────────────────────────────────────
@@ -311,7 +342,7 @@
     var resend = document.getElementById('m-resend');
     if (resend) {
       var wasHidden = resend.hidden;
-      resend.hidden = !(isManager && member.status === 'invited');
+      resend.hidden = !(isManager && member.status === 'invited' && !ownerLocked());
       /* The slot sits between two buttons in the identity header, so a ~190
          character failure string parks itself in the page header and used to
          survive every later re-render — including the one that removes the
@@ -357,17 +388,46 @@
     return isSelf && (field === 'role' || field === 'status');
   }
 
+  /* Only an owner changes an owner (0042). For anyone else an owner's record
+     is read-only here — the database would refuse the save anyway. */
+  function ownerLocked() {
+    return member.role === 'owner' && callerRole !== 'owner';
+  }
+
+  function fieldLocked(field) {
+    if (lockedForSelf(field) || ownerLocked()) return true;
+    /* Phone and notes that could not be read are never written back: the
+       blank fields would erase them. */
+    return (field === 'phone' || field === 'notes') && !privateLoaded;
+  }
+
+  function showField(id, visible) {
+    var el = document.getElementById(id);
+    var field = el && el.closest('.field');
+    if (field) field.hidden = !visible;
+  }
+
   function renderForm() {
     FIELDS.forEach(function (f) {
       var el = document.getElementById('f-' + f);
       if (!el) return;
       el.value = member[f] == null ? '' : member[f];
-      el.disabled = !isManager || lockedForSelf(f);
+      el.disabled = !isManager || fieldLocked(f);
     });
+    /* What employee_private() answers (0043): the phone number to owners,
+       admins and the person themself, the notes to owners and admins. */
+    showField('f-phone', isManager || isSelf);
+    showField('f-notes', isManager);
+    /* Owner is not a role an admin can give. */
+    var ownerOption = document.querySelector('#f-role option[value="owner"]');
+    if (ownerOption) ownerOption.disabled = callerRole !== 'owner' && member.role !== 'owner';
+
     var save = document.getElementById('m-save');
-    save.hidden = !isManager;
+    save.hidden = !isManager || ownerLocked();
     if (!isManager) {
       slotMsg('m-form-msg', 'Only owners and admins can change these details.');
+    } else if (ownerLocked()) {
+      slotMsg('m-form-msg', 'Only an owner can change an owner’s details.');
     } else if (isSelf) {
       slotMsg('m-form-msg', 'You cannot change your own role or status — ask another owner or admin, otherwise you could lock yourself out.');
     }
@@ -376,11 +436,13 @@
   async function save() {
     var btn = document.getElementById('m-save');
     var patch = {};
+    if (ownerLocked()) return;
     FIELDS.forEach(function (f) {
       /* Skip, don't just disable — a disabled input is a UI hint, and the
-         patch must not carry role/status for your own record even if someone
-         re-enables the field in devtools. */
-      if (lockedForSelf(f)) return;
+         patch must not carry role/status for your own record, or phone and
+         notes that were never read, even if someone re-enables the field in
+         devtools. */
+      if (fieldLocked(f)) return;
       var el = document.getElementById('f-' + f);
       var v = (el.value || '').trim();
       patch[f] = v || null;
@@ -423,10 +485,12 @@
 
     var inactive = member.status === 'inactive';
 
-    document.getElementById('m-deactivate').hidden = isSelf || inactive;
+    document.getElementById('m-deactivate').hidden = isSelf || inactive || ownerLocked();
 
     document.getElementById('m-danger-note').textContent = isSelf
       ? 'This is your own account. Deactivating yourself would lock you out, so it has to be done from another owner or admin login.'
+      : ownerLocked()
+        ? 'Only an owner can deactivate an owner.'
       : inactive
         ? 'This member is deactivated and cannot sign in. Set Status back to Active above to restore access.'
         : 'Deactivating blocks their sign-in immediately and hides them from pickers. Their tasks, notes and onboarding history are kept.';
@@ -465,8 +529,12 @@
            arrive, and without it they still cannot get in. Say so plainly. */
         /* Settings cannot fix this — its Email pane is a read-only log.
            Delivery depends on RESEND_API_KEY, a Supabase secret. */
+        /* No link comes back for someone who already has a login: it would be
+           a password reset for their account in a manager's hands. */
+        var existingLogin = out.invited === false && !out.actionLink;
         slotMsg('m-resend-msg', 'The invite email did NOT send: ' + (out.emailError || 'unknown error') +
-          ' Delivery needs RESEND_API_KEY set as a Supabase secret from a terminal.', 'err');
+          ' Delivery needs RESEND_API_KEY set as a Supabase secret from a terminal.' +
+          (existingLogin ? ' They already have an account, so they can use “Forgot password?” on the sign-in page.' : ''), 'err');
         /* This is the dedicated rescue screen, so it must offer the rescue. */
         var slot = document.getElementById('m-welcome-link');
         if (slot && out.actionLink) {

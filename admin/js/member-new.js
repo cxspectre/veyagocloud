@@ -44,6 +44,7 @@
   var preflightFor = null;   // the email+role the cached verdict describes
   var dashboardItemId = null;
   var sending = false;
+  var callerRole = null;     // the signed-in person's own role
 
   function $(id) { return document.getElementById(id); }
   function show(el, on) { if (el) el.hidden = !on; }
@@ -217,6 +218,10 @@
       input.name = 'role';
       input.value = r.value;
       input.checked = draft.role === r.value;
+      /* Only an owner makes someone an owner (0042). The card stays, so an
+         admin can see that the choice is not theirs, and why. */
+      var ownersOnly = r.value === 'owner' && callerRole !== 'owner';
+      input.disabled = ownersOnly;
 
       var body = document.createElement('div');
       var t = document.createElement('div');
@@ -224,8 +229,9 @@
       t.textContent = r.title;
       var s = document.createElement('div');
       s.className = 'radio-card-sub';
-      s.textContent = r.sub;
+      s.textContent = ownersOnly ? r.sub + ' Only an owner can make someone an owner.' : r.sub;
       body.appendChild(t); body.appendChild(s);
+      if (ownersOnly) label.classList.add('is-disabled');
 
       input.addEventListener('change', function () {
         draft.role = input.value;
@@ -576,8 +582,12 @@
     /* Cosmetic guard — RLS and the function's own 403 are the real boundary —
        but it means a wrong URL shows the dashboard, not a broken form. */
     if (!(await window.adminRoles.requireManager())) return;
+    callerRole = await window.adminRoles.role();
 
     loadDraft();
+    /* A draft from before 0042, or from an owner earlier in this tab, may hold
+       a role this person cannot give. */
+    if (draft.role === 'owner' && callerRole !== 'owner') { draft.role = ''; saveDraft(); }
     fillFromDraft();
     wire();
     renderStep();

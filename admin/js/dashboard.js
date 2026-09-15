@@ -56,8 +56,13 @@
 
     var rs = await Promise.allSettled([
       window.sb.from('tasks').select('id,status,due_date,assignee_id').neq('status', 'done').limit(2000),
-      window.sb.from('finance_transactions').select('amount').gte('posted_at', monthStart).limit(5000),
+      /* By what each transaction is, as Finance counts it (finance-figures.js). */
+      window.financeFigures.load(window.sb, function (query, columns) {
+        return query.select(columns).gte('posted_at', monthStart);
+      }),
       window.sb.from('publish_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+      /* Before 0041, the studio's currency is its first active account's that is a code. */
+      window.sb.from('finance_accounts').select('currency').eq('active', true).order('name').limit(20),
     ]);
 
     function ok(i) { return rs[i].status === 'fulfilled' && !rs[i].value.error ? (rs[i].value.data || []) : null; }
@@ -103,13 +108,19 @@
 
     /* Card 3: net this month */
     if (tx) {
-      var net    = tx.reduce(function (s, r) { return s + Number(r.amount); }, 0);
-      var fmtNet = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(net);
+      /* Income less expenses by what each transaction is, in the studio's
+         currency — another currency named, never added in. */
+      var currency = await window.financeFigures.studioCurrency(window.sb, ok(3) || []);
+      var month  = window.financeFigures.totals(tx, currency);
+      var net    = month.net;
+      var fmtNet = window.financeFigures.format(net, month.currency, 0);
       cards.push({
         href: '/admin/finance',
         color: net >= 0 ? '#34c759' : '#ff3b30',
-        n: fmtNet,
-        n2: tx.length + ' transaction' + (tx.length === 1 ? '' : 's'),
+        n: escHtml(fmtNet),
+        n2: month.otherCurrencies.length
+          ? escHtml('also ' + month.otherCurrencies.join(', '))
+          : tx.length + ' transaction' + (tx.length === 1 ? '' : 's'),
         label: 'Net this month',
         icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>',
       });

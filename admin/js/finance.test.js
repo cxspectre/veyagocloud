@@ -11,6 +11,7 @@ const vm = require('node:vm');
 const { JSDOM, VirtualConsole } = require('jsdom');
 
 const SRC = fs.readFileSync(path.join(__dirname, 'finance.js'), 'utf8');
+const FIGURES = fs.readFileSync(path.join(__dirname, 'finance-figures.js'), 'utf8');
 
 const FIXTURE = `<!doctype html><body>
   <p id="msg-overview"></p>
@@ -31,10 +32,34 @@ function fakeSb(tables) {
       gte: (col, val) => builder(table, rows.filter((r) => r[col] >= val)),
       order: () => builder(table, rows),
       limit: (n) => builder(table, rows.slice(0, n)),
+      range: (from, to) => builder(table, rows.slice(from, to + 1)),
       then: (resolve) => resolve({ data: rows, error: null, count: rows.length }),
     };
   }
-  return { from: (table) => builder(table, (tables[table] || []).slice()) };
+  /* A table given as { error } answers every query with that error. */
+  function failing(error) {
+    const chain = {
+      select: () => chain, eq: () => chain, gte: () => chain, order: () => chain, limit: () => chain, range: () => chain,
+      then: (resolve) => resolve({ data: null, error }),
+    };
+    return chain;
+  }
+  return {
+    /* A function the fixture answers, or one that is not there (PGRST202). */
+    rpc: async (name) => ((tables.__rpc && tables.__rpc[name])
+      || { data: null, error: { code: 'PGRST202', message: 'Could not find the function' } }),
+    from: (table) => (tables[table] && tables[table].error
+      ? failing(tables[table].error)
+      : builder(table, (tables[table] || []).slice())),
+  };
+}
+
+/* What finance_figures (0041) answers for a transaction: the row with what it
+   counts towards — by its sign, unless the fixture says otherwise. */
+function countedBySign(t) {
+  if (t.counts_as !== undefined) return t;
+  const amount = Number(t.amount);
+  return { ...t, counts_as: amount > 0 ? 'revenue' : amount < 0 ? 'expense' : null };
 }
 
 /* Every fixture date is relative to this one "today". finance.js reads the
@@ -91,7 +116,7 @@ function freezeClock(window, iso) {
   window.Date = FrozenDate;
 }
 
-async function mount(transactions) {
+async function mount(transactions, options = {}) {
   const dom = new JSDOM(FIXTURE, {
     url: 'https://veyago.cloud/admin/finance',
     runScripts: 'outside-only',
@@ -104,13 +129,16 @@ async function mount(transactions) {
   window.adminRoles = { requireManager: async () => true };
   window.admin = fake.admin;
   window.sb = fakeSb({
-    finance_accounts: [{ id: 'a1', name: 'Mercury Checking', kind: 'bank', provider: 'mercury', currency: 'USD', active: true, last_synced_at: null }],
+    finance_accounts: options.accounts || [{ id: 'a1', name: 'Mercury Checking', kind: 'bank', provider: 'mercury', currency: 'USD', active: true, last_synced_at: null }],
+    __rpc: options.rpc || null,
     finance_categories: [],
     finance_transactions: transactions,
+    finance_figures: options.figures || transactions.map(countedBySign),
     finance_invoices: [],
   });
   window.adminReady = Promise.resolve({ user: { email: 'test@veyago.cloud' } });
 
+  vm.runInContext(FIGURES, dom.getInternalVMContext());
   vm.runInContext(SRC, dom.getInternalVMContext());
   for (let i = 0; i < 8; i++) await new Promise((r) => setTimeout(r, 0));
 
@@ -202,6 +230,61 @@ test('a month with zero net activity still draws a visible sliver, not a zero-he
   assert.equal(rects.length, 6, 'one bar per month even when five are empty');
   const heights = rects.map((r) => Number(r.getAttribute('height')));
   assert.ok(heights.every((h) => h >= 2), 'every bar, including empty months, is at least the 2px visibility floor');
+});
+
+/* ── What counts: by what each transaction is (finance_figures, 0041) ──── */
+
+test('Income and Expenses count by what each transaction is: a row the view counts as neither is left out of both', async () => {
+  const { statCardCalls } = await mount([tx(1, 2, 5000), tx(2, 3, -1000), { ...tx(3, 2, 870), counts_as: null }, { ...tx(4, 2, -2000), counts_as: null }]);
+  const [income, expenses, net] = statCardCalls[0];
+  assert.equal(income.n, '$5,000.00');
+  assert.equal(expenses.n, '$1,000.00');
+  assert.equal(net.n, '$4,000.00');
+});
+
+test('another currency is named under the month\'s figures, never added into them', async () => {
+  const { statCardCalls } = await mount([tx(1, 2, 5000), { ...tx(2, 2, 900), currency: 'EUR' }]);
+  const [income, , net] = statCardCalls[0];
+  assert.equal(income.n, '$5,000.00');
+  assert.equal(income.n2, 'also EUR');
+  assert.equal(net.n2, 'also EUR');
+});
+
+test('the month is counted in the studio\'s currency, as the workspace shows it, not the first account\'s', async () => {
+  const { statCardCalls } = await mount([tx(1, 2, 5000), { ...tx(2, 2, 900), currency: 'EUR' }], {
+    accounts: [{ id: 'a0', name: 'A euro account', kind: 'bank', provider: 'mercury', currency: 'EUR', active: true, last_synced_at: null }],
+    rpc: { studio_currency: { data: 'USD', error: null } },
+  });
+  const [income] = statCardCalls[0];
+  assert.equal(income.n, '$5,000.00');
+  assert.equal(income.n2, 'also EUR');
+});
+
+test('a currency anyone typed is escaped where the figures name it', async () => {
+  const { statCardCalls } = await mount([tx(1, 2, 5000), { ...tx(2, 2, 900), currency: '<img src=x onerror=alert(1)>' }]);
+  const [income] = statCardCalls[0];
+  assert.doesNotMatch(income.n2, /<img/i, 'statCards puts n2 into the page as it is given');
+  assert.equal(income.n2, 'also &lt;IMG SRC=X ONERROR=ALERT(1)&gt;');
+});
+
+test('before 0041 the ledger is read by its sign, as it was', async () => {
+  const { statCardCalls } = await mount([tx(1, 2, 5000), tx(2, 3, -1000)],
+    { figures: { error: { code: 'PGRST205', message: 'Could not find the table public.finance_figures' } } });
+  const [income, expenses] = statCardCalls[0];
+  assert.equal(income.n, '$5,000.00');
+  assert.equal(expenses.n, '$1,000.00');
+});
+
+test('any other error says the overview could not load, rather than showing zeros', async () => {
+  const { window, statCardCalls } = await mount([tx(1, 2, 5000)], { figures: { error: { code: '42501', message: 'permission denied' } } });
+  assert.equal(statCardCalls.length, 0);
+  assert.match(window.document.getElementById('msg-overview').textContent, /Could not load overview: permission denied/);
+});
+
+test('the chart nets each month by what its transactions are', async () => {
+  const { window } = await mount([tx(1, 2, 1000), { ...tx(2, 3, 9000), counts_as: null }, tx(3, 3, -3000)]);
+  assert.match(lastRect(window).getAttribute('style'), /fill:var\(--ac-danger\)/,
+    'a payout of 9,000 into the bank does not turn a losing month into a profit');
 });
 
 /* ── Recent activity rows: rebuilt on .adm-item ──────────────────────────
