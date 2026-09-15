@@ -39,14 +39,22 @@ it; `veyago.cloud/workspace/` is a permanent redirect for old links.
 
 Two helpers do the aggregate work so a screen is one round trip:
 
-- `workspace_overview()` → the four KPI tiles as one `jsonb`.
+- `workspace_overview(p_tz)` → the four KPI tiles as one `jsonb`, with days and
+  months counted in the viewer's time zone (0041).
 - `client_project_progress` → a view: each live project with its task counts
   and a computed completion percentage. Progress is **not stored**; a stored
   percentage drifts the moment a task changes underneath it.
-- `revenue_series(months)` → a row per month, **including empty ones**, because
-  a gap in a line chart reads as missing data rather than as a zero.
-- `revenue_mix(months)` → this month's income by category. Uncategorised income
-  is labelled rather than dropped, so the slices always add up to the total.
+- `revenue_series(p_months, p_tz, p_currency)` → a row per month in one
+  currency, **including empty ones**, because a gap in a line chart reads as
+  missing data rather than as a zero.
+- `revenue_mix(p_months, p_tz, p_currency)` → this month's income by category,
+  in one currency. Uncategorised income is labelled rather than dropped, so the
+  slices always add up to the total.
+- `studio_currency()` → the currency the Overview shows money in: the
+  `base_currency` workspace setting, else the first active finance account's
+  currency, else USD. `revenue_by_currency(today, last_posted)` and
+  `overview_window(today)` are the per-currency sums and the "last month up to
+  the same day" window behind the tiles (0041).
 
 ## Who can see what
 
@@ -62,7 +70,189 @@ Two helpers do the aggregate work so a screen is one round trip:
 | A studio mailbox | – | read | read |
 | A personal mailbox | – | only their own | **only their own** |
 | A mail signature | – | only their own | **only their own** |
+| A colleague's phone and notes | – | their own phone number only | everything, through `employee_private()` (0043) |
+| Roles and status | – | – | everyone's but their own; only an owner makes or changes an owner (0042) |
 | `integration_secrets` | – | – | – |
+
+**Staff means staff who entered their code (0040).** For an account with a
+verified second factor, a session that has not entered it (`aal1`) is nobody:
+`employee_role()` and `active_employee_id()` answer null, so every role check,
+staff RPC and Edge Function says "not staff", and every table in `public` with
+RLS — plus `storage.objects` — carries a restrictive policy, "second factor
+required", that refuses it outright, including the few policies that never ask
+for a role. Accounts without a verified factor are unaffected. A new table needs
+that policy too: `06-second-factor.sql` fails until it has it. `is_manager()`
+answers false, never null, for a session with no role, so a check written `if
+not is_manager() then raise` cannot be passed by one — `cleanup_orphan_notes()`
+could be, by any signed-in account without an employee row, until 0040. The SQL
+editor, which has no `auth.uid()`, still sweeps notes.
+
+**The Overview's figures count the way they read (0041).** `workspace_overview`,
+`revenue_series` and `revenue_mix` take the viewer's time zone (`p_tz`, an IANA
+name; anything unrecognised is UTC), so "today" and "this month" are the
+viewer's. Last month is compared up to the same day of the month, not to its
+end. Money is never added across currencies: the figures are in the studio's
+currency (`studio_currency()`), named in the answer, with every currency listed
+in `revenue_by_currency` and `invoices_outstanding.by_currency` — and an
+invoice tile's count, amount and due date all belong to the one currency it
+shows. Every new argument has a default, so a caller that passes none gets UTC
+and the studio's currency.
+
+**Revenue is money that reached the studio, counted once (0041).** Each
+transaction says what it is — `finance_transactions.kind`, written by the sync
+that stored it: income, a refund of income, a fee, other spending, a payout
+from Stripe to the bank (or Stripe taking a balance back), a transfer between
+the studio's own accounts, an adjustment, or bank interest — and the
+`finance_figures` view decides from that, never from the sign alone, what each
+transaction counts towards (`counts_as`) and by how much (`counted`). Revenue is
+money in from clients less what went back; expenses are spending less what came
+back. Transfers, adjustments and interest count as neither, and a payment still
+pending counts once it has arrived.
+
+A card payment counts once: when Stripe's payout of it arrives in the bank, net
+of Stripe's fees and of the refunds the payout left out. Stripe's own rows —
+charges, refunds and fees — are the detail behind that payout, and count as
+neither. A payout no synced bank account received counts from Stripe's side:
+when no posted payout of that amount, the other way, in that currency, reached
+a synced account from the day before it to fourteen days after. A deposit the
+bank still shows as pending has not arrived, so until it posts Stripe's payout
+counts in its place; a Stripe payout still pending counts as neither. So a
+month reads the same however long ago Stripe was last synced; counting Stripe's
+charges instead was off by up to a month's card income at the edges of what the
+Stripe sync had stored. A card payment shows in the month its deposit posted —
+a few days after the charge on Stripe's daily schedule, the next month on a
+monthly one — or, while no deposit matches its payout, on the day Stripe paid
+it out. Four limits: a payout converted into another currency on its way to the
+bank counts in both; two payouts of the same amount within those fifteen days —
+one to a synced account, one to an account the workspace does not see — count
+as one; while a payout is on its way, a deposit of the same amount from the day
+before it onwards stands in for it, so a retainer paid out day after day can
+read a day or two's payouts short until they land; and a payout that fails or
+is cancelled comes back to Stripe as a payout of its own, which counts against
+revenue on the day it comes back while the failed payout counted on the day it
+was sent — in two different months when a month ends in between — and if the
+same amount is paid out again and reaches the bank within fourteen days, that
+deposit stands in for the failed payout too, so revenue reads the amount short.
+
+The figures read only the days they show: this month up to the viewer's today,
+or UTC's when the syncs have already dated income a day ahead, but never past
+the month's last day — on the evening of September 30 in New York, what the
+syncs dated October 1 is October's, in the tile, the chart and the mix alike —
+and last month up to that same day, which `revenue_prev_through` names. In the
+revenue mix, a category that gave back more than it took in is left out, and
+each share is of the categories listed, so the shares add up to 100. The
+finance policies ask who is looking once a query rather than once a row.
+
+`sync-stripe` stores each balance transaction in whole units, converted from
+its currency's smallest unit, and what Stripe kept of any transaction as a fee
+row of its own (`_shared/stripe-kind.ts`); a window holding more than 4,000
+transactions is stored only in part, and the sync says so. `sync-mercury` maps
+Mercury's transaction kinds (`sync-mercury/kind.ts`). Rows stored before 0041,
+and any Stripe or Mercury row inserted or updated without a kind, are given one
+by `finance_kind_guess()`. A Stripe row is a payout when its description starts
+with one ("STRIPE PAYOUT", `payout_failure`), not when it only mentions one. A
+Mercury row is Stripe's when its counterparty is one of Stripe's own names —
+never Pinstripe or The Stripe Agency — or when the bank's description starts
+with the word, as `sync-mercury` reads it too: so a client whose own name starts
+with Stripe, on a wire described "STRIPE STUDIO LLC WIRE", is taken for a
+payout. That still counts as revenue, but it can stand in for a Stripe payout of
+the same amount, and a payment to that client guessed the same way counts
+against revenue rather than as an expense. The guess cannot tell a transfer
+between the studio's own accounts from other money, and stays until a sync
+writes the real kind, even when an older sync updates the row later without
+one — so deploy `sync-stripe` and `sync-mercury`, which both write it, right
+after 0041, and sync again over anything stored before. A row entered by hand
+or imported from a file without a kind is read by its sign.
+
+**Only an owner makes an owner, and there is always one (0042).** Owners and
+admins add and change team members; nobody deletes one through the API. For
+anyone signed in, a trigger refuses linking a sign-in to a row (only an
+invitation does that), changing their own role or status, changing a member's
+id or the address of someone who can sign in, and creating, granting or
+changing an owner without being one. The service role never moves a member onto
+a different sign-in. For everyone — the service role and the SQL editor
+included — a change that would leave no owner who can sign in is refused, and so
+is deleting the last owner's auth user: make someone else an owner first. `invite-employee` writes with the service role, so it asks
+the same questions itself (`_shared/team-rules.ts`); `activate_self()` still
+moves the caller's own row from invited to active.
+
+**A colleague's phone and notes are not in the directory (0043).** Signed-in
+people can select every column of `employees` except `phone` and `notes`.
+`employee_private(id)` answers the phone number to owners, admins and the person
+themself, and the notes to owners and admins. A column added to `employees`
+later cannot be read through the API until it is granted.
+
+**A colleague's mailbox connection is theirs (0044).** Everyone — owners and
+admins included — reads the studio's connections and their own; a colleague's
+personal mailbox, its address and its last error are not theirs to read,
+through `integration_connections` or `integration_status`. The Edge Functions
+read connections with the service role. The calendar functions read and book
+into the calendar a connection names — `/users/{address}` for a shared one,
+which needs `Calendars.ReadWrite.Shared` and so a reconnect of any calendar
+connected before it — and a booking about client work goes into the studio
+calendar rather than the booker's own (`_shared/calendar-choice.ts`).
+
+The functions draw the same line (security review, 2026-09-14;
+`_shared/connection-rules.ts`, `_shared/connection-check.ts`). None of them acts
+on a colleague's personal connection; reads a studio connection that is a team
+member's own address, records no consenter, or was connected before its address
+was checked against the directory (its grant lacks `User.ReadBasic.All`); or
+reads a shared calendar through a grant without `Calendars.ReadWrite.Shared`.
+Each of those is a reconnect, decided from the stored grant. A disconnected
+calendar is never switched back on. A calendar that needs reconnecting is never
+swapped for another: client work is then saved in the workspace, and a private
+event is refused. One whose last sync failed still takes bookings — nothing
+syncs a calendar again by itself — and Graph's answer to the booking says
+whether it really is broken; client work a studio calendar will not take is
+saved in the workspace alone. Sending, read and starred changes and ticket
+replies refuse a studio mailbox that fails the same rules, as the syncs refuse
+to read it. Anyone reconnects their own mailbox; owners and admins connect new
+ones, saying whose, and reconnect the studio's — and to anyone else a
+colleague's connection is answered as none at all. An owner or admin can still
+tell that a colleague has connected an address, since asking to connect it
+answers that it is connected for someone else; what stays hidden from them is
+the connection itself — its status, its errors and its mail.
+
+**Going live with the calendar fix**, in this order:
+
+1. Add `Calendars.ReadWrite.Shared` and `User.ReadBasic.All` under API
+   permissions in Entra, with admin consent if the tenant requires it. The
+   callback looks each connected address up in the directory, so a sign-in name
+   the team does not store cannot pass for a studio mailbox, and an alias the
+   directory does not list is refused: connect a mailbox by its main address.
+   Only a work account in the studio's organisation can look addresses up —
+   guest and personal Microsoft accounts can connect their own mailbox, and
+   nothing read through someone else's grant.
+2. Deploy `microsoft-connect`, `sync-outlook-calendar`, `create-calendar-event`,
+   `sync-outlook-mail`, `send-mail`, `update-mail-state` and `send-ticket-reply`
+   together — each bundles its own copy of `_shared` — and `microsoft-callback`
+   and `sync-mail-scheduled` with `--no-verify-jwt`: Microsoft's redirect and
+   the schedule carry no Supabase token, and without the flag both answer 401.
+3. Count what a studio calendar synced through someone's consent (the dry run
+   prints it), and decide what to remove before the next sync.
+4. Reconnect every calendar and mailbox — the callback's checks run again on
+   each — then run a manual sync. A studio mailbox or calendar that is not
+   reconnected stays off: its grant predates the directory check, and every
+   function answers that it needs a reconnect.
+
+**Mail that leaves the inbox in Outlook leaves it here (0045).** The scheduled
+sync hands what the inbox's delta reports as removed to `mail_left_folder()` —
+after asking Graph whether each message really has gone — which files those
+messages as `archive` and moves their conversation out of the inbox once none of
+its messages is left there: to Sent while it holds a reply of ours, which the
+workspace lists. Once a day the sync also compares the inbox with a listing of
+Outlook's, for what the delta never reported — everything filed away before
+0045 among it. Nothing is deleted, in the workspace or in Outlook, and a message
+moved back into the inbox takes over the copy that was filed away
+(`store_mail_batch`). Messages stored before 0038 get a folder, and none is
+stored without one from now on. Push 0045 **before** deploying
+`sync-mail-scheduled`: until the migration is live the sync leaves removals
+alone and says so in its log, rather than failing. Pause the mail schedule
+while it is pushed: 0045 checks every stored message as it adds its rule,
+holding `mail_messages` for that long, and a sync storing mail meanwhile would
+wait on it or time out. Push it when nobody is opening tickets from mail or
+removing a mailbox, too: either takes the tables in the other order, and should
+they meet, Postgres cancels 0045, which can simply be pushed again.
 
 Since 0039, owning a project is a permission: its owner adds the members who
 can open its files. So only an owner/admin, or the project's current owner, can
@@ -109,6 +299,7 @@ https://vtbvhhilucxroqoaohjb.supabase.co/functions/v1/microsoft-callback
 - **API permissions** → Add → Microsoft Graph → **Delegated**:
   `Mail.Read`, `Mail.Send`, `Mail.ReadWrite`, `Mail.Read.Shared`,
   `Mail.Send.Shared`, `Mail.ReadWrite.Shared`, `Calendars.ReadWrite`,
+  `Calendars.ReadWrite.Shared`, `User.ReadBasic.All`,
   `User.Read`, `offline_access`. Grant admin consent if your tenant requires it.
 - **Certificates & secrets** → New client secret. Azure shows the **Value**
   exactly once — that is what you copy, not the Secret ID.
@@ -157,6 +348,8 @@ curl -X POST https://vtbvhhilucxroqoaohjb.supabase.co/functions/v1/sync-outlook-
 | `Mail.ReadWrite` | drafts (every workspace send is one), attachments of 3 MB and up, and read/starred state that reaches Outlook |
 | `Mail.Read.Shared`, `Mail.Send.Shared`, `Mail.ReadWrite.Shared` | the same three on a shared mailbox such as hello@veyago.cloud |
 | `Calendars.ReadWrite` | read the diary and put things in it |
+| `Calendars.ReadWrite.Shared` | the same for a studio calendar, which is a shared mailbox's diary rather than the consenting person's |
+| `User.ReadBasic.All` | look a connected address up in the directory, so a studio connection cannot be someone's own mailbox under a sign-in name the team does not store |
 | `User.Read` | which mailbox was actually authorised |
 | `offline_access` | without it there is no refresh token at all |
 
@@ -344,7 +537,15 @@ any connected mailbox, so with the studio's disconnected a customer could be
 answered from someone's private address. With no studio mailbox — or if Graph
 refuses — it falls back to Resend, the path invites and invoices already use.
 Losing a reply is worse than sending it from the wrong place. The response says
-which was used (`via`).
+which was used (`via`). When email is not configured either, the reason says
+why no mailbox sent it: none is connected, the studio's needs reconnecting or
+could not be checked just now, or Outlook refused.
+
+A person can send 20 replies in five minutes. The next is refused with 429
+before anything is saved, so what was written stays in the reply box; notes do
+not count. Replies are counted as they are stored — before they are sent — and
+checked again once the new one is, so replies sent all at once cannot slip past
+together; one past the limit stays in the conversation, marked as not sent.
 
 The insert runs as the **caller**, through the anon key with their own JWT, so
 RLS still decides whether they may post and whose name goes on it. Only the
@@ -392,11 +593,11 @@ All six Edge Functions are live on the project:
 | Function | Auth | Needs |
 |---|---|---|
 | `send-ticket-reply` | staff | `RESEND_API_KEY`, `EMAIL_FROM` — already set |
-| `microsoft-connect` | manager | the Microsoft secrets |
+| `microsoft-connect` | staff — something new, or the studio's, takes an owner or admin; anyone reconnects their own | the Microsoft secrets |
 | `microsoft-callback` | **public** (signed `state`) | the Microsoft secrets |
-| `sync-outlook-mail` | manager | a connected mailbox |
-| `sync-outlook-calendar` | manager | a connected calendar |
-| `create-calendar-event` | staff | a connected calendar (409 → local-only) |
+| `sync-outlook-mail` | manager — the studio's mailboxes and their own | a connected mailbox |
+| `sync-outlook-calendar` | staff — the studio's calendars and their own | a connected calendar |
+| `create-calendar-event` | staff | a connected calendar (409 `localOnly` → saved in the workspace; 503 → the booker's own calendar needs reconnecting) |
 
 Verified after deploying: every authenticated one answers `401` without a
 token, and `microsoft-callback` — which is public by necessity, since Microsoft
@@ -415,8 +616,9 @@ The other half of the loop. Every reply we send carries `[#VYG-142]` in its
 subject; `sync-outlook-mail` hands each inbound message to `route_mail_to_ticket()`,
 which finds that ticket, appends the customer's words to the thread as an
 inbound message attributed to *them*, links the mail thread to the ticket, and
-**reopens it if it had been resolved** — a customer who has replied is waiting
-on us again.
+**reopens it if it was resolved or waiting** — a customer who has replied is
+waiting on us again (0046). A deleted ticket takes no replies and is never
+reopened.
 
 Idempotent: `ticket_messages.mail_message_id` is unique, so re-running a sync
 never doubles a reply. A routing failure is logged and the sync carries on —
@@ -426,7 +628,15 @@ the mail is already saved, and the worst case is a reply someone files by hand.
 message becoming one turns the queue into a second inbox, newsletters and all.
 The manual half is `create_ticket_from_thread()`, wired to the "Create ticket"
 button on a mail thread: it opens the ticket, carries the conversation so far
-into it, and returns the existing one if the thread already has it.
+into it, and returns the existing one if the thread already has it — or opens a
+new one when that ticket was deleted (0046).
+
+Merges take the mail tables' locks first where they can. `merge_tickets()`
+(0054) takes `mail_threads` in SHARE ROW EXCLUSIVE mode before it locks any
+ticket row, the order `store_mail_batch()` takes them in. `merge_companies()`
+and `merge_contacts()` (0053) do not yet, so now and then one can deadlock with
+a mail sync filing mail for the same people: Postgres stops one of the two, and
+running it again succeeds.
 
 ## Booking something
 
@@ -439,10 +649,16 @@ It reads the created event back through the same parser the sync uses, so the
 stored row is byte-identical to what the next sync would write — otherwise the
 first sync after booking silently "corrects" a row that was already right.
 
-With no calendar connected it answers **409 with `localOnly: true`**, and the
+With no calendar connected — or for anything headed to the studio calendar while
+it needs reconnecting, can no longer refresh its sign-in, or will not take the
+event (Graph 401, 403 or 404) — it answers **409 with `localOnly: true`**, and the
 workspace inserts a local event itself through the RLS policy that exists for
-exactly that. The toast says which happened, because an event only the
-workspace knows about is a different thing from one that is now on your phone.
+exactly that. Any other failure saves nothing. A private event whose own
+calendar needs reconnecting, or can no longer refresh its sign-in, is refused
+with **503**: saved locally, every member of staff would read it. Client work is an event linked to a project, company or contact, never
+one guessed from its kind or the words typed. The toast says which happened,
+because an event only the workspace knows about is a different thing from one
+that is now on your phone.
 
 ## Sending mail from the workspace
 
@@ -529,9 +745,9 @@ person's own inbox into a mailbox all staff can see.
 
 - A folder's first round looks back three days. A round that starts again after
   time away — a mailbox waiting to be reconnected, a link Graph has expired —
-  reaches back to just before the schedule last finished a whole run
-  (`delta_synced_at`, which a manual sync does not move), at most 14 days; run
-  a manual sync for anything older.
+  reaches back to just before the schedule last caught up on both folders
+  (`delta_synced_at`, which neither a manual sync nor a run that stopped
+  part-way moves), at most 14 days; run a manual sync for anything older.
 - A link Graph says has gone (410) starts the folder again at once. One it
   refuses outright (400, 404) gets three runs first. An outage, a rate limit or
   a database error never costs the link.
@@ -539,8 +755,31 @@ person's own inbox into a mailbox all staff can see.
 
 A manual sync (`sync-outlook-mail`) never touches the cursor, so it cannot make
 the schedule skip anything. A per-mailbox lock (`claim_mail_sync`) keeps the
-schedule, a manual sync and a long run from overlapping. A message deleted or
-taken out of a synced folder in Outlook stays in the workspace.
+schedule, a manual sync and a long run from overlapping.
+
+Mail deleted, archived or moved out of the inbox in Outlook leaves the workspace
+inbox too (0045). The delta reports it gone, Graph is asked whether it really is
+(`_shared/inbox-sweep.ts`), and `mail_left_folder()` files it — nothing is
+deleted, here or in Outlook. A conversation leaves the inbox once none of its
+messages is left there: for Sent while it holds a reply of ours, otherwise for
+the archive, which the workspace does not list — a starred one stays under
+Starred. What leaves Sent Items changes nothing. Once a day the schedule also
+compares the inbox with a listing of Outlook's, for what the delta never
+reported: mail filed away before 0045, while a mailbox waited to be reconnected,
+while a link had gone, or received before a delta round reaches. The listing
+takes in Outlook's inbox as far back as its newest 3,000 messages, and every
+workspace inbox message in that span is compared. Graph is asked about at most
+150 a run — a different 150 each day when it found more — and while a run files
+something the next one carries on; a message Graph refuses to answer about
+stays, and the rest are still asked about. When Graph asks for a pause, or a
+run's time runs out before it has filed anything, the comparison tries again in
+an hour rather than a day. A run stops starting work after 90 seconds — the
+platform stops a request at about 150, and a stopped run releases and records
+nothing. A page whose removals are not all confirmed yet is read again next run,
+for up to six runs in a row, about half an hour. After that the sync goes on
+without them and says so — in its log, and on the mailbox in Mail until the
+next daily comparison has asked about that mail again: one message Graph keeps not answering
+about must not stop all the mail that arrives after it.
 
 Everything is stored through `store_mail_batch()`, one call per batch, which
 upserts the messages and brings each conversation in line with **every** message
@@ -588,7 +827,15 @@ without that, a shared mailbox would be read as the consenting person's own.
 
 `microsoft-connect` refuses a different owner for a mailbox that already has a
 row, and two first connections of the same address at once cannot overwrite
-each other's owner. A manager deletes the studio's connections or their own,
+each other's owner. It reconnects the studio's mailboxes for an owner or admin,
+and anyone's own for them — never a colleague's. Something new takes an owner or
+admin, who says whose it is; a studio connection cannot be a team member's own
+address, nor a personal one a colleague's, and the callback checks both again
+before it stores the grant — and refuses an address the directory does not know
+as an account whenever the mailbox is read through someone else's grant, since
+an alias could be anyone's mailbox. A row refused before it ever held a grant,
+or whose consent was abandoned, holds nothing: an owner or admin starts it again,
+with the owner it has or the one they name. A manager deletes the studio's connections or their own,
 not a colleague's — the row takes the grant and every stored message with it.
 Handing a mailbox to someone else means removing the connection and connecting
 it fresh; disconnecting keeps the row, and its owner. The workspace has no way to
@@ -624,8 +871,9 @@ only the scopes it was consented with, so `Mail.ReadWrite` arrives with the next
 consent; until then `send-mail` answers 409 with `reconnect: true`. Add
 `Mail.ReadWrite` and `Mail.ReadWrite.Shared` under **API permissions** in Entra
 ID first. A reconnect keeps the mailbox's owner and consenting account, so
-`employeeId` no longer has to be repeated — leaving it out used to turn a
-personal mailbox into a shared one.
+`employeeId` no longer has to be repeated for a reconnect — leaving it out used
+to turn a personal mailbox into a shared one. Connecting something new still
+takes it: `null` for the studio, or the employee it belongs to.
 
 **Only then ship the workspace's read and star change** (veyago-workspace
 `dist` v36). It calls `update-mail-state` and deliberately has no fallback to
@@ -643,8 +891,8 @@ an error instead of quietly doing half the job.
   `mail-attachments` once it is sent. Files uploaded for a message that was
   never sent — the compose window closed, or the send failed — stay until
   someone removes them.
-- **Mail stored before 0038** has no Message-ID or folder until a sync sees it
-  again. One that moves in Outlook before then is stored a second time under its
-  new Graph id rather than recognised as the same message.
+- **Mail stored before 0038** has no Message-ID until a sync sees it again (0045
+  gave it a folder). One that moves in Outlook before then is stored a second
+  time under its new Graph id rather than recognised as the same message.
 - **Invoice creation** from the workspace — Finance reads `finance_invoices`,
   which is still written from `/admin`.
