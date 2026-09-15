@@ -35,10 +35,11 @@ without a token stays green.
 | `17-project-activity.sql` | a task added, done, reopened or deleted, and a note or file added or removed, is logged under its project; a file's name shows only to people who can see the file; activity stored before 0052 is filed under its project too; staff cannot write activity directly |
 | `18-crm-functions.sql` | a contact and their company are made in one call; merging two companies or two contacts moves every reference to the one kept, and a merge that would collide or loop is refused; a company is given a client number when it first becomes a client, and the app never writes one. The suite uses about five client numbers on the project it runs against and hands them back, and its last section briefly locks `crm_companies` and `finance_invoices` while it swaps `crm_merge_references()`, until the rollback |
 | `19-ticket-merge.sql` | merging one ticket into another moves its messages, notes and conversations and adds a note to both; the refusals hold; a reply that quotes the merged ticket's number, or comes in its conversation, reaches the ticket kept |
+| `21-ticket-workflow.sql` | opening a ticket from a conversation keeps the sender's raw name and address even when the CRM has no contact for them; a reply sent from Mail or Outlook, not through the ticket's own reply box, is filed on the ticket its conversation is attached to, with no author, and is not filed again if the sync sees it twice or if send-ticket-reply already linked it itself; a conversation with no live ticket stays mail; response targets are exactly the four priorities support_tickets.priority checks against, staff read them and only a manager changes the minutes; a new ticket's due-by times come from its priority and move when the priority does; a ticket attachment is recorded only once it is actually uploaded, with the size and type storage actually has; whoever uploaded a file or a manager removes it, nobody else, and anon reaches none of it; email_log accepts its two new kinds |
 
-`06` to `19` test migrations 0040 to 0054: until those are live they fail, so
-dry-run them first — each suite with the migrations applied inside its own
-transaction, and rolled back with it.
+`06` to `19` test migrations 0040 to 0054, and `21` tests 0056: until those are
+live they fail, so dry-run them first — each suite with the migrations
+applied inside its own transaction, and rolled back with it.
 
 Each suite prints one row per check with `PASS` / `FAIL`. The runner exits
 non-zero if any row says FAIL.

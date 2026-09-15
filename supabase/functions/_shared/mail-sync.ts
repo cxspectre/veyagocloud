@@ -1,12 +1,19 @@
 /* Pulling mail from Graph, and storing it.
  *
  * Shared by the manual sync (sync-outlook-mail), the scheduled one
- * (sync-mail-scheduled), send-mail — which stores its own sent copy exactly the
- * way the next sync would — and send-ticket-reply, which only sends.
+ * (sync-mail-scheduled), and send-mail, which stores its own sent copy
+ * exactly the way the next sync would. send-ticket-reply sends through
+ * graphRequest() too but does not store here — it only stamps its own
+ * ticket_messages row with Graph's Message-ID, and leaves the actual storing
+ * to whichever of these runs next.
  *
  * Storing is one database call per chunk — store_mail_batch() in 0038 — which
  * upserts the messages and derives each conversation's folder, read and
- * starred state from every message it holds, atomically.
+ * starred state from every message it holds, atomically. Since 0056 it also
+ * routes an outbound message (a reply sent from Mail or Outlook, or one
+ * send-ticket-reply already stamped) and says which tickets a CUSTOMER's
+ * reply landed on (repliedTickets) — storeMessages tells their assignees
+ * (ticket-notify.ts), best-effort, so this never fails the store itself.
  *
  * Every Graph call goes through graphRequest(), which asks graph-guard.ts
  * first: nothing here can delete, move or copy mail, whatever builds the URL.
@@ -20,11 +27,20 @@ import { markNeedsReauth } from './graph-token.ts';
 import { directionFor, failureStatusOf, ownAddresses } from './mail-store.ts';
 import { removedIds } from './delta-loop.ts';
 import { mailboxPath } from './mailbox.ts';
+import { notifyRepliedTickets } from './ticket-notify.ts';
 import {
   SWEEP_EVERY_HOURS, SWEEP_LOOKAHEAD, SWEEP_MAX, SWEEP_RETRY_HOURS, confirmedGone, coveredSince, goneFromInbox,
   isTransient, sweepDue, sweepDueAgainIn, sweepSettlesNote, sweepSlice,
 } from './inbox-sweep.ts';
 import type { FolderLookup } from './inbox-sweep.ts';
+
+/* Where a ticket lives in the workspace, not the marketing site's admin —
+ * the same env var notify-ticket/index.ts reads, default
+ * https://workspace.veyago.cloud. */
+function ticketUrl(number: number): string {
+  const site = (Deno.env.get('WORKSPACE_URL') ?? 'https://workspace.veyago.cloud').replace(/\/+$/, '');
+  return `${site}/#tickets/${number}`;
+}
 
 export const GRAPH = 'https://graph.microsoft.com/v1.0';
 const MAX_PAGES = 50;
@@ -255,6 +271,7 @@ export async function storeMessages(
   let threadIds = new Map<string, string>();
   let messages = 0;
   let routed = 0;
+  const repliedTickets = new Set<string>();
   for (const chunk of chunks(rows)) {
     const { data, error } = await admin.rpc('store_mail_batch', {
       p_connection: conn.id,
@@ -265,7 +282,20 @@ export async function storeMessages(
     threadIds = new Map([...threadIds, ...Object.entries(data?.threads ?? {}) as [string, string][]]);
     messages += Number(data?.messages ?? 0);
     routed += Number(data?.routed ?? 0);
+    for (const id of (data?.repliedTickets ?? []) as string[]) repliedTickets.add(id);
   }
+
+  /* Awaited, so an Edge Function instance torn down right after answering
+   * does not silently drop it (there is no EdgeRuntime.waitUntil() assumed
+   * here) — but a failure is caught, never thrown: a mail failure must not
+   * look like the sync itself failed, the same rule notify-task/index.ts
+   * follows for a task. */
+  if (repliedTickets.size) {
+    await notifyRepliedTickets(admin, [...repliedTickets], ticketUrl).catch((err) => {
+      console.warn('[mail-sync] could not tell an assignee about a customer\'s reply:', String((err as Error)?.message ?? err));
+    });
+  }
+
   return { threads: threadIds.size, messages, routedToTickets: routed, threadIds };
 }
 

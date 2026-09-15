@@ -125,6 +125,12 @@ test('an empty recipient list is sent when given, so removing everyone from Cc s
   assert.deepEqual(m.draftMessagePayload({ cc: [] }), { ccRecipients: [] });
 });
 
+test('a draft carries replyTo when given, the same as a one-shot send does', () => {
+  assert.deepEqual(m.draftMessagePayload({ replyTo: ['support@veyago.cloud'] }),
+    { replyTo: [{ emailAddress: { address: 'support@veyago.cloud' } }] });
+  assert.ok(!('replyTo' in m.draftMessagePayload({ html: '<p>Hi</p>' })), 'omitted, not sent empty, when never given');
+});
+
 test('importance is low, normal or high, and nothing else', () => {
   assert.equal(m.draftMessagePayload({ importance: 'low' }).importance, 'low');
   assert.throws(() => m.draftMessagePayload({ importance: 'urgent' }), /importance/);

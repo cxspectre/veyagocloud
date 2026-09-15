@@ -76,6 +76,10 @@ export interface DraftOptions {
   subject?: string;
   html?: string;
   importance?: string;
+  /* Where a reply to this message should go — send-ticket-reply's own
+   * SUPPORT_REPLY_TO, kept on a draft the same way sendMailPayload already
+   * carries it on a one-shot send. */
+  replyTo?: (Recipient | string)[];
 }
 
 /* A draft, or the changes to one. Only what is given is sent: a reply draft
@@ -92,6 +96,7 @@ export function draftMessagePayload(o: DraftOptions) {
     ...(o.html !== undefined ? { body: { contentType: 'HTML', content: o.html } } : {}),
     ...(o.to !== undefined ? { toRecipients: recipients(o.to) } : {}),
     ...(o.cc !== undefined ? { ccRecipients: recipients(o.cc) } : {}),
+    ...(o.replyTo !== undefined ? { replyTo: recipients(o.replyTo) } : {}),
     ...(o.bcc !== undefined ? { bccRecipients: recipients(o.bcc) } : {}),
     ...(o.importance !== undefined ? { importance: o.importance } : {}),
   };

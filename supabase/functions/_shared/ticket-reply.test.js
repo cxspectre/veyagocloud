@@ -58,6 +58,16 @@ test('an obviously broken address is refused before the provider sees it', () =>
   assert.equal(m.decideSend({ direction: 'outbound', body: 'x', toEmail: "o'brien+tag@sub.example.co.uk" }).send, true);
 });
 
+test('a reply goes to the linked contact, or — the CRM has none — the raw address the ticket came in on', () => {
+  assert.equal(m.replyAddress({ contactEmail: 'ana@northline.example', requesterEmail: 'guest@example.invalid' }),
+    'ana@northline.example', 'a linked contact always wins, even over a requester address on file');
+  assert.equal(m.replyAddress({ contactEmail: null, requesterEmail: 'guest@example.invalid' }), 'guest@example.invalid');
+  assert.equal(m.replyAddress({ contactEmail: '', requesterEmail: '  guest@example.invalid  ' }), 'guest@example.invalid',
+    'trimmed, the way a typed address is everywhere else');
+  assert.equal(m.replyAddress({}), null, 'neither is nothing to send to');
+  assert.equal(m.replyAddress({ contactEmail: '   ', requesterEmail: null }), null, 'blank is the same as none');
+});
+
 test('the subject carries the reference and does not stack Re:', () => {
   assert.equal(m.replySubject(ticket),
     'Re: Subscription not restoring on new device [#VYG-142]');
