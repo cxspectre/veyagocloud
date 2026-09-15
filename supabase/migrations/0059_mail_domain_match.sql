@@ -28,9 +28,18 @@
 -- domain at all. So this does not repeat that list to stay out of the same
 -- trap 0021's promote_enquiry_to_crm() and 0049's expanded list guard
 -- against — there is nothing here for it to guard against, unless a domain
--- was written some other way than through the workspace. Still only inbound
--- mail is looked at, exactly as before: what we send is not a signal about
--- whose company wrote to us.
+-- was written some other way than through the workspace. Still only for
+-- inbound mail: what we send is not a signal about whose company wrote to
+-- us, the way their writing to us is.
+--
+-- Reconciled 2026-09-15 with 0055's own change to this same function (both
+-- written the same day, in parallel, each unaware of the other): 0055 widened
+-- the CONTACT match to outbound mail too — the "other party" address, so a
+-- thread we start ourselves matches a contact immediately rather than
+-- waiting for a reply that may never come — while this migration widens the
+-- COMPANY match to a sender's domain, inbound only. create or replace on the
+-- same function overwrites whichever applied first; the body below keeps
+-- both rather than losing 0055's fix the moment this one lands after it.
 --
 -- Idempotent: create or replace on the same signature the trigger already
 -- points at, so 0025's trigger picks this up without being redefined.
@@ -46,25 +55,39 @@ as $$
 declare
   v_contact uuid;
   v_company uuid;
+  v_other   text;
   v_domain  text;
 begin
-  if new.direction = 'inbound' and new.from_email is not null then
+  -- Whoever is on the other side of this message (0055): the sender, for one
+  -- that arrived; the first non-staff recipient, for one we sent.
+  v_other := case
+    when new.direction = 'inbound' then new.from_email
+    else (
+      select addr.email
+      from unnest(coalesce(new.to_emails, '{}') || coalesce(new.cc_emails, '{}')) as addr(email)
+      where addr.email is not null and addr.email <> '' and not public.is_staff_address(addr.email)
+      limit 1
+    )
+  end;
+
+  if v_other is not null then
     select id, company_id into v_contact, v_company
     from public.crm_contacts
-    where lower(email) = lower(new.from_email) and deleted_at is null
+    where lower(email) = lower(v_other) and deleted_at is null
     limit 1;
+  end if;
 
-    -- No company from the address itself — either nobody in the CRM has it,
-    -- or they do but were never filed under a company. Its domain still says
-    -- whose company likely wrote in.
-    if v_company is null then
-      v_domain := lower(nullif(split_part(new.from_email, '@', 2), ''));
-      if v_domain is not null then
-        select id into v_company
-        from public.crm_companies
-        where lower(domain) = v_domain and deleted_at is null
-        limit 1;
-      end if;
+  -- No company from the contact match — either nobody in the CRM has this
+  -- address, or they do but were never filed under a company. For inbound
+  -- mail only, the sender's domain still says whose company likely wrote in
+  -- (0059).
+  if v_company is null and new.direction = 'inbound' and v_other is not null then
+    v_domain := lower(nullif(split_part(v_other, '@', 2), ''));
+    if v_domain is not null then
+      select id into v_company
+      from public.crm_companies
+      where lower(domain) = v_domain and deleted_at is null
+      limit 1;
     end if;
   end if;
 
@@ -82,9 +105,10 @@ $$;
 
 comment on function public.mail_messages_maintain_thread() is
   'Keeps a thread''s counts and its best-effort contact/company links current '
-  'on every message inserted. The contact match is by exact address; failing '
-  'that, the company match is by the sender''s domain (0059). Both only fill '
-  'a blank a human has not already set, and only for inbound mail.';
+  'on every message inserted. The contact match is by exact address, on '
+  'either side of the conversation (0055); failing that, the company match '
+  'is by the sender''s domain, inbound only (0059). All three only fill a '
+  'blank a human has not already set.';
 
 -- ── Prove it took ────────────────────────────────────────────────────────
 
