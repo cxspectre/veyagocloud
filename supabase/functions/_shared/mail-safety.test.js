@@ -20,10 +20,30 @@ const path = require('node:path');
 const FUNCTIONS = path.join(__dirname, '..');
 const MIGRATIONS = path.join(__dirname, '..', '..', 'migrations');
 
+/* This file is about Mail.ReadWrite — a scope that must never delete, move or
+   copy a client's mail (see the header above). Calendars.ReadWrite and
+   Calendars.ReadWrite.Shared are a different grant, on a different resource,
+   where deleting or moving an EVENT (0057, "Edits and deletes need to reach
+   Outlook") is exactly what update-calendar-event and delete-calendar-event
+   are for — the workspace's Remove event has always meant Graph DELETE for a
+   synced one, once there was a function to send it. Named narrowly, not by a
+   loose "calendar" substring, so an addition here is a deliberate choice, not
+   a pattern that happens to match: each of these five is read-checked by hand
+   (2026-09-15) to touch nothing under /messages, /mailFolders or an
+   attachment. A sixth calendar function added later starts back inside the
+   scan until it earns the same reading. */
+const CALENDAR_FUNCTIONS = new Set([
+  'sync-outlook-calendar', 'create-calendar-event', 'update-calendar-event',
+  'delete-calendar-event', 'sync-calendar-scheduled',
+]);
+
 function files(dir, extensions) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) return files(full, extensions);
+    if (entry.isDirectory()) {
+      if (CALENDAR_FUNCTIONS.has(entry.name)) return [];
+      return files(full, extensions);
+    }
     if (entry.name.endsWith('.test.js')) return [];
     return extensions.some((ext) => entry.name.endsWith(ext)) ? [full] : [];
   });
@@ -61,6 +81,17 @@ test('the one function that calls Graph for mail is guarded, and so is the uploa
   assert.match(sync, /assertGraphCall\(/, 'graphRequest must check every call');
   const send = fs.readFileSync(path.join(FUNCTIONS, 'send-mail', 'index.ts'), 'utf8');
   assert.match(send, /assertUploadCall\(/, 'the attachment upload must check where it is going');
+});
+
+test('the calendar functions this scan exempts do not go near a message, a mail folder or an attachment', () => {
+  const offenders = [...CALENDAR_FUNCTIONS].flatMap((name) => {
+    const indexPath = path.join(FUNCTIONS, name, 'index.ts');
+    if (!fs.existsSync(indexPath)) return [`${name}: has no index.ts to read`];
+    const source = fs.readFileSync(indexPath, 'utf8');
+    return /\/messages\b|mailFolders|mail-attachments/i.test(source) ? [name] : [];
+  });
+  assert.deepEqual(offenders, [],
+    'a calendar function exempted from the mail-delete scan must never have a reason to be');
 });
 
 test('the source scan would notice if it were broken', () => {

@@ -246,6 +246,13 @@ export interface GraphEvent {
   sensitivity?: string;
   location?: { displayName?: string };
   onlineMeeting?: { joinUrl?: string };
+  /* Who booked it. Absent on an event from before Teams meetings existed, and
+     on some personal-calendar events Graph does not attach one to. */
+  organizer?: { emailAddress?: GraphAddress };
+  /* The zone the organiser was in when they made it — never what start/end
+     carry here, which the sync always reads back as UTC (see the file
+     header's Prefer: outlook.timezone="UTC"). Context only. */
+  originalStartTimeZone?: string;
   attendees?: { emailAddress?: GraphAddress; status?: { response?: string } }[];
 }
 
@@ -260,6 +267,23 @@ export interface EventRow {
   kind: string;
   status: string;
   attendees: { name: string | null; email: string | null; response: string | null }[];
+  organizer_name: string | null;
+  organizer_email: string | null;
+  /* A video-call join link, https only (see joinUrl() below). */
+  meeting_url: string | null;
+  /* The organiser's own zone, IANA or a Windows name as Graph sent it — shown
+     for context, computed from nowhere (0026's still-open "time zones" item). */
+  time_zone: string | null;
+}
+
+/* A join link worth keeping: Graph has only ever sent us https:// links in
+   practice, and a page renders this straight into an href — a scheme we do
+   not expect (http://, or anything stranger) is worth dropping rather than
+   trusting. Case-insensitive: a scheme is not case-sensitive in the standard,
+   even though Graph has never sent us anything but lowercase. */
+function joinUrl(value: unknown): string | null {
+  const url = String(value ?? '').trim();
+  return /^https:\/\//i.test(url) ? url : null;
 }
 
 /* An event with someone from outside the studio on it is client work; one that
@@ -284,12 +308,17 @@ export function toEventRow(ev: GraphEvent, ownDomain: string, options: { hidePri
   const outside = attendees.some((a) => a.email && !a.email.endsWith(`@${domain}`));
   const hidden = Boolean(options.hidePrivate)
     && ['personal', 'private', 'confidential'].includes(String(ev.sensitivity ?? '').toLowerCase());
+  /* Nothing to show for a hidden event: an organiser, a join link and a zone
+     are still "something else" about it, the same as its attendees. */
+  const meetingUrl = hidden ? null : joinUrl(ev.onlineMeeting?.joinUrl);
+  const organizerEmail = hidden ? '' : String(ev.organizer?.emailAddress?.address ?? '').trim().toLowerCase();
+  const organizerName = hidden ? '' : String(ev.organizer?.emailAddress?.name ?? '').trim();
 
   return {
     external_id: ev.id,
     title: hidden ? 'Private' : (String(ev.subject ?? '').trim() || '(no title)'),
     detail: hidden ? null
-      : ev.onlineMeeting?.joinUrl
+      : meetingUrl
         ? (String(ev.bodyPreview ?? '').trim() || 'Online meeting')
         : (String(ev.bodyPreview ?? '').trim() || null),
     location: hidden ? null : (ev.location?.displayName?.trim() || null),
@@ -301,5 +330,9 @@ export function toEventRow(ev: GraphEvent, ownDomain: string, options: { hidePri
       : String(ev.showAs ?? '').toLowerCase() === 'tentative' ? 'tentative'
       : 'confirmed',
     attendees: hidden ? [] : attendees,
+    organizer_name: organizerName || null,
+    organizer_email: organizerEmail || null,
+    meeting_url: meetingUrl,
+    time_zone: hidden ? null : (String(ev.originalStartTimeZone ?? '').trim() || null),
   };
 }
