@@ -10,7 +10,18 @@
  * is flagged. So marking read touches every message from outside; starring
  * flags the newest one; un-starring clears every flag in the conversation —
  * clearing only the newest let the next sync find an older flag and star the
- * thread again.
+ * thread again. mail-read-state.ts decides exactly which stored messages
+ * that is, from their own current is_read/is_flagged, so a message already at
+ * the wanted state is never re-sent to Outlook.
+ *
+ * A long thread used to cap at fifty Outlook PATCH calls and then mark every
+ * message read in the database regardless of how many of those fifty actually
+ * went through — reporting success while most of a busy thread stayed unread
+ * in Outlook, with nothing to notice the mismatch short of a full resync.
+ * Instead this runs for OUTLOOK_BUDGET_MS and writes the database only for
+ * what Outlook was actually told: a call cut short by the clock is truthful
+ * about it (`incomplete`), and asking again targets only what is left,
+ * because the messages already brought in line are no longer targets.
  *
  * A mailbox connected before Mail.ReadWrite answers 403. The change still
  * lands here and the caller is told Outlook did not get it, rather than the
@@ -27,11 +38,13 @@ import { accessTokenFor, markNeedsReauthIfUnchanged } from '../_shared/graph-tok
 import { connectionCheck } from '../_shared/connection-check.ts';
 import { mailboxPath } from '../_shared/mailbox.ts';
 import { GRAPH, GraphError, graphRequest } from '../_shared/mail-sync.ts';
+import { messagesToFlag, messagesToMarkRead, messagesToUnflag, type StoredMessage } from '../_shared/mail-read-state.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/* A thread with more messages to change than this is changed in Outlook as
-   far as this goes; the database change is whole either way. */
-const MAX_MESSAGES = 50;
+/* Comfortably inside the platform's own limit on how long a request may run,
+   leaving room for the database writes that come after (SYNC_LEASE_SECONDS in
+   mail-sync.ts is the same margin for the scheduled sync). */
+const OUTLOOK_BUDGET_MS = 90_000;
 /* Ids per database update, so a long conversation never makes a URL too long. */
 const ID_CHUNK = 100;
 
@@ -46,8 +59,6 @@ function json(body: unknown, status = 200): Response {
     status, headers: { ...CORS, 'Content-Type': 'application/json' },
   });
 }
-
-interface StoredMessage { id: string; external_id: string; direction: string; is_flagged: boolean }
 
 // deno-lint-ignore no-explicit-any
 async function updateMessages(admin: any, ids: string[], change: Record<string, boolean>): Promise<string | null> {
@@ -99,19 +110,28 @@ Deno.serve(async (req) => {
     if (connErr) return json({ error: connErr.message }, 500);
     const { data: stored, error: storedErr } = await admin
       .from('mail_messages')
-      .select('id, external_id, direction, is_flagged')
+      .select('id, external_id, direction, is_read, is_flagged')
       .eq('thread_id', threadId)
       .order('sent_at', { ascending: false });
     if (storedErr) return json({ error: storedErr.message }, 500);
     const messages: StoredMessage[] = stored ?? [];
-    const inbound = messages.filter((m) => m.direction === 'inbound');
 
-    /* Which messages change, and how. */
-    const readTargets = read === undefined ? [] : inbound;
-    const flagOn = inbound[0] ?? messages[0];
-    const flagTargets = starred === undefined ? []
-      : starred ? (flagOn ? [flagOn] : [])
-      : messages.filter((m) => m.is_flagged || m === flagOn);
+    /* Which messages change, and how — only the ones not already at the
+       wanted state (mail-read-state.ts), so a retry after a timed-out call
+       below asks Outlook for nothing it already has. */
+    const readTargets = messagesToMarkRead(messages, read);
+    const flagTargets = [...messagesToFlag(messages, starred), ...messagesToUnflag(messages, starred)];
+
+    /* What actually got patched in Outlook — or, for a message gone 404,
+       nothing left there to disagree with us — so the database is only ever
+       told what Outlook was actually asked to change. In the branches below
+       that give up on Outlook entirely for the whole thread (disconnected,
+       waiting, unchecked, no scope) this is set to the full target lists
+       instead: the change still lands here on purpose, and setting a value a
+       message already has is harmless either way. */
+    let readDone: StoredMessage[] = [];
+    let flagDone: StoredMessage[] = [];
+    let timedOut = false;
 
     let outlook = true;
     let reason: string | null = null;
@@ -152,24 +172,45 @@ Deno.serve(async (req) => {
           throw err;
         }
       };
-      for (const m of readTargets.slice(0, MAX_MESSAGES)) await patch(m, { isRead: read });
-      for (const m of flagTargets.slice(0, MAX_MESSAGES)) {
-        await patch(m, { flag: { flagStatus: starred ? 'flagged' : 'notFlagged' } });
+
+      const deadline = Date.now() + OUTLOOK_BUDGET_MS;
+      for (const m of readTargets) {
+        if (Date.now() >= deadline) { timedOut = true; break; }
+        await patch(m, { isRead: read });
+        readDone = [...readDone, m];
       }
+      if (!timedOut) {
+        for (const m of flagTargets) {
+          if (Date.now() >= deadline) { timedOut = true; break; }
+          await patch(m, { flag: { flagStatus: starred ? 'flagged' : 'notFlagged' } });
+          flagDone = [...flagDone, m];
+        }
+      }
+
       if (moved) reason = `${moved} message${moved === 1 ? ' has' : 's have'} moved in Outlook since the last sync.`;
+      if (timedOut) {
+        const left = (readTargets.length - readDone.length) + (flagTargets.length - flagDone.length);
+        const timeoutNote = `Outlook is answering slowly, so ${left} more message${left === 1 ? '' : 's'} `
+          + 'are left — ask again to finish, and only what is left will be sent.';
+        reason = reason ? `${reason} ${timeoutNote}` : timeoutNote;
+      }
     } catch (err) {
       if (err === switchedOff) {
         outlook = false;
         reason = 'This mailbox is disconnected, so the change stays in the workspace and does not reach Outlook.';
+        readDone = readTargets; flagDone = flagTargets;
       } else if (err === waiting) {
         outlook = false;
         reason = 'This mailbox needs reconnecting, so the change stays in the workspace only — and a sync after reconnecting may undo it.';
+        readDone = readTargets; flagDone = flagTargets;
       } else if (err === unchecked) {
         outlook = false;
         reason = 'Outlook could not be updated just now, so the next sync may undo this.';
+        readDone = readTargets; flagDone = flagTargets;
       } else if (err instanceof GraphError && (err.status === 401 || err.status === 403)) {
         outlook = false;
         reason = 'Reconnect this mailbox for read and starred to reach Outlook — until then the next sync may undo it.';
+        readDone = readTargets; flagDone = flagTargets;
       } else {
         return json({ error: `Outlook did not take the change: ${String((err as Error).message || err)}` }, 502);
       }
@@ -177,13 +218,14 @@ Deno.serve(async (req) => {
 
     /* The stored messages, which the thread's state is derived from. The
        browser has no write on mail_messages; this is the service role. Only
-       the messages read above: one a sync stored since then has not been
-       changed in Outlook, and marking it here would leave the two disagreeing
-       where delta never looks again. */
+       the messages Outlook was actually told about (readDone/flagDone) — a
+       message this call ran out of time for, or one a sync stored since
+       Outlook was last asked, is left exactly as it was, so the store and
+       Outlook are never made to disagree by a change that only landed on one
+       side of it. */
     const updates: Array<[string[], Record<string, boolean>]> = [
-      ...(read !== undefined ? [[inbound.map((m) => m.id), { is_read: read }]] : []),
-      ...(starred === true && flagOn ? [[[flagOn.id], { is_flagged: true }]] : []),
-      ...(starred === false ? [[messages.map((m) => m.id), { is_flagged: false }]] : []),
+      ...(read !== undefined && readDone.length ? [[readDone.map((m) => m.id), { is_read: read }]] : []),
+      ...(starred !== undefined && flagDone.length ? [[flagDone.map((m) => m.id), { is_flagged: starred }]] : []),
     ] as Array<[string[], Record<string, boolean>]>;
     for (const [ids, change] of updates) {
       const failed = await updateMessages(admin, ids, change);
@@ -201,7 +243,7 @@ Deno.serve(async (req) => {
     const row = (refreshed ?? [])[0];
     const state = row ? { id: row.id, is_read: row.is_read, is_starred: row.is_starred } : null;
 
-    return json({ ok: true, thread: state, outlook, reason });
+    return json({ ok: true, thread: state, outlook, reason, incomplete: timedOut });
   } catch (err) {
     return json({ error: String((err as Error).message || err) }, 500);
   }
