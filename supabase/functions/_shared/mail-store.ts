@@ -61,16 +61,39 @@ export function directionFor(graphFolder: string, parsed: 'inbound' | 'outbound'
   return String(graphFolder).toLowerCase() === 'sentitems' ? 'outbound' : parsed;
 }
 
+/* Where a round would start if it could reach as far back as the last
+   successful sync — three days on a first sync, or just before last time
+   otherwise (roundStart's OVERLAP_MINUTES, so the gap is not lost to a
+   rounding edge). Not yet capped to MAX_GAP_DAYS: that is roundStart's job,
+   and missedRange's. */
+function desiredStart(nowMs: number, lastSyncedAt?: string | null): number {
+  const usual = nowMs - FIRST_SYNC_DAYS * DAY;
+  const last = Date.parse(String(lastSyncedAt ?? ''));
+  return Number.isFinite(last) ? Math.min(usual, last - OVERLAP_MINUTES * MINUTE) : usual;
+}
+
 /* Where a delta round starts. Three days back on a first sync. After time
    away — a mailbox waiting to be reconnected, a link Graph has expired — from
    just before the last successful sync, so the gap is stored rather than
    skipped; but never more than fourteen days, past which a manual sync fills
-   it in. */
+   it in (see missedRange). */
 export function roundStart(nowMs: number, lastSyncedAt?: string | null): string {
-  const usual = nowMs - FIRST_SYNC_DAYS * DAY;
-  const last = Date.parse(String(lastSyncedAt ?? ''));
-  const since = Number.isFinite(last) ? Math.min(usual, last - OVERLAP_MINUTES * MINUTE) : usual;
-  return new Date(Math.max(since, nowMs - MAX_GAP_DAYS * DAY)).toISOString();
+  const cap = nowMs - MAX_GAP_DAYS * DAY;
+  return new Date(Math.max(desiredStart(nowMs, lastSyncedAt), cap)).toISOString();
+}
+
+/* What roundStart's fourteen-day cap left out: a mailbox away for longer than
+   that has the days before the cap skipped rather than synced, and until now
+   nothing said so. null once a round can reach all the way back on its own —
+   never synced yet counts as nothing missed, not an infinite gap.
+   sync-mail-scheduled records this as a note on the connection (mail-sync.ts,
+   SYNC_GAP_NOTE) so it is not lost the moment the round moves delta_synced_at
+   forward; a manual sync (sync-outlook-mail) with `days` reaching back to
+   `from` is how it is actually filled in. */
+export function missedRange(nowMs: number, lastSyncedAt?: string | null): { from: string; to: string } | null {
+  const cap = nowMs - MAX_GAP_DAYS * DAY;
+  const wanted = desiredStart(nowMs, lastSyncedAt);
+  return wanted < cap ? { from: new Date(wanted).toISOString(), to: new Date(cap).toISOString() } : null;
 }
 
 /* Where the scheduled sync carries on from: Graph's delta link for each

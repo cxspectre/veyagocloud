@@ -176,6 +176,53 @@ export function toMailRow(msg: GraphMessage, ownAddresses: string[] = []): MailR
   };
 }
 
+/* An attachment as Graph's list endpoint describes it — metadata only.
+ * Content lives at Graph until something actually needs it: fetching every
+ * attachment's bytes on every sync would turn a handful of PDFs into
+ * megabytes of base64 moved around for no reader, on a schedule that runs
+ * every five minutes. ATTACHMENT_SELECT is deliberately narrower than
+ * MESSAGE_SELECT's shape for exactly that reason — no contentBytes. */
+export interface GraphAttachment {
+  id: string;
+  name?: string;
+  contentType?: string;
+  size?: number;
+  isInline?: boolean;
+  contentId?: string;
+}
+
+export const ATTACHMENT_SELECT = 'id,name,contentType,size,isInline,contentId';
+
+export interface AttachmentRow {
+  external_id: string;
+  name: string;
+  content_type: string;
+  size: number;
+  is_inline: boolean;
+  content_id: string | null;
+}
+
+/* A whole number of bytes, zero or more — anything else (missing, negative, a
+ * fraction, NaN, a string Graph never sends but a test or a future API
+ * version might) is "not known", which is nearer the truth than guessing. A
+ * genuinely empty file (size 0) is kept as 0, not folded into "not known". */
+function sizeOf(value: unknown): number {
+  return Number.isInteger(value) && (value as number) >= 0 ? value as number : 0;
+}
+
+export function toAttachmentRow(a: GraphAttachment): AttachmentRow {
+  return {
+    external_id: String(a?.id ?? ''),
+    /* A blank name would print as nothing next to a paperclip icon — labelled
+       is more honest than invisible. */
+    name: String(a?.name ?? '').trim() || 'attachment',
+    content_type: String(a?.contentType || '').trim() || 'application/octet-stream',
+    size: sizeOf(a?.size),
+    is_inline: a?.isInline === true,
+    content_id: String(a?.contentId ?? '').trim() || null,
+  };
+}
+
 /* Graph's well-known folder names, mapped to ours. */
 export function folderFromWellKnownName(name: string): string {
   switch (String(name || '').toLowerCase()) {
