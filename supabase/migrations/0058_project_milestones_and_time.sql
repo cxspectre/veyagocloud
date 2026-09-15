@@ -107,6 +107,18 @@ create policy "project leads remove milestones"
   on public.project_milestones for delete to authenticated
   using (public.can_manage_project(project_id));
 
+-- A table added after 0040 is not swept by its one-time loop over every RLS
+-- table that existed then — layer 2 (a verified second factor, not just a
+-- role) has to be added with it, the same shape 0040 gave every earlier
+-- table, or a session that hasn't entered its code reads and writes here
+-- through layer 1 alone. supabase/tests/06-second-factor.sql's own coverage
+-- check would catch this table's absence.
+drop policy if exists "second factor required" on public.project_milestones;
+create policy "second factor required"
+  on public.project_milestones as restrictive for all to authenticated
+  using ((select public.second_factor_met()))
+  with check ((select public.second_factor_met()));
+
 -- Column grants: id, created_by, created_at and updated_at are the
 -- database's to set, never the caller's — the same shape client_projects'
 -- own grants take (0039) for the columns nobody may pick or backdate.
@@ -174,6 +186,14 @@ drop policy if exists "own or managed time entries remove" on public.time_entrie
 create policy "own or managed time entries remove"
   on public.time_entries for delete to authenticated
   using (employee_id = public.active_employee_id() or public.can_manage_project(project_id));
+
+-- Same reason as project_milestones' own: a table added after 0040 needs
+-- this policy added with it, not inherited from the one-time loop.
+drop policy if exists "second factor required" on public.time_entries;
+create policy "second factor required"
+  on public.time_entries as restrictive for all to authenticated
+  using ((select public.second_factor_met()))
+  with check ((select public.second_factor_met()));
 
 -- id, employee_id's own default (none here — sent explicitly, like
 -- project_members.employee_id) aside, created_at and updated_at are the
