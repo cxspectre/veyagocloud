@@ -45,7 +45,8 @@ as $$
   select t.connection_id, count(*)::integer as unread_count
   from public.mail_threads t
   where t.folder = 'inbox' and t.is_read = false
-  group by t.connection_id;
+  group by t.connection_id
+  order by t.connection_id;
 $$;
 
 revoke all on function public.mail_unread_counts() from public, anon;
