@@ -9,6 +9,30 @@
  * for every connection, so a studio calendar connected through a person synced
  * that person's own diary — where every member of staff could read it.
  *
+ * TWO MORE BUGS FIXED HERE (agenda audit, 2026-09-14 — both still open as of
+ * the wave-1 agenda review, which flagged the first as "still not fixed"):
+ *
+ *   - it used to ask Graph for at most $top=250 events and stop, so a window
+ *     with more than that in it silently lost whatever came after the 250th,
+ *     and it never noticed an event Outlook had removed since the last sync —
+ *     it only ever added and updated, so a deleted meeting stayed on the
+ *     agenda forever. It now follows `@odata.nextLink` (_shared/calendar-sync.
+ *     ts nextLinkOf) until Graph stops sending one or MAX_PAGES is reached,
+ *     and marks cancelled anything this connection+calendar already had, in
+ *     the same window just asked about, that none of those pages mentioned
+ *     (vanishedIds) — the agenda already excludes cancelled rows from every
+ *     list (calendar_events_window_idx, agenda-model.js), so nothing else has
+ *     to change for a removed event to actually stop showing.
+ *
+ *   - it used to write `kind` on every row, every run, straight from
+ *     toEventRow's attendee-list guess — including a row create-calendar-
+ *     event had already stored with the CALLER's own choice ("the caller's
+ *     intent wins over the guess", that function's own comment). Nothing told
+ *     "guessed" and "chosen" apart, so the very next ordinary sync quietly put
+ *     the guess back. syncedEventFields leaves `kind` out of the upsert
+ *     entirely for a row this sync already has, so whatever is stored — a
+ *     choice or an earlier guess, this sync cannot tell which — survives.
+ *
  * What it will not do (security review, 2026-09-14): sync a colleague's
  * personal calendar, a disconnected one, or a studio connection that is a team
  * member's own address, does not record who consented, or was never checked
@@ -31,12 +55,18 @@ import { failureStatusOf } from '../_shared/mail-store.ts';
 import { markSyncedIfLive } from '../_shared/mail-sync.ts';
 import { grantCovers, mayActOn } from '../_shared/connection-rules.ts';
 import { connectionCheck } from '../_shared/connection-check.ts';
+import { nextLinkOf, syncedEventFields, vanishedIds } from '../_shared/calendar-sync.ts';
 
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 const SHARED_SCOPE = 'Calendars.ReadWrite.Shared';
 /* The statuses a sync may still write to: never over a calendar someone
    disconnected, or one waiting to be reconnected. */
 const LIVE = ['connected', 'error'];
+/* calendarView pages at 250 a time; a mailbox with a genuinely enormous
+   number of events in the window (thousands) stops here rather than page
+   forever on a nextLink that never runs out — 20 pages is 5,000 events,
+   already far more than any real calendar in a window this short holds. */
+const MAX_PAGES = 20;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -133,55 +163,123 @@ Deno.serve(async (req) => {
       $orderby: 'start/dateTime',
       $select: 'id,subject,bodyPreview,start,end,isAllDay,isCancelled,showAs,sensitivity,location,attendees,onlineMeeting',
     });
-    const res = await fetch(`${GRAPH}${mailboxPath(conn)}/calendarView?${query}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        /* Ask for UTC, or every dateTime is a wall clock in a Windows timezone
-           name — see the header of _shared/graph-message.ts. */
-        Prefer: 'outlook.timezone="UTC"',
-      },
-    });
-    /* Not a reconnect by itself: a 401 can be an expired token or a policy
-       challenge, and a 403 has causes a reconnect does not fix. The stored
-       grant, above, is what says a reconnect is needed. */
-    if (!res.ok) {
-      throw new Error(`Graph calendarView → ${res.status}: ${(await res.text()).slice(0, 200)}`);
+
+    /* Every page Graph has for the window, not only the first: a nextLink
+       keeps coming back until Graph is actually done, or MAX_PAGES gives up
+       on one that never stops (see the file header). `truncated` says which
+       one happened — MAX_PAGES giving up means `events` is only PART of the
+       window, and vanishedIds must not run against a partial set: an event
+       on the page after the one this run stopped at would look exactly like
+       one Outlook deleted, and get cancelled for a reason that is really
+       just "this run didn't get that far". */
+    const events: unknown[] = [];
+    let next: string | null = `${GRAPH}${mailboxPath(conn)}/calendarView?${query}`;
+    let truncated = false;
+    for (let pages = 0; next; pages++) {
+      if (pages >= MAX_PAGES) { truncated = true; break; }
+      const res = await fetch(next, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          /* Ask for UTC, or every dateTime is a wall clock in a Windows timezone
+             name — see the header of _shared/graph-message.ts. */
+          Prefer: 'outlook.timezone="UTC"',
+        },
+      });
+      /* Not a reconnect by itself: a 401 can be an expired token or a policy
+         challenge, and a 403 has causes a reconnect does not fix. The stored
+         grant, above, is what says a reconnect is needed. */
+      if (!res.ok) {
+        throw new Error(`Graph calendarView → ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      }
+      const page = await res.json();
+      events.push(...(page.value ?? []));
+      next = nextLinkOf(page);
     }
-    const page = await res.json();
     const studio = conn.employee_id === null;
 
+    /* What this connection+calendar already has in the same window just
+       asked about — needed twice: to decide whether a row's `kind` may take
+       the fresh guess (syncedEventFields), and, after the loop, to find
+       whatever none of the pages just read mentioned any more (vanishedIds).
+       Scoped to the window, not "everything this connection ever synced": a
+       shorter `days` than a previous run asked for must not read events
+       merely outside today's request as deleted.
+
+       The window test is the same overlap queries.js's own eventsOverlapping
+       uses, not a plain starts_at between timeMin and timeMax: a multi-day
+       event that started more than 7 days ago but is still running would
+       otherwise fall out of `known` — miscounted as new (its kind re-guessed)
+       if still there, or never even considered if it was in fact deleted.
+
+       Paged the same way queries.js's everyRow reads a list from the browser
+       (PAGE at a time, stop once a page comes back short): Supabase caps a
+       single select at its own max rows and says nothing when it does, and
+       MAX_PAGES above already allows for a calendar with several thousand
+       events in the window — reading `known` in one unpaged call would
+       silently truncate it well before that, quietly reopening both of this
+       file's bugs for whatever fell off the end. */
+    const EXISTING_PAGE = 1000;
+    const known = new Set<string>();
+    for (let from = 0; ; from += EXISTING_PAGE) {
+      const { data: existingRows, error: existingErr } = await admin
+        .from('calendar_events')
+        .select('external_id')
+        .eq('connection_id', connectionId)
+        .eq('calendar_id', calendarId)
+        .not('external_id', 'is', null)
+        .neq('status', 'cancelled')
+        .lt('starts_at', timeMax)
+        .or(`ends_at.gt."${timeMin}",and(ends_at.is.null,starts_at.gte."${timeMin}")`)
+        .order('external_id')
+        .range(from, from + EXISTING_PAGE - 1);
+      if (existingErr) throw new Error(`reading synced events: ${existingErr.message}`);
+      (existingRows ?? []).forEach((r: { external_id: string }) => known.add(r.external_id));
+      if (!existingRows || existingRows.length < EXISTING_PAGE) break;
+    }
+
     let written = 0, skipped = 0;
-    for (const ev of page.value ?? []) {
+    const seen = new Set<string>();
+    for (const ev of events) {
       const row = toEventRow(ev, ownDomain, { hidePrivate: studio });
       /* toEventRow returns null when the start cannot be trusted. A missing
          event is easier to notice than one silently an hour out. */
       if (!row) { skipped++; continue; }
+      seen.add(row.external_id);
 
       const { error: upErr } = await admin.from('calendar_events').upsert(
-        {
-          connection_id: connectionId,
-          calendar_id: calendarId,
-          external_id: row.external_id,
-          title: row.title,
-          detail: row.detail,
-          location: row.location,
-          starts_at: row.starts_at,
-          ends_at: row.ends_at,
-          all_day: row.all_day,
-          kind: row.kind,
-          status: row.status,
-          attendees: row.attendees,
-        },
+        syncedEventFields(row, connectionId, calendarId, known.has(row.external_id)),
         { onConflict: 'connection_id,calendar_id,external_id' },
       );
       if (upErr) throw new Error(`event upsert: ${upErr.message}`);
       written++;
     }
 
+    /* An id this connection+calendar had, in this same window, that no page
+       just read mentioned: gone from Outlook, so cancelled here too — never a
+       hard delete, the same reasoning as everywhere else a sync retires a
+       row. calendar_events already excludes cancelled rows from every list
+       (calendar_events_window_idx, agenda-model.js), so nothing downstream
+       has to change for this to actually clear the agenda. vanishedIds
+       itself refuses to name anything when `truncated` (calendar-sync.ts,
+       calendar-sync.test.js) — a fetch MAX_PAGES cut short must not cancel
+       an id merely past wherever it stopped. */
+    const gone = vanishedIds(known, seen, truncated);
+    let cancelled = 0;
+    if (gone.length) {
+      const { error: cancelErr, count } = await admin
+        .from('calendar_events')
+        .update({ status: 'cancelled' }, { count: 'exact' })
+        .eq('connection_id', connectionId)
+        .eq('calendar_id', calendarId)
+        .in('external_id', gone);
+      if (cancelErr) throw new Error(`cancelling removed events: ${cancelErr.message}`);
+      cancelled = count ?? gone.length;
+    }
+
     /* Only a calendar still connected, or in error, is marked synced: a run
        must not switch back on a calendar someone disconnected meanwhile. */
     await markSyncedIfLive(admin, connectionId);
-    return json({ ok: true, events: written, skipped, windowDays: days, calendarId });
+    return json({ ok: true, events: written, skipped, cancelled, truncated, windowDays: days, calendarId });
   } catch (err) {
     const message = String((err as Error).message || err);
     if (connectionId) {

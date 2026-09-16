@@ -35,8 +35,9 @@ without a token stays green.
 | `17-project-activity.sql` | a task added, done, reopened or deleted, and a note or file added or removed, is logged under its project; a file's name shows only to people who can see the file; activity stored before 0052 is filed under its project too; staff cannot write activity directly |
 | `18-crm-functions.sql` | a contact and their company are made in one call; merging two companies or two contacts moves every reference to the one kept, and a merge that would collide or loop is refused; a company is given a client number when it first becomes a client, and the app never writes one. The suite uses about five client numbers on the project it runs against and hands them back, and its last section briefly locks `crm_companies` and `finance_invoices` while it swaps `crm_merge_references()`, until the rollback |
 | `19-ticket-merge.sql` | merging one ticket into another moves its messages, notes and conversations and adds a note to both; the refusals hold; a reply that quotes the merged ticket's number, or comes in its conversation, reaches the ticket kept |
+| `29-agenda-event-search.sql` | `search_events` finds a past meeting or a non-project event by a word in its title, detail or location — never a cancelled one, and never one on a colleague's own personal calendar, only the studio's or the searcher's own (0026's rule, applied automatically: the function is security_invoker); `p_limit` is honoured up to a hard cap of 50 however high a caller asks; a blank or null query asks nothing |
 
-`06` to `19` test migrations 0040 to 0054: until those are live they fail, so
+`06` to `19` test migrations 0040 to 0054, and `29` migration 0064: until those are live they fail, so
 dry-run them first — each suite with the migrations applied inside its own
 transaction, and rolled back with it.
 
