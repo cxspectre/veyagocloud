@@ -85,7 +85,7 @@ insert into public.integration_connections (id, provider, account_label, employe
   ('21a00000-0000-4000-a000-000000000001', 'microsoft_mail', 'check-21@example.invalid', null, 'connected');
 
 -- A conversation from a sender the CRM has never seen.
-insert into public.mail_threads (id, connection_id, external_id, subject, last_from_name, last_from_email) values
+insert into public.mail_threads (id, connection_id, external_id, subject, other_party_name, other_party_email) values
   ('21a00000-0000-4000-a000-000000000002', '21a00000-0000-4000-a000-000000000001', 'check-21-new',
    'check-21 A question about billing', 'Check Twentyone Guest', 'guest@check-21.invalid');
 
@@ -182,7 +182,7 @@ insert into public.mail_threads (id, connection_id, external_id, subject, ticket
   ('21a00000-0000-4000-a000-000000000013', '21a00000-0000-4000-a000-000000000001', 'check-21-attached',
    'Re: check-21 Attached to a live ticket', '21a00000-0000-4000-a000-000000000011'),
   ('21a00000-0000-4000-a000-000000000014', '21a00000-0000-4000-a000-000000000001', 'check-21-unattached',
-   'check-21 A conversation with no ticket');
+   'check-21 A conversation with no ticket', null);
 insert into public.mail_messages (id, thread_id, external_id, direction, from_email, subject, body_text, sent_at, folder) values
   ('21a00000-0000-4000-a000-000000000015', '21a00000-0000-4000-a000-000000000013', 'check-21-reply-1', 'outbound',
    'check-21@example.invalid', 'Re: check-21 Attached to a live ticket', 'check-21 Sent from Outlook, not the ticket box.',
@@ -250,10 +250,10 @@ insert into results(name, expected, actual, pass)
 select 'OUTBOUND: a reply send-ticket-reply already stamped is linked by its Message-ID, not filed again, once the sync sees it',
        '1 row, its own author kept, linked',
        count(*)::text || ' row' || (case when count(*) = 1 then '' else 's' end)
-         || (case when count(*) = 1 and min(author_employee_id) = current_setting('test.owner_employee')::uuid
+         || (case when count(*) = 1 and min(author_employee_id::text) = current_setting('test.owner_employee')
                   then ', its own author kept' else ', author changed or row missing' end)
          || (case when bool_and(mail_message_id = '21a00000-0000-4000-a000-000000000018') then ', linked' else ', not linked' end),
-       count(*) = 1 and min(author_employee_id) = current_setting('test.owner_employee')::uuid
+       count(*) = 1 and min(author_employee_id::text) = current_setting('test.owner_employee')
          and bool_and(mail_message_id = '21a00000-0000-4000-a000-000000000018')
 from public.ticket_messages where internet_message_id = '<check-21-c@sent.invalid>';
 
@@ -288,7 +288,12 @@ select pg_temp.refused('ATTACHMENTS: an upload that has not finished cannot be r
           'uploaded.png', 1, 'text/plain')
 $sql$, 'has not finished uploading');
 
+-- Table owner, no JWT: the lingering claims from the block above must be
+-- cleared too, or check_ticket_attachment() (0056) checks this insert's
+-- auth.uid() against storage.objects' owner_id as if a session were still
+-- live (17's own convention for the same reason).
 reset role;
+select set_config('request.jwt.claims', '', true);
 insert into public.ticket_attachments (id, ticket_id, storage_path, name, size_bytes, content_type, uploaded_by) values
   ('21a00000-0000-4000-a000-000000000021', '21a00000-0000-4000-a000-000000000012',
    '21a00000-0000-4000-a000-000000000012/u2/elsewhere.png', 'elsewhere.png', 64, 'image/png',
@@ -317,6 +322,7 @@ select pg_temp.affects('ATTACHMENTS: whoever uploaded a file removes their own',
 $sql$, 1);
 
 reset role;
+select set_config('request.jwt.claims', '', true);
 insert into public.ticket_attachments (id, ticket_id, storage_path, name, size_bytes, content_type, uploaded_by) values
   ('21a00000-0000-4000-a000-000000000022', '21a00000-0000-4000-a000-000000000012',
    '21a00000-0000-4000-a000-000000000012/u2/elsewhere.png', 'elsewhere.png', 64, 'image/png',

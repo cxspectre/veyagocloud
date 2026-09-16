@@ -16,9 +16,9 @@ insert into public.integration_connections (id, provider, account_label, status)
 insert into public.mail_threads (id, connection_id, external_id, subject) values
   ('c2800000-0000-4000-a000-000000000002', 'c2800000-0000-4000-a000-000000000001', 'check-28-thread', 'Attachments');
 
-insert into public.mail_messages (id, thread_id, external_id, direction, from_email, sent_at) values
+insert into public.mail_messages (id, thread_id, external_id, direction, from_email, sent_at, folder) values
   ('c2800000-0000-4000-a000-000000000003', 'c2800000-0000-4000-a000-000000000002', 'check-28-msg',
-   'inbound', 'client@check-28.example.invalid', now());
+   'inbound', 'client@check-28.example.invalid', now(), 'inbox');
 
 insert into public.mail_attachments (id, message_id, external_id, name, content_type, size, is_inline) values
   ('c2800000-0000-4000-a000-000000000004', 'c2800000-0000-4000-a000-000000000003', 'check-28-att-1',
@@ -57,6 +57,19 @@ from pg_trigger
 where tgrelid = 'public.ticket_messages'::regclass and tgname = 'ticket_messages_carry_attachments' and not tgisinternal;
 
 -- ── Telling a carried-over row apart from a staff upload ───────────────────
+--
+-- The Storage API's own record for each file below, so check_ticket_attachment()
+-- (0056) finds a real upload behind every storage_path this suite inserts —
+-- the same requirement suite 17 already satisfies for project-files.
+insert into storage.objects (bucket_id, name, metadata) values
+  ('ticket-attachments', 'c2800000-0000-4000-a000-000000000006/c2800000-0000-4000-a000-000000000004/quote.pdf',
+   '{"size": 1024, "mimetype": "application/pdf"}'),
+  ('ticket-attachments', 'c2800000-0000-4000-a000-000000000006/staff-upload/notes.txt',
+   '{"size": 20, "mimetype": "text/plain"}'),
+  ('ticket-attachments', 'c2800000-0000-4000-a000-000000000006/c2800000-0000-4000-a000-000000000004/again.pdf',
+   '{"size": 1024, "mimetype": "application/pdf"}'),
+  ('ticket-attachments', 'c2800000-0000-4000-a000-000000000006/c2800000-0000-4000-a000-000000000005/again.pdf',
+   '{"size": 1024, "mimetype": "application/pdf"}');
 
 insert into public.ticket_attachments (id, ticket_id, message_id, storage_path, name, size_bytes, content_type, uploaded_by, mail_attachment_id)
 values ('c2800000-0000-4000-a000-000000000008', 'c2800000-0000-4000-a000-000000000006',

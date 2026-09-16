@@ -38,17 +38,20 @@ insert into public.integration_connections (id, provider, account_label, employe
 
 insert into public.calendar_events (id, title, detail, location, starts_at, status, connection_id, calendar_id, external_id) values
   -- A meeting well outside any week the agenda would have loaded, found by its title.
+  -- calendar_id is '' (0028's own default for a hand-made event), never null:
+  -- the column is not-null, and an explicit null overrides a column default
+  -- rather than falling back to it.
   ('29a00000-0000-4000-a000-000000000011', 'check-29 zzcheck29 kickoff', null, null,
-   now() - interval '90 days', 'confirmed', null, null, null),
+   now() - interval '90 days', 'confirmed', null, '', null),
   -- Found by its detail, not its title.
   ('29a00000-0000-4000-a000-000000000012', 'check-29 debrief', 'zzcheck29 project debrief notes', null,
-   now() - interval '10 days', 'confirmed', null, null, null),
+   now() - interval '10 days', 'confirmed', null, '', null),
   -- Found by its location, not its title or detail.
   ('29a00000-0000-4000-a000-000000000013', 'check-29 offsite', null, 'zzcheck29 Lisbon office',
-   now() + interval '5 days', 'confirmed', null, null, null),
+   now() + interval '5 days', 'confirmed', null, '', null),
   -- Cancelled: must never come back, whoever searches.
   ('29a00000-0000-4000-a000-000000000014', 'check-29 zzcheck29 cancelled meeting', null, null,
-   now() - interval '5 days', 'cancelled', null, null, null),
+   now() - interval '5 days', 'cancelled', null, '', null),
   -- Synced into the studio calendar: any staff member reads this.
   ('29a00000-0000-4000-a000-000000000015', 'check-29 zzcheck29 zzcheck29studiosync', null, null,
    now() + interval '1 day', 'confirmed', '29a00000-0000-4000-a000-000000000001', 'default', 'check-29-studio'),
@@ -59,7 +62,7 @@ insert into public.calendar_events (id, title, detail, location, starts_at, stat
 -- 51 more, marked apart from everything above, so a p_limit far higher than
 -- 50 still comes back capped at 50.
 insert into public.calendar_events (title, starts_at, status, connection_id, calendar_id, external_id)
-select 'check-29 zzq29cap ' || g, now() + (g || ' minutes')::interval, 'confirmed', null, null, null
+select 'check-29 zzq29cap ' || g, now() + (g || ' minutes')::interval, 'confirmed', null, '', null
 from generate_series(1, 51) as g;
 
 -- Every matching row, in the order search_events itself returns them — WITH

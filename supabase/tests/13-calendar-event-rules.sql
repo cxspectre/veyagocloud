@@ -124,15 +124,19 @@ select pg_temp.affects('ASSISTANT: changes their own event', $sql$
   where title = 'check-13 booked here'
 $sql$, 1);
 
+-- Caught by the column guard (0057), not the bare ownership check: created_by
+-- and connection_id are both outside the five columns a non-manager may
+-- touch, so its own, more specific message fires before RLS's generic one
+-- would even be reached.
 select pg_temp.refused('ASSISTANT: cannot hand their event to a colleague', format($sql$
   update public.calendar_events set created_by = %L
   where title = 'check-13 booked here, moved'
-$sql$, current_setting('test.owner_employee')), 'row-level security');
+$sql$, current_setting('test.owner_employee')), 'you can only change');
 
 select pg_temp.refused('ASSISTANT: cannot put their event on a synced calendar', $sql$
   update public.calendar_events set connection_id = '13a00000-0000-4000-a000-000000000001'
   where title = 'check-13 booked here, moved'
-$sql$, 'row-level security');
+$sql$, 'you can only change');
 
 select pg_temp.affects('SYNCED: the assistant cannot change an event they booked into the studio calendar', $sql$
   update public.calendar_events set title = 'check-13 renamed by the assistant'

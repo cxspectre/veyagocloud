@@ -97,15 +97,29 @@ select 'and no ticket was opened for it', '0 new',
        count(*) = current_setting('fixture.tickets_before')::int
 from public.support_tickets;
 
--- Our own outbound mail is already in the thread; routing it back would echo.
+-- Our own outbound mail, sent from Mail or Outlook rather than through the
+-- ticket's own reply box (0056, section 2): nothing on the ticket reflects it
+-- yet, so it is filed the same as an inbound reply would be. Its own
+-- statement first — see the note at the top of this file.
 insert into public.mail_messages (id, thread_id, external_id, direction, from_email, subject, body_text, sent_at, folder) values
   ('c0000000-0000-4000-a000-000000000009','c0000000-0000-4000-a000-000000000005','msg-o','outbound',
    'fixture.inbox@example.invalid','Re: Subscription not restoring','We are on it.', now(), 'sent');
 
+select public.route_mail_to_ticket('c0000000-0000-4000-a000-000000000009') as routed_outbound;
+
 insert into results(name, expected, actual, pass)
-select 'our own sent mail is not echoed back', 'null',
-       coalesce(public.route_mail_to_ticket('c0000000-0000-4000-a000-000000000009')::text,'null'),
-       public.route_mail_to_ticket('c0000000-0000-4000-a000-000000000009') is null;
+select 'our own sent mail, not yet reflected, is filed on its ticket', 'outbound on the ticket',
+       case when ticket_id='c0000000-0000-4000-a000-000000000004' and direction='outbound'
+            then 'outbound on the ticket' else 'wrong' end,
+       ticket_id='c0000000-0000-4000-a000-000000000004' and direction='outbound'
+from public.ticket_messages where mail_message_id='c0000000-0000-4000-a000-000000000009';
+
+-- A second sync over the same outbound message does not double it either.
+select public.route_mail_to_ticket('c0000000-0000-4000-a000-000000000009') as routed_outbound_again;
+
+insert into results(name, expected, actual, pass)
+select 're-syncing the same outbound mail does not double it', '1', count(*)::text, count(*)=1
+from public.ticket_messages where mail_message_id='c0000000-0000-4000-a000-000000000009';
 
 -- create_ticket_from_thread: the manual half.
 grant all on results to authenticated;

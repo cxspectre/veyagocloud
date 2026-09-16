@@ -200,10 +200,13 @@ insert into results(name, expected, actual, pass)
 select 'AAL1: even the owner reads no line before the code is entered', '0', count(*)::text, count(*) = 0
 from public.finance_invoice_lines where invoice_id = '25a00000-0000-4000-a000-000000000101';
 
+-- Two policies apply to this insert (manager-all, second-factor-required),
+-- so Postgres's own message omits which one failed — the same generic form
+-- "STAFF: cannot add a line" above already expects on this same table.
 select pg_temp.refused('AAL1: and cannot add one either', $sql$
   insert into public.finance_invoice_lines (invoice_id, description, unit_amount, amount)
   values ('25a00000-0000-4000-a000-000000000101', 'Slipped in at aal1', 1, 1)
-$sql$, 'second factor required');
+$sql$, 'row-level security');
 
 -- ── An anonymous caller ────────────────────────────────────────────────
 reset role;
