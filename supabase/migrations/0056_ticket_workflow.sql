@@ -847,7 +847,7 @@ begin
     raise exception '0056: ticket_response_targets does not have row level security enabled';
   end if;
   if not exists (select 1 from pg_policies
-                 where schemaname = 'public' and tablename = 'ticket_response_targets' and cmd = 'r') then
+                 where schemaname = 'public' and tablename = 'ticket_response_targets' and cmd = 'SELECT') then
     raise exception '0056: ticket_response_targets has no read policy';
   end if;
   if not exists (select 1 from information_schema.tables
