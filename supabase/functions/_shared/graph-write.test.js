@@ -125,6 +125,12 @@ test('an empty recipient list is sent when given, so removing everyone from Cc s
   assert.deepEqual(m.draftMessagePayload({ cc: [] }), { ccRecipients: [] });
 });
 
+test('a draft carries replyTo when given, the same as a one-shot send does', () => {
+  assert.deepEqual(m.draftMessagePayload({ replyTo: ['support@veyago.cloud'] }),
+    { replyTo: [{ emailAddress: { address: 'support@veyago.cloud' } }] });
+  assert.ok(!('replyTo' in m.draftMessagePayload({ html: '<p>Hi</p>' })), 'omitted, not sent empty, when never given');
+});
+
 test('importance is low, normal or high, and nothing else', () => {
   assert.equal(m.draftMessagePayload({ importance: 'low' }).importance, 'low');
   assert.throws(() => m.draftMessagePayload({ importance: 'urgent' }), /importance/);
@@ -155,4 +161,59 @@ test('a large file goes through an upload session, in ranges that cover every by
 
 test('an untitled event is refused', () => {
   assert.throws(() => m.eventPayload({ title: '   ', startsAt: '2026-09-11T09:00:00Z' }), /title/);
+});
+
+/* ── Changing an event already booked (update-calendar-event) ───────────── */
+
+test('an update sends only the fields it was given, in Graph\'s shape', () => {
+  assert.deepEqual(m.eventUpdatePayload({ title: 'Kickoff, moved' }), { subject: 'Kickoff, moved' });
+  assert.deepEqual(m.eventUpdatePayload({ location: 'Meeting room 2' }),
+    { location: { displayName: 'Meeting room 2' } });
+  assert.deepEqual(m.eventUpdatePayload({ detail: 'Bring the deck' }),
+    { body: { contentType: 'Text', content: 'Bring the deck' } });
+  assert.deepEqual(m.eventUpdatePayload({}), {}, 'nothing given, nothing sent');
+});
+
+test('clearing detail or location sends an empty string, not the field left off', () => {
+  assert.deepEqual(m.eventUpdatePayload({ detail: null }), { body: { contentType: 'Text', content: '' } });
+  assert.deepEqual(m.eventUpdatePayload({ location: null }), { location: { displayName: '' } });
+});
+
+test('a moved start and end each carry their own zone', () => {
+  const p = m.eventUpdatePayload({ starts_at: '2026-09-21T12:30:00.000Z', ends_at: '2026-09-21T13:00:00.000Z' });
+  assert.deepEqual(p.start, { dateTime: '2026-09-21T12:30:00', timeZone: 'UTC' });
+  assert.deepEqual(p.end, { dateTime: '2026-09-21T13:00:00', timeZone: 'UTC' });
+});
+
+test('an update cannot blank the title, or make it end before it starts', () => {
+  assert.throws(() => m.eventUpdatePayload({ title: '   ' }), /title/);
+  assert.throws(() => m.eventUpdatePayload({ starts_at: '2026-09-21T13:00:00Z', ends_at: '2026-09-21T12:00:00Z' }),
+    /cannot end before it starts/);
+});
+
+test('an end with no matching start still just sends the end — the start is not being moved', () => {
+  assert.deepEqual(m.eventUpdatePayload({ ends_at: '2026-09-21T13:00:00.000Z' }),
+    { end: { dateTime: '2026-09-21T13:00:00', timeZone: 'UTC' } });
+});
+
+test('a start moved with no end given keeps the meeting the length it already was', () => {
+  const current = { starts_at: '2026-09-21T12:00:00.000Z', ends_at: '2026-09-21T12:30:00.000Z' };
+  const kept = m.keptDuration({ starts_at: '2026-09-21T14:00:00.000Z' }, current);
+  assert.equal(kept.ends_at, '2026-09-21T14:30:00.000Z', 'the same 30 minutes, moved along with the new start');
+});
+
+test('an end given alongside the start is never second-guessed', () => {
+  const current = { starts_at: '2026-09-21T12:00:00.000Z', ends_at: '2026-09-21T12:30:00.000Z' };
+  const explicit = { starts_at: '2026-09-21T14:00:00.000Z', ends_at: '2026-09-21T14:05:00.000Z' };
+  assert.deepEqual(m.keptDuration(explicit, current), explicit);
+  const clearsIt = { starts_at: '2026-09-21T14:00:00.000Z', ends_at: null };
+  assert.deepEqual(m.keptDuration(clearsIt, current), clearsIt, 'ends_at explicitly null clears it, and is left alone');
+});
+
+test('nothing to keep the length of: no current end, or the start was not moved', () => {
+  const noEnd = { starts_at: '2026-09-21T12:00:00.000Z', ends_at: null };
+  assert.deepEqual(m.keptDuration({ starts_at: '2026-09-21T14:00:00.000Z' }, noEnd),
+    { starts_at: '2026-09-21T14:00:00.000Z' }, 'Graph decides, as a new event with no end does');
+  assert.deepEqual(m.keptDuration({ title: 'Renamed' }, { starts_at: '2026-09-21T12:00:00.000Z', ends_at: '2026-09-21T12:30:00.000Z' }),
+    { title: 'Renamed' }, 'the start was not touched, so there is no length to carry anywhere');
 });

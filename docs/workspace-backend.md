@@ -4,10 +4,18 @@ The workspace is a second front end onto the **same** Supabase project as
 `/admin`, not a second database. Same auth, same `employees.role`, same anon
 key in the browser with RLS as the only boundary.
 
-Migrations `0021`–`0038`. `0021`–`0037` are applied to the live project and
-verified there — see [Tests](#tests). `0038` (sending mail) is written and
-tested locally but **not applied yet**; see
-[Going live](#going-live).
+Migrations `0021`–`0038`. `0021`–`0038` are all applied to the live project
+and verified there — see [Tests](#tests).
+
+**Update, 2026-09-15:** the workspace kept growing past this document —
+migrations through `0054` are deployed live (second factor, employee role and
+column guards, calendar/mailbox privacy, mail leaving the inbox, agenda and
+task write rules, CRM merges and client numbers, invoice links and project
+activity), and the function count below is old. This file was not rewritten
+to match; the session memory at
+`.claude/projects/-Users-cassiandrefke-Developer-Websites-veyago-workspace/memory/workspace-audit.md`
+in the workspace repo has the day-by-day detail. Treat everything below this
+note as the state as of `0038` unless it says otherwise.
 
 The front end is a separate repo, [`cxspectre/workspaceveyago`][repo], live at
 **<https://workspace.veyago.cloud>**. `veyago.cloud/login/` links straight to
@@ -588,7 +596,11 @@ matched to its ticket once the mail sync runs.
 
 ## Deployed
 
-All six Edge Functions are live on the project:
+All six Edge Functions below were live as of this document's own last update
+(migration `0038`). Seven more have gone out since (`send-mail`, `sync-mercury`,
+`sync-stripe`, `sync-mail-scheduled`, `update-mail-state`, `invoice-pdf`,
+`invite-employee`) — see the update note at the top of this document for
+where the detail lives; this table was not extended to match.
 
 | Function | Auth | Needs |
 |---|---|---|
@@ -662,8 +674,9 @@ that is now on your phone.
 
 ## Sending mail from the workspace
 
-Migration `0038` and three functions. **Written and unit-tested, not deployed
-yet** — the checklist is at the end of this section.
+Migration `0038` and three functions. Deployed and live since 2026-09-15 (see
+the update note at the top of this document) — the checklist that follows
+describes how that went out, kept for the record.
 
 ### send-mail
 
@@ -843,13 +856,12 @@ remove one yet, so for a colleague's personal mailbox that is the SQL editor.
 
 ### Going live
 
-`0038` needs **Postgres 15 or later** (`unique nulls not distinct`). Check first,
-read-only: `show server_version;` in the SQL editor.
+Kept for the record — this already happened. `0038` needed **Postgres 15 or
+later** (`unique nulls not distinct`); the live project already met that bar.
 
-None of 0038, nor the SQL tests written with it, has run anywhere yet. Before
-`db push`, dry-run both: apply 0038 and the `supabase/tests` suites inside one
-transaction that ends in `rollback`, or run them on a local stack
-(`supabase start`, which needs Docker).
+Before `db push`, `0038` and the `supabase/tests` suites written with it were
+dry-run inside one transaction that ends in `rollback`, then applied for
+real. Every migration since has followed the same dry-run-then-push shape.
 
 ```bash
 supabase db push                                   # 0038

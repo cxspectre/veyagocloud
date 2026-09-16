@@ -339,6 +339,63 @@ export function taskCommentEmail(opts: {
   };
 }
 
+/* Sent to the assignee when a ticket is handed to them — the same shape
+   taskAssignedEmail already uses for a task, so the two read as one family. */
+export function ticketAssignedEmail(opts: {
+  assigneeName: string; number: number; subject: string;
+  priority?: string | null; assignedBy?: string | null; ticketUrl: string;
+}) {
+  const first = String(opts.assigneeName || '').trim().split(/\s+/)[0] || 'there';
+  const ref = `#VYG-${opts.number}`;
+  const meta: string[] = [ref];
+  if (opts.priority && opts.priority !== 'normal') meta.push(escapeHtml(opts.priority));
+  return {
+    subject: `New ticket: ${opts.subject}`,
+    html: layout({
+      title: 'A ticket was assigned to you',
+      preheader: `${ref} · ${opts.subject}`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 22px/1.3 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">Hi ${escapeHtml(first)}, you have a new ticket</h1>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:18px 0;border:1px solid ${HAIR};border-radius:12px;">
+          <tr><td style="padding:16px 18px;">
+            <div style="font:600 16px -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};">${escapeHtml(opts.subject)}</div>
+            <div style="margin-top:6px;font-size:13px;color:${MUTED};">${meta.join(' · ')}</div>
+          </td></tr>
+        </table>
+        ${opts.assignedBy ? `<p style="margin:0;font-size:14px;color:${MUTED};">Assigned by ${escapeHtml(opts.assignedBy)}.</p>` : ''}
+        ${button(opts.ticketUrl, 'Open the ticket')}`,
+    }),
+    text:
+      `Hi ${first}, you have a new ticket\n\n${ref} ${opts.subject}\n` +
+      (opts.assignedBy ? `Assigned by ${opts.assignedBy}.\n` : '') +
+      `\nOpen it: ${opts.ticketUrl}`,
+  };
+}
+
+/* Sent to the assignee when their ticket's customer replies — never for a
+   reply of the assignee's own, which is not news to them (ticket-notify.ts
+   decides that, this only composes the email). */
+export function ticketCustomerReplyEmail(opts: {
+  assigneeName: string | null; number: number; subject: string; ticketUrl: string;
+}) {
+  const greeting = opts.assigneeName ? `Hi ${escapeHtml(opts.assigneeName.split(/\s+/)[0])},` : 'Hi,';
+  const ref = `#VYG-${opts.number}`;
+  return {
+    subject: `Reply on ${ref}: ${opts.subject}`,
+    html: layout({
+      title: 'A customer replied',
+      preheader: `${ref} · ${opts.subject}`,
+      bodyHtml: `
+        <h1 style="margin:0 0 14px;font:600 22px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:${INK};letter-spacing:-0.02em;">The customer replied</h1>
+        <p style="margin:0 0 16px;">${greeting} there is a new reply on <strong>${escapeHtml(ref)} ${escapeHtml(opts.subject)}</strong>, assigned to you.</p>
+        ${button(opts.ticketUrl, 'Open the ticket')}`,
+    }),
+    text:
+      `The customer replied on ${ref}: ${opts.subject}\n\n` +
+      `Open it: ${opts.ticketUrl}`,
+  };
+}
+
 export function invoiceEmail(opts: {
   clientName: string; number: string; amountFormatted: string; dueOn?: string | null;
 }) {

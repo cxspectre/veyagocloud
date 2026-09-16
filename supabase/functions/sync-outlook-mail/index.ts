@@ -20,13 +20,19 @@
  *
  * Deploy:  supabase functions deploy sync-outlook-mail
  * Body:    { "connectionId": "...", "days": 30, "max": 200, "folder": "inbox" | "sentitems" | "archive" }
- * Caller must be a manager.
+ * Caller must be staff, and either a manager or the mailbox's own owner: a
+ * deeper reach into the studio's shared mailbox is an owner or admin's call,
+ * like connecting or reconnecting it (microsoft-connect); reaching further
+ * back into your own personal mailbox — the usual reason to call this by
+ * hand, "load older mail" having no other way in — needs nobody's say-so but
+ * yours.
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { accessTokenFor, markNeedsReauthIfUnchanged } from '../_shared/graph-token.ts';
+import { MAX_GAP_DAYS } from '../_shared/mail-store.ts';
 import {
-  claimSync, fetchFolder, markSyncedIfLive, recordSyncFailure, releaseSync, storeMessages,
+  claimSync, clearSyncGapNote, fetchFolder, markSyncedIfLive, recordSyncFailure, releaseSync, storeMessages,
 } from '../_shared/mail-sync.ts';
 import { isShared } from '../_shared/mailbox.ts';
 import { mayActOn } from '../_shared/connection-rules.ts';
@@ -60,7 +66,6 @@ Deno.serve(async (req) => {
   const { data: userData, error: userErr } = await asCaller.auth.getUser();
   if (userErr || !userData?.user) return json({ error: 'Not signed in' }, 401);
   const { data: isManager } = await asCaller.rpc('is_manager');
-  if (!isManager) return json({ error: 'Managers only' }, 403);
   const { data: me, error: meErr } = await asCaller.rpc('active_employee_id');
   if (meErr) return json({ error: 'Could not tell who you are: ' + meErr.message }, 500);
 
@@ -82,6 +87,11 @@ Deno.serve(async (req) => {
      not even that it exists. */
   if (connErr || !conn || !mayActOn(conn, typeof me === 'string' ? me : null)) {
     return json({ error: 'No such connection' }, 404);
+  }
+  /* mayActOn already let this through as the studio's or your own; a studio
+     mailbox needs a manager on top of that (see the header). */
+  if (conn.employee_id === null && isManager !== true) {
+    return json({ error: 'Only an owner or admin can reach further back into a studio mailbox.' }, 403);
   }
   if (conn.provider !== 'microsoft_mail') return json({ error: 'That connection is not a mailbox' }, 400);
   if (!LIVE.includes(conn.status)) return json({ error: 'That mailbox is not connected. Reconnect it first.' }, 409);
@@ -105,9 +115,13 @@ Deno.serve(async (req) => {
     const token = await accessTokenFor(admin, connectionId);
     const since = new Date(Date.now() - days * 86400_000).toISOString();
     const page = await fetchFolder(conn, token, folder, { since, max });
-    const stored = await storeMessages(admin, conn, folder, page.items);
+    const stored = await storeMessages(admin, conn, folder, page.items, token);
 
     await markSyncedIfLive(admin, connectionId);
+    /* A reach further back than the schedule ever manages on its own is what
+       actually fills in a recorded gap (missedRange/SYNC_GAP_NOTE) — a
+       shallow "sync the last few days again" is not the same claim. */
+    if (days > MAX_GAP_DAYS) await clearSyncGapNote(admin, connectionId);
     return json({
       ok: true, mailbox: conn.account_label, shared: isShared(conn), folder,
       threads: stored.threads, messages: stored.messages, routedToTickets: stored.routedToTickets,

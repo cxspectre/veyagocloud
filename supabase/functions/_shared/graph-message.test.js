@@ -133,6 +133,43 @@ test('no priority, or one Graph does not define, is normal; no message id is nul
   assert.equal(m.toMailRow({ ...message, importance: 'Low' }).importance, 'low');
 });
 
+test('an attachment carries its name, kind, size and — for an inline image — its cid', () => {
+  const row = m.toAttachmentRow({
+    id: 'AAMk-1', name: 'invoice.pdf', contentType: 'application/pdf', size: 2048, isInline: false,
+  });
+  assert.deepEqual(row, {
+    external_id: 'AAMk-1', name: 'invoice.pdf', content_type: 'application/pdf',
+    size: 2048, is_inline: false, content_id: null,
+  });
+
+  const inline = m.toAttachmentRow({
+    id: 'AAMk-2', name: 'logo.png', contentType: 'image/png', size: 512, isInline: true, contentId: 'logo123',
+  });
+  assert.equal(inline.is_inline, true);
+  assert.equal(inline.content_id, 'logo123');
+});
+
+test('an attachment missing a name, type or size is stored anyway, never as something untrue', () => {
+  assert.equal(m.toAttachmentRow({ id: 'x' }).name, 'attachment', 'nameless is labelled, not blank');
+  assert.equal(m.toAttachmentRow({ id: 'x', name: '  ' }).name, 'attachment', 'whitespace is still nameless');
+  assert.equal(m.toAttachmentRow({ id: 'x' }).content_type, 'application/octet-stream');
+  for (const size of [undefined, null, -4, 1.5, NaN, 'nine']) {
+    assert.equal(m.toAttachmentRow({ id: 'x', size }).size, 0, `size: ${size}`);
+  }
+  assert.equal(m.toAttachmentRow({ id: 'x', size: 0 }).size, 0, 'a genuinely empty file is not confused with "unknown"');
+  assert.equal(m.toAttachmentRow({ id: 'x', isInline: 'yes' }).is_inline, false, 'only Graph\'s own true counts');
+  assert.equal(m.toAttachmentRow({ id: 'x', contentId: '' }).content_id, null);
+});
+
+test('the attachment list is asked for as metadata only — never $expand, never the bytes', () => {
+  const fields = m.ATTACHMENT_SELECT.split(',');
+  for (const f of ['id', 'name', 'contentType', 'size', 'isInline', 'contentId']) {
+    assert.ok(fields.includes(f), `${f} is missing from the attachment $select`);
+  }
+  assert.ok(!m.ATTACHMENT_SELECT.toLowerCase().includes('contentbytes'),
+    'contentBytes would pull the whole file into the sync for every attachment, every run');
+});
+
 test('the sync asks Graph for every field the row is built from', () => {
   const fields = m.MESSAGE_SELECT.split(',');
   for (const f of ['id', 'conversationId', 'internetMessageId', 'subject', 'body', 'from',
@@ -213,4 +250,62 @@ test('an event marked personal is hidden in a studio calendar too', () => {
   const row = m.toEventRow({ ...event, sensitivity: 'personal' }, 'veyago.cloud', { hidePrivate: true });
   assert.equal(row.title, 'Private');
   assert.equal(row.location, null);
+});
+
+/* ── Who organised it, its meeting link, and the zone it was booked in ──── */
+
+test('the organiser is kept, lower-cased by address', () => {
+  const organized = { ...event, organizer: { emailAddress: { name: 'Dana Reyes', address: 'Dana@Northline.example' } } };
+  const row = m.toEventRow(organized, 'veyago.cloud');
+  assert.equal(row.organizer_name, 'Dana Reyes');
+  assert.equal(row.organizer_email, 'dana@northline.example');
+});
+
+test('an event with no organizer field keeps null, not empty strings mistaken for one', () => {
+  const row = m.toEventRow(event, 'veyago.cloud');
+  assert.equal(row.organizer_name, null);
+  assert.equal(row.organizer_email, null);
+});
+
+test('a hidden event keeps no organiser either: that is still something else about it', () => {
+  const secret = { ...event, sensitivity: 'private', organizer: { emailAddress: { name: 'Dana Reyes', address: 'dana@northline.example' } } };
+  const row = m.toEventRow(secret, 'veyago.cloud', { hidePrivate: true });
+  assert.equal(row.organizer_name, null);
+  assert.equal(row.organizer_email, null);
+});
+
+test('an https join link is kept; anything else is thrown away rather than trusted', () => {
+  const withLink = { ...event, onlineMeeting: { joinUrl: 'https://teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(withLink, 'veyago.cloud').meeting_url, 'https://teams.microsoft.com/l/meetup-join/abc');
+
+  const http = { ...event, onlineMeeting: { joinUrl: 'http://teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(http, 'veyago.cloud').meeting_url, null, 'http:// is not accepted, only https://');
+
+  const javascriptUri = { ...event, onlineMeeting: { joinUrl: 'javascript:alert(1)' } };
+  assert.equal(m.toEventRow(javascriptUri, 'veyago.cloud').meeting_url, null);
+
+  const noScheme = { ...event, onlineMeeting: { joinUrl: 'teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(noScheme, 'veyago.cloud').meeting_url, null);
+
+  assert.equal(m.toEventRow(event, 'veyago.cloud').meeting_url, null, 'no onlineMeeting at all is simply none');
+});
+
+test('the detail still says "Online meeting" when there is a link and nothing else to preview, only for a link that is kept', () => {
+  const noPreview = { ...event, bodyPreview: '', onlineMeeting: { joinUrl: 'https://teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(noPreview, 'veyago.cloud').detail, 'Online meeting');
+  const rejectedLink = { ...event, bodyPreview: '', onlineMeeting: { joinUrl: 'http://not-https.example' } };
+  assert.equal(m.toEventRow(rejectedLink, 'veyago.cloud').detail, null,
+    'a link that was thrown away must not still switch the detail to "Online meeting"');
+});
+
+test('a hidden event keeps no meeting link either', () => {
+  const secret = { ...event, sensitivity: 'confidential', onlineMeeting: { joinUrl: 'https://teams.microsoft.com/l/meetup-join/abc' } };
+  assert.equal(m.toEventRow(secret, 'veyago.cloud', { hidePrivate: true }).meeting_url, null);
+});
+
+test('the organiser\'s own zone is kept for context, trimmed, and blank reads as none', () => {
+  const zoned = { ...event, originalStartTimeZone: 'Europe/Amsterdam' };
+  assert.equal(m.toEventRow(zoned, 'veyago.cloud').time_zone, 'Europe/Amsterdam');
+  assert.equal(m.toEventRow(event, 'veyago.cloud').time_zone, null);
+  assert.equal(m.toEventRow({ ...event, originalStartTimeZone: '  ' }, 'veyago.cloud').time_zone, null);
 });

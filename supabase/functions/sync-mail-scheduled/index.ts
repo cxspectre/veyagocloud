@@ -33,11 +33,11 @@ import { accessTokenFor, markNeedsReauthIfUnchanged } from '../_shared/graph-tok
 import { connectionCheck } from '../_shared/connection-check.ts';
 import { timingSafeEqual } from '../_shared/oauth.ts';
 import { mailboxPath } from '../_shared/mailbox.ts';
-import { readCursors, roundStart, withCursor } from '../_shared/mail-store.ts';
+import { missedRange, readCursors, roundStart, withCursor } from '../_shared/mail-store.ts';
 import { syncFolder, type FolderResult } from '../_shared/delta-loop.ts';
 import {
-  UNCONFIRMED_NOTE, claimSync, dailyInboxSweep, fetchDeltaPage, markLeftFolder, markSyncedIfLive, recordSyncFailure,
-  releaseSync, saveCursor, storeMessages,
+  SYNC_GAP_NOTE, UNCONFIRMED_NOTE, claimSync, dailyInboxSweep, fetchDeltaPage, markLeftFolder, markSyncedIfLive,
+  recordSyncFailure, releaseSync, saveCursor, storeMessages,
 } from '../_shared/mail-sync.ts';
 
 const FOLDERS = ['inbox', 'sentitems'];
@@ -107,6 +107,10 @@ Deno.serve(async (req) => {
     /* From when this schedule last finished a whole run — not last_synced_at,
        which a manual sync of one folder also moves. */
     const since = roundStart(Date.now(), conn.delta_synced_at);
+    /* What roundStart's own fourteen-day cap is about to leave out — read
+       before this run moves delta_synced_at forward, or the gap this run is
+       about to close would already look closed. */
+    const gap = missedRange(Date.now(), conn.delta_synced_at);
     let cursor: string = conn.sync_cursor ?? '';
     let folders: Record<string, FolderResult> = {};
 
@@ -115,7 +119,7 @@ Deno.serve(async (req) => {
         readCursors(cursor, mailbox)[folder] ?? { link: null, failures: 0 },
         {
           fetchPage: (from) => fetchDeltaPage(conn, token, folder, from, since),
-          store: (items) => storeMessages(admin, conn, folder, items),
+          store: (items) => storeMessages(admin, conn, folder, items, token),
           leave: (ids) => markLeftFolder(admin, conn, folder, ids, token, deadline),
           save: async (next) => {
             const updated = withCursor(cursor, mailbox, folder, next);
@@ -146,7 +150,18 @@ Deno.serve(async (req) => {
       .map((folder) => `${folder}: ${folders[folder].unconfirmed}`)
       .join(' · ');
     if (unconfirmed) console.warn(`[sync-mail-scheduled] ${conn.id}: ${unconfirmed}`);
-    await markSyncedIfLive(admin, conn.id, { delta: caughtUp, note: unconfirmed ? UNCONFIRMED_NOTE + unconfirmed : null });
+    if (gap) {
+      console.warn(`[sync-mail-scheduled] ${conn.id}: a sync gap from ${gap.from} to ${gap.to} was not filled in`);
+    }
+    const notes = [
+      unconfirmed ? `${UNCONFIRMED_NOTE}${unconfirmed}` : null,
+      /* The day alone reads better than a full timestamp, and this is a note
+         for a person, not a value anything parses back. */
+      gap ? `${SYNC_GAP_NOTE}mail from before ${gap.from.slice(0, 10)} may be missing — this mailbox `
+        + 'was away longer than the schedule reaches back on its own. A manual sync reaching further '
+        + 'back fills it in.' : null,
+    ].filter(Boolean).join(' · ');
+    await markSyncedIfLive(admin, conn.id, { delta: caughtUp, note: notes || null });
 
     /* Once a day, the inbox against Outlook's, for what the delta never
        reported — only when both folders are caught up and there is time for

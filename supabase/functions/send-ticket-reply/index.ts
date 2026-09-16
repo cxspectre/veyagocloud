@@ -13,6 +13,26 @@
  * in Sent and threads in the customer's client. Falls back to Resend when
  * there is none — never to someone's personal mailbox (pickTicketMailbox).
  *
+ * The address to send to is the linked contact's, or — a sender the CRM has
+ * no contact for (0056: requester_email/requester_name) — the raw address
+ * the ticket came in on, so a customer nobody has filed in the CRM yet can
+ * still be answered.
+ *
+ * A reply through a studio mailbox answers the customer's own last message
+ * (Graph's createReply) rather than starting a fresh one, so it threads in
+ * their client instead of opening a new conversation (0056) — the same
+ * reason send-mail's own replies use createDraft rather than one-shot
+ * sendMail. A reply with nothing to answer (a ticket opened by hand, with no
+ * inbound message on it yet) is sent as a new message instead.
+ *
+ * Once sent, the ticket_messages row already inserted above is stamped with
+ * Graph's own Message-ID for it (internet_message_id) — a plain write, no
+ * second call to Graph to confirm anything. Whenever the regular mail sync
+ * later stores that same message as mail — there is no telling how soon
+ * Sent Items shows it, and it is not this call's job to wait and see —
+ * route_mail_to_ticket() (0056) matches it by that Message-ID and links it to
+ * this same row, instead of filing the reply a second time.
+ *
  * Deploy:  supabase functions deploy send-ticket-reply
  * Secrets: RESEND_API_KEY, EMAIL_FROM  (the fallback; already set)
  * Body:    { "ticketId": "...", "body": "…", "kind": "reply" | "note" }
@@ -20,9 +40,9 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { sendEmail } from '../_shared/email.ts';
-import { decideSend, notRefusedBy, pickTicketMailbox, ticketReplyEmail, ticketRef } from '../_shared/ticket-reply.ts';
+import { decideSend, notRefusedBy, pickTicketMailbox, replyAddress, ticketReplyEmail, ticketRef } from '../_shared/ticket-reply.ts';
 import { accessTokenFor } from '../_shared/graph-token.ts';
-import { sendMailPayload } from '../_shared/graph-write.ts';
+import { draftMessagePayload } from '../_shared/graph-write.ts';
 import { mailboxPath } from '../_shared/mailbox.ts';
 import { GRAPH, graphRequest } from '../_shared/mail-sync.ts';
 import { connectionCheck } from '../_shared/connection-check.ts';
@@ -53,35 +73,76 @@ async function usableMailboxes<T extends MailboxCandidate>(admin: any, rows: T[]
   }
 }
 
+/* The customer's own last message on this ticket, if the reply can answer it
+   directly (Graph's createReply) rather than starting a fresh conversation —
+   only when it arrived through the SAME mailbox this reply is about to leave
+   from; a message from another mailbox is not one Graph will let this
+   mailbox reply to. Read as the service role: this is about how the reply
+   threads, not about what the caller may see. */
+async function lastCustomerMessage(
+  admin: ReturnType<typeof createClient>,
+  ticketId: string,
+  mailboxId: string,
+): Promise<string | null> {
+  const { data: linked } = await admin
+    .from('ticket_messages')
+    .select('mail_message_id')
+    .eq('ticket_id', ticketId)
+    .eq('direction', 'inbound')
+    .not('mail_message_id', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!linked?.mail_message_id) return null;
+
+  const { data: original } = await admin
+    .from('mail_messages')
+    .select('external_id, thread:mail_threads (connection_id)')
+    .eq('id', linked.mail_message_id)
+    .maybeSingle();
+  // deno-lint-ignore no-explicit-any
+  const thread = original && (original as any).thread;
+  if (!original?.external_id || thread?.connection_id !== mailboxId) return null;
+  return original.external_id;
+}
+
 /* Sending from the studio's own mailbox beats sending through Resend for a
  * support reply: it lands in Sent where anyone can see it was answered, and
- * the customer's client threads it with the rest of the conversation instead
- * of starting a new one. Resend stays as the fallback for a project with no
- * mailbox connected yet — losing a reply is worse than sending it from the
- * wrong place. */
+ * — replying to the customer's own last message, when there is one — threads
+ * in their client instead of opening a new conversation (0056). Resend stays
+ * as the fallback for a project with no mailbox connected yet — losing a
+ * reply is worse than sending it from the wrong place. */
 async function sendViaGraph(
   admin: ReturnType<typeof createClient>,
   connection: { id: string; account_label: string; external_id?: string | null },
   to: string,
   subject: string,
   html: string,
-): Promise<{ ok: boolean; error?: string }> {
+  originalExternalId: string | null,
+): Promise<{ ok: boolean; error?: string; internetMessageId?: string }> {
   try {
     const token = await accessTokenFor(admin, connection.id);
+    const box = `${GRAPH}${mailboxPath(connection)}`;
     const replyTo = Deno.env.get('SUPPORT_REPLY_TO');
-    /* Sent through the shared mailbox's own path, so it leaves as
-       hello@veyago.cloud rather than as whoever's grant is being used — and
-       lands in THAT mailbox's Sent items, where the team can see it. Through
-       graphRequest, like every other Graph call for mail, so the guard sees it.
-       Graph answers 202 Accepted with an empty body on success. */
-    await graphRequest(`${GRAPH}${mailboxPath(connection)}/sendMail`, token, {
-      method: 'POST',
-      body: sendMailPayload({
-        to: [to], subject, html,
-        ...(replyTo ? { replyTo: [replyTo] } : {}),
-      }),
+    const payload = draftMessagePayload({
+      to: [to], subject, html,
+      ...(replyTo ? { replyTo: [replyTo] } : {}),
     });
-    return { ok: true };
+
+    // deno-lint-ignore no-explicit-any
+    let draft: any;
+    if (originalExternalId) {
+      const created = await graphRequest(
+        `${box}/messages/${encodeURIComponent(originalExternalId)}/createReply`, token, { method: 'POST', body: {} });
+      draft = await graphRequest(`${box}/messages/${encodeURIComponent(created.id)}`, token, {
+        method: 'PATCH', body: payload,
+      });
+    } else {
+      draft = await graphRequest(`${box}/messages`, token, { method: 'POST', body: payload });
+    }
+
+    await graphRequest(`${box}/messages/${encodeURIComponent(draft.id)}/send`, token, { method: 'POST', body: {} });
+    return { ok: true, internetMessageId: draft.internetMessageId };
   } catch (err) {
     return { ok: false, error: String((err as Error).message || err) };
   }
@@ -168,10 +229,12 @@ Deno.serve(async (req) => {
     }
 
     /* Read through the caller's own session: a ticket they cannot see is a
-       ticket they cannot reply to, and RLS is what decides that. */
+       ticket they cannot reply to, and RLS is what decides that. requester_*
+       (0056) is the raw address a ticket came in on, for a sender the CRM has
+       no contact for. */
     const { data: ticket, error: ticketErr } = await asCaller
       .from('support_tickets')
-      .select('id, number, subject, contact:crm_contacts (full_name, email)')
+      .select('id, number, subject, requester_name, requester_email, contact:crm_contacts (full_name, email)')
       .eq('id', ticketId)
       .maybeSingle();
     if (ticketErr) return json({ error: ticketErr.message }, 500);
@@ -199,10 +262,14 @@ Deno.serve(async (req) => {
     }
 
     const contact = (ticket as { contact?: { full_name?: string; email?: string } }).contact;
+    /* The linked contact's address, or the raw one the ticket came in on
+       (0056) — a sender the CRM has no contact for yet is still someone to
+       answer. */
+    const to = replyAddress({ contactEmail: contact?.email, requesterEmail: (ticket as { requester_email?: string }).requester_email });
     const decision = decideSend({
       direction: internal ? 'internal' : 'outbound',
       body,
-      toEmail: contact?.email,
+      toEmail: to,
     });
 
     /* Saved, not sent — and the caller is told which, rather than being left to
@@ -218,7 +285,7 @@ Deno.serve(async (req) => {
       ticket: { number: ticket.number as number, subject: ticket.subject as string },
       body,
       fromName: author?.full_name ?? null,
-      contactName: contact?.full_name ?? null,
+      contactName: contact?.full_name ?? (ticket as { requester_name?: string }).requester_name ?? null,
     });
 
     /* A studio mailbox or none. Support comes from the address the customer
@@ -234,14 +301,31 @@ Deno.serve(async (req) => {
     const mailbox = pickTicketMailbox(usable);
 
     const html = wrap(mail.bodyHtml);
-    let sent: { ok: boolean; error?: string; skipped?: boolean };
+    let sent: { ok: boolean; error?: string; skipped?: boolean; internetMessageId?: string };
     let via: 'outlook' | 'resend';
     let outlookError: string | null = null;
 
     if (mailbox) {
       via = 'outlook';
-      sent = await sendViaGraph(admin, mailbox, contact!.email!, mail.subject, html);
-      if (!sent.ok) {
+      const originalExternalId = await lastCustomerMessage(admin, ticketId, mailbox.id).catch((err) => {
+        console.warn('[send-ticket-reply] could not find the customer\'s last message to reply to:', String((err as Error)?.message ?? err));
+        return null;
+      });
+      sent = await sendViaGraph(admin, mailbox, to!, mail.subject, html, originalExternalId);
+      if (sent.ok) {
+        /* Best-effort: whether or not this finds the Sent copy, the reply is
+           already sent and recorded — the regular mail sync stores and
+           routes it either way (route_mail_to_ticket, 0056) once it does. */
+        if (sent.internetMessageId) {
+          const { error: stampErr } = await admin
+            .from('ticket_messages')
+            .update({ internet_message_id: sent.internetMessageId })
+            .eq('id', message.id);
+          if (stampErr) {
+            console.warn('[send-ticket-reply] the Message-ID was not stamped; the regular sync may file this reply again:', stampErr.message);
+          }
+        }
+      } else {
         /* The mailbox is connected but refused. Fall back rather than drop the
            reply, and keep Graph's reason — a needs_reauth connection is the
            likely cause and it is already flagged by accessTokenFor(). */
@@ -249,14 +333,14 @@ Deno.serve(async (req) => {
         outlookError = sent.error ?? 'Outlook refused it';
         via = 'resend';
         sent = await sendEmail({
-          to: contact!.email!, subject: mail.subject, html, text: mail.text,
+          to: to!, subject: mail.subject, html, text: mail.text,
           replyTo: Deno.env.get('SUPPORT_REPLY_TO') ?? undefined,
         });
       }
     } else {
       via = 'resend';
       sent = await sendEmail({
-        to: contact!.email!, subject: mail.subject, html, text: mail.text,
+        to: to!, subject: mail.subject, html, text: mail.text,
         replyTo: Deno.env.get('SUPPORT_REPLY_TO') ?? undefined,
       });
     }
@@ -279,7 +363,7 @@ Deno.serve(async (req) => {
     ).eq('id', message.id);
 
     await admin.from('email_log').insert({
-      to_email: contact!.email!,
+      to_email: to!,
       kind: 'ticket_reply',
       subject: mail.subject,
       ok: sent.ok,
@@ -297,7 +381,7 @@ Deno.serve(async (req) => {
       }, 502);
     }
 
-    return json({ ok: true, messageId: message.id, sent: true, via, to: contact!.email, ref: ticketRef({ number: ticket.number as number, subject: '' }) });
+    return json({ ok: true, messageId: message.id, sent: true, via, to, ref: ticketRef({ number: ticket.number as number, subject: '' }) });
   } catch (err) {
     return json({ error: String((err as Error).message || err) }, 500);
   }

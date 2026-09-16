@@ -51,6 +51,19 @@ export function ticketRef(ticket: TicketLike): string {
   return `#VYG-${ticket.number}`;
 }
 
+/* Who a reply actually goes to: the linked CRM contact's address, or — a
+ * sender the CRM has no contact for yet (0056: support_tickets.requester_
+ * email, kept on the ticket by create_ticket_from_thread and by opening one
+ * by hand with an address for who to reach) — the raw address the ticket
+ * came in on. A contact once linked always wins, so correcting the CRM later
+ * is what a reply then follows, not a stale address frozen on the ticket. */
+export function replyAddress(opts: { contactEmail?: string | null; requesterEmail?: string | null }): string | null {
+  const contact = String(opts.contactEmail ?? '').trim();
+  if (contact) return contact;
+  const requester = String(opts.requesterEmail ?? '').trim();
+  return requester || null;
+}
+
 /* The PostgREST filter for replies the rate limit did not refuse: those with
    no delivery_error, or a different one. The message is quoted, with its own
    quotes and backslashes escaped, so a comma, period or parenthesis in it stays
