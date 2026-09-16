@@ -37,10 +37,12 @@ without a token stays green.
 | `19-ticket-merge.sql` | merging one ticket into another moves its messages, notes and conversations and adds a note to both; the refusals hold; a reply that quotes the merged ticket's number, or comes in its conversation, reaches the ticket kept |
 | `21-ticket-workflow.sql` | opening a ticket from a conversation keeps the sender's raw name and address even when the CRM has no contact for them; a reply sent from Mail or Outlook, not through the ticket's own reply box, is filed on the ticket its conversation is attached to, with no author, and is not filed again if the sync sees it twice or if send-ticket-reply already linked it itself; a conversation with no live ticket stays mail; response targets are exactly the four priorities support_tickets.priority checks against, staff read them and only a manager changes the minutes; a new ticket's due-by times come from its priority and move when the priority does; a ticket attachment is recorded only once it is actually uploaded, with the size and type storage actually has; whoever uploaded a file or a manager removes it, nobody else, and anon reaches none of it; email_log accepts its two new kinds |
 | `27-mail-unread-counts.sql` | `mail_unread_counts()` answers only what `mail_threads`' own policy already lets this session read — the studio's mailbox and this person's own, never a colleague's personal one — counting only unread threads still in the inbox, the same thing the reading pane already means by unread; it stays `security invoker` rather than a rule of its own; anon is refused outright, and someone signed in who is not on the team counts nothing |
+| `29-agenda-event-search.sql` | `search_events` finds a past meeting or a non-project event by a word in its title, detail or location — never a cancelled one, and never one on a colleague's own personal calendar, only the studio's or the searcher's own (0026's rule, applied automatically: the function is security_invoker); `p_limit` is honoured up to a hard cap of 50 however high a caller asks; a blank or null query asks nothing |
 
-`06` to `19` test migrations 0040 to 0054, and `21` tests 0056: until those are
-live they fail, so dry-run them first — each suite with the migrations
-applied inside its own transaction, and rolled back with it.
+`06` to `19` test migrations 0040 to 0054, `21` tests 0056, and `29` tests
+migration 0064: until those are live they fail, so dry-run them first — each
+suite with the migrations applied inside its own transaction, and rolled
+back with it.
 
 Each suite prints one row per check with `PASS` / `FAIL`. The runner exits
 non-zero if any row says FAIL.

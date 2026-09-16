@@ -1,7 +1,9 @@
 /* sync-outlook-calendar — pulls a connected calendar into calendar_events, on
  * demand (a staff member presses Sync). sync-calendar-scheduled runs the same
  * work every 15 minutes (0057 §3); both call _shared/calendar-sync.ts, so
- * a rule that changes here cannot quietly stay different there.
+ * a rule that changes here cannot quietly stay different there — including
+ * the pagination and deleted-event retirement fixes documented in that
+ * file's own header (agenda audit, 2026-09-14).
  *
  * Idempotent: upserts on (connection_id, calendar_id, external_id), the plain
  * unique index from 0028. Hand-made workspace events have a null external_id
