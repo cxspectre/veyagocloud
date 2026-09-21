@@ -145,3 +145,20 @@ points there keeps working.
 - **Veyago app links** point to `https://veyago.app` — update if that domain differs.
 - Screenshots are from the Kept demo build; swap in real App Store captures any time
   (`assets/kept-*-{330,660}w.webp`).
+
+## Press kit
+
+The press section lives at `/company/#press`. Update `company/index.html` and
+`assets/veyago-press-notes.txt` together when company or product facts change.
+The Dutch/German pages are generated; add new copy to the locale dictionaries
+and run `npm run build:locales`.
+
+`python3 tools/build-press-pdf.py` builds the PDF using ReportLab, fonttools and
+Brotli. It reads the committed press notes and locally hosted Inter / IBM Plex
+Mono fonts (licenses in `assets/fonts/`). Then run
+`python3 tools/build-press-kit.py` to rebuild the ZIP from committed assets.
+The full-size Veyago icon is preserved from the original kit.
+
+Use `assets/css/press.css` for the press section's document-system styling.
+Bump the press CSS and ZIP query versions in the Company page when replacing
+those downloads, then regenerate the locale pages and run `npm run check`.
