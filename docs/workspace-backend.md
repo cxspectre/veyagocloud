@@ -597,10 +597,11 @@ matched to its ticket once the mail sync runs.
 ## Deployed
 
 All six Edge Functions below were live as of this document's own last update
-(migration `0038`). Seven more have gone out since (`send-mail`, `sync-mercury`,
+(migration `0038`). Seven more went out after that (`send-mail`, `sync-mercury`,
 `sync-stripe`, `sync-mail-scheduled`, `update-mail-state`, `invoice-pdf`,
-`invite-employee`) — see the update note at the top of this document for
-where the detail lives; this table was not extended to match.
+`invite-employee`), and the 2026-09-15 audit batch added or replaced fifteen
+more on 2026-09-21 — see **The 2026-09-15 audit batch** under *Going live*
+below. The table covers the original six only.
 
 | Function | Auth | Needs |
 |---|---|---|
@@ -891,6 +892,62 @@ takes it: `null` for the studio, or the employee it belongs to.
 `dist` v36). It calls `update-mail-state` and deliberately has no fallback to
 writing the thread row, so before the function is live those buttons fail with
 an error instead of quietly doing half the job.
+
+### The 2026-09-15 audit batch
+
+Also kept for the record — this happened on 2026-09-21. Migrations `0055`
+through `0066`, and fifteen functions.
+
+```bash
+supabase db push                                   # 0055 … 0066
+supabase functions deploy create-calendar-event delete-calendar-event \
+  mail-attachment-content notify-ticket send-mail send-ticket-reply \
+  sync-outlook-calendar sync-outlook-mail update-calendar-event update-mail-state
+supabase functions deploy carry-ticket-attachments cleanup-mail-attachments \
+  sync-calendar-scheduled sync-finance-scheduled sync-mail-scheduled --no-verify-jwt
+supabase secrets set CALENDAR_SYNC_SECRET=$(openssl rand -hex 32)
+supabase secrets set FINANCE_SYNC_SECRET=$(openssl rand -hex 32)
+```
+
+Each of those two secrets also goes into the vault under the name its
+migration reads (`0057` and `0060`), with the same value and never committed —
+as `mail_sync_secret` already was above:
+
+```sql
+select vault.create_secret('<CALENDAR_SYNC_SECRET>', 'calendar_sync_secret');
+select vault.create_secret('<FINANCE_SYNC_SECRET>', 'finance_sync_secret');
+```
+
+**Pause `sync-workspace-mail` for the push and turn it back on afterwards** —
+the reason is the one given above for `0045`, and `0055` holds the same tables.
+It stays paused until someone re-enables it, which is easy to forget: it was
+off for six days here, and mail simply stops arriving while it is.
+
+```sql
+select cron.alter_job((select jobid from cron.job where jobname = 'sync-workspace-mail'), active := false);
+-- … push, deploy …
+select cron.alter_job((select jobid from cron.job where jobname = 'sync-workspace-mail'), active := true);
+```
+
+**Three functions the same batch replaced had to be repaired after it.**
+`0055` and `0056` were written in separate worktrees off the same base, so
+each `create or replace` carried only what its own author could see, and the
+higher number silently dropped the other's work: `store_mail_batch` lost
+`0055`'s attachment block (restored in `0066`), `create_ticket_from_thread`
+kept reading `mail_threads.last_from_name` after `0055` renamed it (fixed in
+`0065`), and `mail_messages_maintain_thread` hit the same thing between `0055`
+and `0059` (caught before the push). None of it could fail in `node --test` —
+a fake Supabase client validates no column and no function body. What found
+them was `node tools/check-db.js` against the real database, and it is worth
+re-running after any batch where two migrations touch one function. To list
+the candidates:
+
+```bash
+cd supabase/migrations && for f in 00*.sql; do
+  grep -oE "create or replace function public\.[a-z_]+" "$f" |
+    sed "s|create or replace function public\.||" | sort -u | sed "s|^|${f%%_*} |"
+done | sort -k2 | awk '{ if ($2 == prev) print "both " prevfile " and " $1 ": " $2; prev=$2; prevfile=$1 }'
+```
 
 ## What is still not built
 

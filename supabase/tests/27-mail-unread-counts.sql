@@ -65,6 +65,28 @@ $$;
 
 grant execute on function pg_temp.counts() to authenticated, anon;
 
+-- The same call with nothing joined to it. pg_temp.counts() above cannot
+-- answer "was this refused?": its inner join to integration_connections finds
+-- no row a caller may read, and the planner drops the function scan with it —
+-- so a caller carrying no grant at all still comes back 'none' rather than
+-- raising. Asking for the function on its own keeps the privilege check in
+-- the plan, which is the thing the anon check below is actually about.
+create function pg_temp.callable()
+returns text
+language plpgsql
+as $$
+declare
+  n int;
+begin
+  select count(*) into n from public.mail_unread_counts();
+  return 'allowed';
+exception when insufficient_privilege then
+  return 'refused';
+end;
+$$;
+
+grant execute on function pg_temp.callable() to authenticated, anon;
+
 -- ── The assistant, a member of staff ─────────────────────────────────────
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal2"}', true);
@@ -99,9 +121,22 @@ select set_config('request.jwt.claims', '{"role":"anon"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'ANON: refused outright — execute was never granted', 'refused', x.seen, x.seen = 'refused'
+from (select pg_temp.callable() as seen) x;
+
+insert into results(name, expected, actual, pass)
+select 'ANON: and counts nothing even so', 'none', x.seen, x.seen = 'none'
 from (select pg_temp.counts() as seen) x;
 
 reset role;
+
+-- Said plainly, so it does not rest on any one call path's plan.
+insert into results(name, expected, actual, pass)
+select 'GRANTS: authenticated may execute mail_unread_counts, anon may not', 'yes · no',
+       (case when has_function_privilege('authenticated', 'public.mail_unread_counts()', 'execute') then 'yes' else 'no' end)
+         || ' · ' ||
+       (case when has_function_privilege('anon', 'public.mail_unread_counts()', 'execute') then 'yes' else 'no' end),
+       has_function_privilege('authenticated', 'public.mail_unread_counts()', 'execute')
+         and not has_function_privilege('anon', 'public.mail_unread_counts()', 'execute');
 
 insert into results(name, expected, actual, pass)
 select 'SECURITY: invoker, not definer — it must rely on mail_threads'' own RLS, never a copy of it',
