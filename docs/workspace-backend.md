@@ -725,10 +725,36 @@ Outlook, and the response says so.
 `Mail.ReadWrite` would allow it, so it is refused twice. **At runtime**, every
 Graph call for mail goes through `graphRequest()`, which asks
 `_shared/graph-guard.ts` first: an allowlist of reads, drafts, attachments,
-sends and read/flag changes. A call assembled from variables cannot talk its way
-past it, and an attachment upload may only go to the session Graph issued.
-**In source**, `mail-safety.test.js` fails on any delete, purge, move or copy in
-a function or a migration, and checks the guard is actually wired in.
+sends, read/flag changes and — since 2026-09-21 — a move to one of exactly
+three folders. A call assembled from variables cannot talk its way past it, and
+an attachment upload may only go to the session Graph issued. **In source**,
+`mail-safety.test.js` fails on any delete, purge or copy in a function or a
+migration, on either of Outlook's purge folders being named anywhere at all, and
+on `MOVABLE_TO` holding anything but those three — and checks the guard is
+actually wired in.
+
+### move-mail-thread
+
+The owner's decision on 2026-09-21: the workspace may **archive, mark as junk
+and delete**, where *delete means a move to Deleted Items* and nothing else.
+Nothing anywhere may purge a message.
+
+Unlike `update-mail-state`, this goes to **Outlook first and only then to the
+store, and refuses outright when Outlook cannot be reached**. A read flag the
+next sync undoes is a small loss; a *move* written here that Graph never took
+is not — the next delta stores the message back under `inbox` and the
+conversation reappears minutes after the button said it was gone.
+
+Which messages move is `_shared/mail-move.ts`: only ones still in a folder the
+workspace lists, and, for junk, only mail from outside — marking our own reply
+as junk teaches Outlook that our own address sends junk. A move changes the
+message's Graph id, so the new one is written too, or
+`mail-attachment-content` would be fetching by an id Graph no longer knows.
+
+`mail_moved()` (`0069`, service role only) then files the messages and hands
+the conversation itself to `0045`'s own `file_threads_out_of_inbox()` — so a
+conversation archived here and one archived in Outlook and noticed by the sync
+land in the same place by the same rule.
 
 ### update-mail-state
 
@@ -948,6 +974,28 @@ cd supabase/migrations && for f in 00*.sql; do
     sed "s|create or replace function public\.||" | sort -u | sed "s|^|${f%%_*} |"
 done | sort -k2 | awk '{ if ($2 == prev) print "both " prevfile " and " $1 ": " $2; prev=$2; prevfile=$1 }'
 ```
+
+### Moving mail (0069)
+
+Not yet pushed. `0069` adds `mail_moved()` and `mail_thread_placement()` and
+replaces **no existing function at all** — deliberately, given what the batch
+above cost. The conversation rule it needs is `0045`'s
+`file_threads_out_of_inbox()`, *called* rather than copied or widened, since
+`mail_left_folder()` and `store_mail_batch()` (now `0066`'s text) both depend
+on it exactly as it stands.
+
+```bash
+supabase db push                                   # 0069
+supabase functions deploy move-mail-thread
+```
+
+Dry-run `supabase/tests/32-mail-moving.sql` with `0069` applied inside its own
+transaction first, as every batch since `0038` has. The pause-the-cron advice
+above applies: `0069` takes the two mail tables.
+
+**Then ship the workspace's Mail change**, which calls `move-mail-thread` with
+no fallback — before the function is live, Archive, Junk and Delete fail with
+an error rather than half-filing a conversation.
 
 ## What is still not built
 

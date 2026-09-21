@@ -260,9 +260,57 @@ export interface GraphEvent {
   organizer?: { emailAddress?: GraphAddress };
   /* The zone the organiser was in when they made it — never what start/end
      carry here, which the sync always reads back as UTC (see the file
-     header's Prefer: outlook.timezone="UTC"). Context only. */
+     header's Prefer: outlook.timezone="UTC"). Usually a Windows name; 0068
+     maps it to an IANA one alongside (_shared/calendar-recurrence.ts). */
   originalStartTimeZone?: string;
   attendees?: { emailAddress?: GraphAddress; status?: { response?: string } }[];
+  /* Series, reminder and invitation fields (0068). All read by
+     _shared/calendar-recurrence.ts and _shared/calendar-response.ts rather
+     than by toEventRow, which cannot import them — see EVENT_SELECT below. */
+  type?: string;                       // singleInstance | occurrence | exception | seriesMaster
+  seriesMasterId?: string;
+  recurrence?: unknown;                // only ever on the series master
+  isReminderOn?: boolean;
+  reminderMinutesBeforeStart?: number;
+  isOrganizer?: boolean;
+  responseStatus?: { response?: string; time?: string };
+}
+
+/* Every field the sync's calendarView asks for. Here, beside MESSAGE_SELECT,
+ * for the same reason that one is: a field added to a row cannot then be
+ * forgotten in the request that has to fetch it.
+ *
+ * EVERY NAME HERE IS A PROPERTY OF microsoft.graph.event ITSELF. That is not
+ * a pleasantry — asking $select for a property that lives on a DERIVED type
+ * makes Graph refuse the WHOLE request with a 400, and the calendar fetch
+ * loop turns that into a thrown error for the entire connection. It is the
+ * same trap ATTACHMENT_SELECT documents a few lines up, where `contentId`
+ * belongs to microsoft.graph.fileAttachment and silently broke attachments
+ * for weeks. `recurrence` is deliberately NOT here: it exists on the base
+ * type, but calendarView returns expanded OCCURRENCES, which never carry one
+ * — only the series master does, and calendar-sync.ts fetches those
+ * separately (SERIES_SELECT). */
+export const EVENT_SELECT = [
+  'id', 'subject', 'bodyPreview', 'start', 'end', 'isAllDay', 'isCancelled', 'showAs',
+  'sensitivity', 'location', 'attendees', 'onlineMeeting', 'organizer', 'originalStartTimeZone',
+  /* 0068: which occurrence of which series this is, whether a reminder is set
+     and how long before, and how the calendar's owner answered the invite. */
+  'type', 'seriesMasterId', 'isReminderOn', 'reminderMinutesBeforeStart',
+  'isOrganizer', 'responseStatus',
+].join(',');
+
+/* What a series master is fetched for, once per series per run: the pattern
+ * itself, which no occurrence carries. */
+export const SERIES_SELECT = 'id,recurrence';
+
+/* An event its organiser marked personal, private or confidential, in a
+ * calendar every member of staff reads. Exported so that everything deciding
+ * what to keep about such an event agrees — toEventRow below, and 0068's
+ * recurrence, reminder and invitation fields, which are "something else about
+ * it" in exactly the same way its attendees and join link are. */
+export function privateInStudio(sensitivity: unknown, hidePrivate: boolean | undefined): boolean {
+  return Boolean(hidePrivate)
+    && ['personal', 'private', 'confidential'].includes(String(sensitivity ?? '').toLowerCase());
 }
 
 export interface EventRow {
@@ -315,8 +363,7 @@ export function toEventRow(ev: GraphEvent, ownDomain: string, options: { hidePri
 
   const domain = String(ownDomain || '').toLowerCase();
   const outside = attendees.some((a) => a.email && !a.email.endsWith(`@${domain}`));
-  const hidden = Boolean(options.hidePrivate)
-    && ['personal', 'private', 'confidential'].includes(String(ev.sensitivity ?? '').toLowerCase());
+  const hidden = privateInStudio(ev.sensitivity, options.hidePrivate);
   /* Nothing to show for a hidden event: an organiser, a join link and a zone
      are still "something else" about it, the same as its attendees. */
   const meetingUrl = hidden ? null : joinUrl(ev.onlineMeeting?.joinUrl);

@@ -35,7 +35,9 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { accessTokenFor, TokenRefreshError } from '../_shared/graph-token.ts';
-import { toEventRow, toInstant, type GraphEvent } from '../_shared/graph-message.ts';
+import { privateInStudio, toEventRow, toInstant, type GraphEvent } from '../_shared/graph-message.ts';
+import { eventExtraFields } from '../_shared/calendar-recurrence.ts';
+import { responseFields } from '../_shared/calendar-response.ts';
 import { eventUpdatePayload, keptDuration, type EventChanges } from '../_shared/graph-write.ts';
 import { eventChangeRefusal } from '../_shared/calendar-event-guard.ts';
 import { calendarSyncBlocker } from '../_shared/calendar-sync.ts';
@@ -192,6 +194,19 @@ Deno.serve(async (req) => {
     const parsed = toEventRow(updated, String(conn.account_label).split('@')[1] ?? '', { hidePrivate: studio });
     if (!parsed) return json({ error: 'Graph returned an event we could not read back' }, 502);
 
+    /* 0068's columns, from the same PATCH response and through the same two
+       pure modules the sync uses, so "identical to what the next sync would
+       write" above stays true of the whole row rather than most of it. A
+       PATCH with no $select returns the full event, so `updated` carries
+       them. There is no series to read a pattern from here: eventChangeRefusal
+       has refused every non-singleInstance event since 0057, so
+       recurrence_summary is null by construction, not by omission. */
+    const hidden = privateInStudio(updated.sensitivity, studio);
+    const extras = {
+      ...eventExtraFields(updated, { hidden }),
+      ...responseFields(updated, { hidden }),
+    };
+
     const { error: saveErr } = await admin.from('calendar_events').update({
       title: parsed.title,
       detail: parsed.detail,
@@ -205,6 +220,7 @@ Deno.serve(async (req) => {
       organizer_email: parsed.organizer_email,
       meeting_url: parsed.meeting_url,
       time_zone: parsed.time_zone,
+      ...extras,
     }).eq('id', row.id);
     if (saveErr) return json({ error: saveErr.message }, 500);
 

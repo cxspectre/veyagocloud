@@ -30,13 +30,15 @@
  */
 
 import { accessTokenFor, markNeedsReauth, markNeedsReauthIfUnchanged, storedGrant } from './graph-token.ts';
-import { toEventRow, type GraphEvent } from './graph-message.ts';
+import { EVENT_SELECT, privateInStudio, SERIES_SELECT, toEventRow, type GraphEvent } from './graph-message.ts';
 import { isShared, mailboxPath } from './mailbox.ts';
 import { failureStatusOf } from './mail-store.ts';
 import { markSyncedIfLive } from './mail-sync.ts';
 import { grantCovers } from './connection-rules.ts';
 import { connectionCheck } from './connection-check.ts';
-import { nextLinkOf, syncedEventFields, vanishedIds, type GraphPage } from './calendar-sync-helpers.ts';
+import { nextLinkOf, seriesMasterIds, syncedEventFields, vanishedIds, type GraphPage } from './calendar-sync-helpers.ts';
+import { eventExtraFields, recurrenceSummary } from './calendar-recurrence.ts';
+import { responseFields } from './calendar-response.ts';
 
 // deno-lint-ignore no-explicit-any
 type Admin = any;
@@ -61,6 +63,14 @@ const MAX_PAGES = 20;
    (PAGE at a time, stop once a page comes back short): Supabase caps a
    single select at its own max rows and says nothing when it does. */
 const EXISTING_PAGE = 1000;
+/* How many series masters one run will fetch the recurrence pattern of
+   (0068). calendarView hands back EXPANDED occurrences, which carry no
+   pattern at all, so the words "Every 2 weeks on Monday" can only come from
+   the master — one extra GET per distinct series in the window, not per
+   occurrence. Fifty is far more distinct series than a two-person studio's
+   window holds; past it the remaining events still read as repeating (their
+   `type` says so, free) and simply carry no sentence describing the pattern. */
+const MAX_SERIES = 50;
 
 export type CalendarConnectionRow = {
   id: string;
@@ -73,6 +83,10 @@ export type CalendarConnectionRow = {
 
 export type CalendarSyncResult = {
   ok: true; events: number; skipped: number; cancelled: number; truncated: boolean; windowDays: number; calendarId: string;
+  /* How many distinct recurring series the run read a pattern for (0068) —
+     reported rather than inferred, since a window with no repeating meeting
+     in it and one whose masters all failed to read look the same otherwise. */
+  series: number;
 };
 
 /* A connection-level problem that stops the sync before it starts, with the
@@ -125,8 +139,12 @@ export async function runCalendarSync(admin: Admin, conn: CalendarConnectionRow,
       endDateTime: timeMax,
       $top: '250',
       $orderby: 'start/dateTime',
-      $select: 'id,subject,bodyPreview,start,end,isAllDay,isCancelled,showAs,sensitivity,location,attendees,' +
-        'onlineMeeting,organizer,originalStartTimeZone',
+      /* Named once, in graph-message.ts beside the row it fills — and every
+         name in it is a property of microsoft.graph.event itself. Read that
+         constant's comment before adding one: a $select naming a property
+         that lives on a derived type is a 400 for the WHOLE request, which
+         here throws and takes the entire connection's sync with it. */
+      $select: EVENT_SELECT,
     });
 
     /* Every page Graph has for the window, not only the first: a nextLink
@@ -158,6 +176,34 @@ export async function runCalendarSync(admin: Admin, conn: CalendarConnectionRow,
       next = nextLinkOf(page);
     }
     const studio = conn.employee_id === null;
+
+    /* THE RECURRING SERIES, READ PROPERLY (0068). calendarView expands a
+       series into its occurrences — which is why it is used instead of
+       /events, see the comment on the query above — and an occurrence's
+       `recurrence` is null: only the series master holds the pattern. So a
+       weekly stand-up arrived as twelve unrelated-looking meetings, and
+       nothing on the agenda could say it repeated.
+
+       One GET per DISTINCT series in the window (MAX_SERIES at most), not one
+       per occurrence: twelve stand-ups are one master. A master that fails to
+       read is skipped, not thrown — the pattern's words are the least
+       important thing on the row, and losing the whole connection's sync over
+       one of them would be the wrong trade. Everything else about those
+       occurrences still syncs, and they still say they repeat, because
+       `type` comes back on the occurrence itself. */
+    const summaries = new Map<string, string>();
+    for (const masterId of seriesMasterIds(events, MAX_SERIES)) {
+      try {
+        const res = await fetch(
+          `${GRAPH}${mailboxPath(conn)}/events/${encodeURIComponent(masterId)}?$select=${SERIES_SELECT}`,
+          { headers: { Authorization: `Bearer ${token}`, Prefer: 'outlook.timezone="UTC"' } },
+        );
+        if (!res.ok) continue;
+        const master = await res.json() as { recurrence?: unknown };
+        const words = recurrenceSummary(master?.recurrence as never);
+        if (words) summaries.set(masterId, words);
+      } catch { /* the pattern's words are not worth failing a sync for */ }
+    }
 
     /* What this connection+calendar already has in the same window just
        asked about — needed twice: to decide whether a row's `kind` may take
@@ -198,8 +244,18 @@ export async function runCalendarSync(admin: Admin, conn: CalendarConnectionRow,
       if (!row) { skipped++; continue; }
       seen.add(row.external_id);
 
+      /* The columns 0068 added, decided in the two pure modules that own
+         their vocabularies rather than here — and nulled together for a
+         private event in the studio calendar, which keeps its time and
+         nothing else (privateInStudio, the same test toEventRow makes). */
+      const hidden = privateInStudio(ev.sensitivity, studio);
+      const extras = {
+        ...eventExtraFields(ev, { seriesSummary: summaries.get(String(ev.seriesMasterId ?? '')) ?? null, hidden }),
+        ...responseFields(ev, { hidden }),
+      };
+
       const { error: upErr } = await admin.from('calendar_events').upsert(
-        syncedEventFields(row, conn.id, DEFAULT_CALENDAR_ID, known.has(row.external_id)),
+        syncedEventFields(row, conn.id, DEFAULT_CALENDAR_ID, known.has(row.external_id), extras),
         { onConflict: 'connection_id,calendar_id,external_id' },
       );
       if (upErr) throw new Error(`event upsert: ${upErr.message}`);
@@ -228,7 +284,10 @@ export async function runCalendarSync(admin: Admin, conn: CalendarConnectionRow,
     /* Only a calendar still connected, or in error, is marked synced: a run
        must not switch back on a calendar someone disconnected meanwhile. */
     await markSyncedIfLive(admin, conn.id);
-    return { ok: true, events: written, skipped, cancelled, truncated, windowDays: days, calendarId: DEFAULT_CALENDAR_ID };
+    return {
+      ok: true, events: written, skipped, cancelled, truncated,
+      windowDays: days, calendarId: DEFAULT_CALENDAR_ID, series: summaries.size,
+    };
   } catch (err) {
     const message = String((err as Error).message || err);
     try {
