@@ -1,8 +1,15 @@
 /* Tests for _shared/graph-guard.ts — the runtime half of "the workspace never
-   deletes, moves or copies mail". Mail.ReadWrite permits all three, and a
-   source scan (mail-safety.test.js) can be dodged by building a URL or a
-   method from a variable. This check sits inside the one function that calls
-   Graph for mail, and refuses at the call. */
+   deletes or copies mail, and moves it only to the three folders the owner
+   named". Mail.ReadWrite permits deleting, moving and copying, and a source
+   scan (mail-safety.test.js) can be dodged by building a URL or a method from
+   a variable. This check sits inside the one function that calls Graph for
+   mail, and refuses at the call.
+
+   Since 2026-09-21 an archive, junk or Deleted Items move is allowed
+   (0069/move-mail-thread), which is why the move cases below are split: the
+   three named destinations go through, and everything else about a move —
+   another folder, a raw folder id, an extra field, a copy, a purge — does
+   not. */
 'use strict';
 
 const test = require('node:test');
@@ -43,22 +50,57 @@ test('reading mail, drafting, attaching and sending are allowed', () => {
   }
 });
 
-test('deleting, moving and copying mail are refused at the call', () => {
+test('deleting and copying mail are refused at the call', () => {
   for (const [method, url] of [
     ['DELETE', `${G}/me/messages/AAMk`],
     ['delete', `${G}/me/messages/AAMk`],
     ['PUT', `${G}/me/messages/AAMk`],
-    ['POST', `${G}/me/messages/AAMk/move`],
-    ['POST', `${G}/me/messages/AAMk/Move`],
     ['POST', `${G}/me/messages/AAMk/copy`],
     ['POST', `${G}/me/messages/AAMk/permanentDelete`],
-    ['POST', `${G}/me/mailFolders/inbox/messages/AAMk/move`],
     ['POST', `${G}/me/mailFolders/inbox/messages/delta`],
     ['POST', `${G}/me/mailFolders`],
     ['PATCH', `${G}/me/mailFolders/inbox`],
   ]) {
     assert.throws(() => m.assertGraphCall(method, url, {}), /not allowed/, `${method} ${url}`);
   }
+});
+
+test('a move reaches the three folders the owner named, in any mailbox', () => {
+  for (const [url, to] of [
+    [`${G}/me/messages/AAMk/move`, 'archive'],
+    [`${G}/me/messages/AAMk/Move`, 'junkemail'],
+    [`${G}/me/messages/AAMk/move`, 'deleteditems'],
+    [`${G}/me/messages/AAMk/move`, 'DeletedItems'],
+    [`${G}/users/hello%40veyago.cloud/messages/AAMk%3D/move`, 'archive'],
+    [`${G}/me/mailFolders/inbox/messages/AAMk/move`, 'archive'],
+  ]) {
+    assert.doesNotThrow(() => m.assertGraphCall('POST', url, { destinationId: to }), `${url} → ${to}`);
+  }
+});
+
+/* The whole reason this guard still exists after the owner allowed moving:
+   a purge is permanent, and "delete" must never be able to mean one. */
+test('a move anywhere but those three is refused, purge folders above all', () => {
+  for (const to of [
+    'recoverableitemsdeletions',          // Outlook's purge: mail here is gone for good
+    'recoverableitemspurges',
+    'inbox',                              // mail comes BACK only by being synced back
+    'sentitems',
+    'drafts',
+    'AAMkAGI2THEREALFOLDERID=',           // an id says nothing about where it leads
+    '',
+  ]) {
+    assert.throws(() => m.assertGraphCall('POST', `${G}/me/messages/AAMk/move`, { destinationId: to }),
+      /not allowed/, `move to ${to || '(nothing)'}`);
+  }
+});
+
+test('a move may say which folder and nothing else', () => {
+  const at = `${G}/me/messages/AAMk/move`;
+  assert.throws(() => m.assertGraphCall('POST', at, {}), /not allowed/);
+  assert.throws(() => m.assertGraphCall('POST', at, undefined), /not allowed/);
+  assert.throws(() => m.assertGraphCall('POST', at, { destinationId: 'archive', isRead: true }), /not allowed/);
+  assert.throws(() => m.assertGraphCall('POST', at, { DestinationId: 'archive' }), /not allowed/);
 });
 
 test('a PATCH may only change what the workspace changes', () => {
