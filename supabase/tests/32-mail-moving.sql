@@ -154,6 +154,12 @@ select public.store_mail_batch('32a00000-0000-4000-a000-000000000002', 'inbox', 
   pg_temp.mail('w-1', 'conv-w', 'inbound', 25)));
 
 select set_config('test.started', pg_temp.still_there('32a00000-0000-4000-a000-000000000001'), true);
+-- The owner's own conversation, remembered WHILE it can still be looked up:
+-- a colleague cannot read mail_threads to find its id, so asking for it as
+-- them would prove nothing about mail_thread_placement() itself — only that
+-- the id came back null.
+select set_config('test.private_thread',
+  pg_temp.thread_id('32a00000-0000-4000-a000-000000000002', 'conv-w')::text, true);
 
 -- ── 1. Archiving a conversation whose mail is all from outside ─────────────
 -- Both messages move, and the conversation follows them out of the inbox —
@@ -275,9 +281,9 @@ select 'PLACEMENT: staff read where a studio conversation''s messages are', '2',
 from public.mail_thread_placement(pg_temp.thread_id('32a00000-0000-4000-a000-000000000001', 'conv-q'));
 
 insert into results(name, expected, actual, pass)
-select 'PLACEMENT: but not a colleague''s personal mailbox', '0',
+select 'PLACEMENT: but not a colleague''s personal mailbox, asked for by its own id', '0',
        count(*)::text, count(*) = 0
-from public.mail_thread_placement(pg_temp.thread_id('32a00000-0000-4000-a000-000000000002', 'conv-w'));
+from public.mail_thread_placement(current_setting('test.private_thread')::uuid);
 
 select pg_temp.refused('NO BROWSER MOVES MAIL: a signed-in person cannot file it themselves', $sql$
   select public.mail_moved(
