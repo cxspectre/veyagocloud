@@ -191,7 +191,16 @@ export interface GraphAttachment {
   contentId?: string;
 }
 
-export const ATTACHMENT_SELECT = 'id,name,contentType,size,isInline,contentId';
+/* contentId belongs to microsoft.graph.fileAttachment, not to the base
+ * microsoft.graph.attachment this endpoint returns, so it has to be asked for
+ * through its derived type. Bare, Graph refuses the WHOLE list with
+ * "Could not find a property named 'contentId' on type
+ * 'microsoft.graph.attachment'" — and fetchAttachments treats a failed list as
+ * "no attachments this round", so every message came back with none and
+ * nothing was ever stored (found 2026-09-21, live). Still no contentBytes:
+ * the bytes are fetched one attachment at a time, on demand. */
+export const ATTACHMENT_SELECT =
+  'id,name,contentType,size,isInline,microsoft.graph.fileAttachment/contentId';
 
 export interface AttachmentRow {
   external_id: string;

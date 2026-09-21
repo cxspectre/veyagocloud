@@ -163,9 +163,16 @@ test('an attachment missing a name, type or size is stored anyway, never as some
 
 test('the attachment list is asked for as metadata only — never $expand, never the bytes', () => {
   const fields = m.ATTACHMENT_SELECT.split(',');
-  for (const f of ['id', 'name', 'contentType', 'size', 'isInline', 'contentId']) {
+  for (const f of ['id', 'name', 'contentType', 'size', 'isInline']) {
     assert.ok(fields.includes(f), `${f} is missing from the attachment $select`);
   }
+  /* contentId is only on the derived type. Asked for bare, Graph refuses the
+     whole request, the list comes back empty, and nothing is stored at all —
+     which is exactly what happened until 2026-09-21. */
+  assert.ok(fields.includes('microsoft.graph.fileAttachment/contentId'),
+    'contentId must be asked for through microsoft.graph.fileAttachment');
+  assert.ok(!fields.includes('contentId'),
+    'a bare contentId makes Graph refuse the whole attachment list');
   assert.ok(!m.ATTACHMENT_SELECT.toLowerCase().includes('contentbytes'),
     'contentBytes would pull the whole file into the sync for every attachment, every run');
 });
