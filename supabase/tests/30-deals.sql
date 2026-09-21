@@ -271,8 +271,16 @@ select pg_temp.check('BACKFILL: a company added after 0067 ran has no deal until
 $sql$);
 
 -- ── 6. A session that has not entered its code ───────────────────────────
-
-select set_config('request.jwt.claims', '{"sub":"21fc20c1-50e8-4764-9a11-71031d2f8f2c","role":"authenticated","aal":"aal1"}', true);
+--
+-- The OWNER, not the assistant, and that is the whole point: second_factor_met()
+-- (0040) answers true for an account with no verified factor enrolled, because
+-- such an account has no code to owe and nothing to withhold. The assistant has
+-- none on this project, so running this block as them proves nothing — the
+-- restrictive policy correctly lets them through and the checks read as a hole
+-- that is not there. The owner has a verified factor, so aal1 genuinely owes a
+-- code, which is what makes these three checks mean something. 25-thicker-
+-- invoices.sql's own aal1 block uses the owner for exactly this reason.
+select set_config('request.jwt.claims', '{"sub":"d7d1bedb-fd7d-48b0-aa82-4fcae1cfb093","role":"authenticated","aal":"aal1"}', true);
 
 insert into results(name, expected, actual, pass)
 select 'AAL1: staff read no deal at all before the code is entered', '0', count(*)::text, count(*) = 0
