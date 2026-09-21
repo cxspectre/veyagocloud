@@ -38,11 +38,12 @@ without a token stays green.
 | `21-ticket-workflow.sql` | opening a ticket from a conversation keeps the sender's raw name and address even when the CRM has no contact for them; a reply sent from Mail or Outlook, not through the ticket's own reply box, is filed on the ticket its conversation is attached to, with no author, and is not filed again if the sync sees it twice or if send-ticket-reply already linked it itself; a conversation with no live ticket stays mail; response targets are exactly the four priorities support_tickets.priority checks against, staff read them and only a manager changes the minutes; a new ticket's due-by times come from its priority and move when the priority does; a ticket attachment is recorded only once it is actually uploaded, with the size and type storage actually has; whoever uploaded a file or a manager removes it, nobody else, and anon reaches none of it; email_log accepts its two new kinds |
 | `27-mail-unread-counts.sql` | `mail_unread_counts()` answers only what `mail_threads`' own policy already lets this session read — the studio's mailbox and this person's own, never a colleague's personal one — counting only unread threads still in the inbox, the same thing the reading pane already means by unread; it stays `security invoker` rather than a rule of its own; anon is refused outright, and someone signed in who is not on the team counts nothing |
 | `29-agenda-event-search.sql` | `search_events` finds a past meeting or a non-project event by a word in its title, detail or location — never a cancelled one, and never one on a colleague's own personal calendar, only the studio's or the searcher's own (0026's rule, applied automatically: the function is security_invoker); `p_limit` is honoured up to a hard cap of 50 however high a caller asks; a blank or null query asks nothing |
+| `30-deals.sql` | one company holds several open deals at once, each with its own stage and value, and the company's own `stage`/`value` are untouched; a deal is open exactly when it has no outcome, and a won or lost one keeps the stage it stood at when it closed — won and lost are never stages; a blank title, an outcome with no date, a date with no outcome, a negative value, a currency that is not three capital letters and a stage the table does not have are each refused; staff add, move and close deals but only a manager removes one, a session at `aal1` reads and writes none, and anon reaches none of it; `updated_at` cannot be forged; the backfill is one-time, so a company added since has no deal; a hard-deleted company takes its deals with it; and merging two companies moves the merged one's deals to the company kept, which `crm_merge_references()` (0067 §5) is what makes possible at all |
 
-`06` to `19` test migrations 0040 to 0054, `21` tests 0056, and `29` tests
-migration 0064: until those are live they fail, so dry-run them first — each
-suite with the migrations applied inside its own transaction, and rolled
-back with it.
+`06` to `19` test migrations 0040 to 0054, `21` tests 0056, `29` tests
+migration 0064 and `30` tests 0067: until those are live they fail, so dry-run
+them first — each suite with the migrations applied inside its own
+transaction, and rolled back with it.
 
 Each suite prints one row per check with `PASS` / `FAIL`. The runner exits
 non-zero if any row says FAIL.
