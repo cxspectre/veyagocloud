@@ -316,3 +316,46 @@ test('the organiser\'s own zone is kept for context, trimmed, and blank reads as
   assert.equal(m.toEventRow(event, 'veyago.cloud').time_zone, null);
   assert.equal(m.toEventRow({ ...event, originalStartTimeZone: '  ' }, 'veyago.cloud').time_zone, null);
 });
+
+/* ── privateInStudio, EVENT_SELECT, SERIES_SELECT (0068) ──────────────── */
+
+test('an event marked private is hidden only in a calendar everyone reads', () => {
+  for (const sensitivity of ['personal', 'private', 'confidential', 'Private']) {
+    assert.equal(m.privateInStudio(sensitivity, true), true, sensitivity);
+    assert.equal(m.privateInStudio(sensitivity, false), false,
+      'a personal calendar\'s own private event was never hidden from its owner');
+  }
+  assert.equal(m.privateInStudio('normal', true), false);
+  assert.equal(m.privateInStudio(undefined, true), false);
+  assert.equal(m.privateInStudio('private', undefined), false);
+});
+
+test('toEventRow hides exactly what privateInStudio says to hide', () => {
+  /* The two must agree: 0068's extra columns are nulled by the caller using
+     privateInStudio, while the rest of the row is nulled inside toEventRow. */
+  const secret = { ...event, sensitivity: 'personal' };
+  assert.equal(m.toEventRow(secret, 'veyago.cloud', { hidePrivate: true }).title, 'Private');
+  assert.equal(m.privateInStudio(secret.sensitivity, true), true);
+});
+
+test('every name in EVENT_SELECT is a property of microsoft.graph.event itself', () => {
+  /* Asking $select for a property that lives on a DERIVED type is a 400 for
+     the WHOLE request — the contentId bug, which silently broke attachments
+     for weeks. A derived-type path carries a slash and a dot, the way
+     ATTACHMENT_SELECT's 'microsoft.graph.fileAttachment/contentId' does. */
+  const names = m.EVENT_SELECT.split(',');
+  for (const name of names) {
+    assert.ok(!name.includes('/'), `${name} looks like a derived-type path, which would 400 the whole calendarView`);
+    assert.ok(/^[a-zA-Z]+$/.test(name), `${name} is not a plain property name`);
+  }
+  assert.ok(names.includes('type') && names.includes('seriesMasterId'), 'the series fields 0068 needs');
+  assert.ok(names.includes('isReminderOn') && names.includes('reminderMinutesBeforeStart'), 'the reminder fields');
+  assert.ok(names.includes('responseStatus') && names.includes('isOrganizer'), 'the invitation fields');
+  assert.ok(!names.includes('recurrence'),
+    'an expanded occurrence never carries one — the master is fetched separately, with SERIES_SELECT');
+  assert.equal(new Set(names).size, names.length, 'no name asked for twice');
+});
+
+test('a series master is fetched for its pattern and nothing else', () => {
+  assert.equal(m.SERIES_SELECT, 'id,recurrence');
+});

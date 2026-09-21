@@ -94,12 +94,21 @@ export interface SyncableEventRow {
  * already stored keeps whatever `kind` it has — this leaves `kind` out of the
  * object entirely rather than reading it back from the database first, since
  * an upsert's ON CONFLICT DO UPDATE only touches the columns actually given
- * it. Only a row genuinely new to this sync gets the fresh guess. */
+ * it. Only a row genuinely new to this sync gets the fresh guess.
+ *
+ * `extras` is 0068's series, reminder, zone and invitation columns, worked out
+ * by _shared/calendar-recurrence.ts's eventExtraFields() and _shared/calendar-
+ * response.ts's responseFields() — not by this file, which must stay
+ * import-free so its own test can load it from a data: URL (see the header).
+ * They go in LAST and unconditionally, unlike `kind`: every one of them comes
+ * from Graph and only from Graph, so there is no local choice to protect.
+ * `kind` stays the sole exception it has been since the audit fix above. */
 export function syncedEventFields(
   row: SyncableEventRow,
   connectionId: string,
   calendarId: string,
   alreadyStored: boolean,
+  extras: Record<string, unknown> = {},
 ): Record<string, unknown> {
   const fields: Record<string, unknown> = {
     connection_id: connectionId,
@@ -117,7 +126,29 @@ export function syncedEventFields(
     organizer_email: row.organizer_email,
     meeting_url: row.meeting_url,
     time_zone: row.time_zone,
+    ...extras,
   };
   if (!alreadyStored) fields.kind = row.kind;
   return fields;
+}
+
+/* Every distinct series a page of calendarView results belongs to, in the
+ * order they were first seen — what the sync then fetches one master each
+ * for, since an expanded occurrence carries no recurrence pattern of its own.
+ * `limit` is the caller's own ceiling on how many masters one run will fetch:
+ * each is a separate Graph round trip, and a calendar whose window is nothing
+ * but hundreds of distinct series should slow down rather than stampede.
+ * Beyond it, those events simply carry no words for their pattern — they are
+ * still marked as repeating by their `type`, which costs no request at all. */
+export function seriesMasterIds(events: { seriesMasterId?: unknown }[], limit = 50): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const ev of events ?? []) {
+    const id = String(ev?.seriesMasterId ?? '').trim();
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+    if (out.length >= limit) break;
+  }
+  return out;
 }

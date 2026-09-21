@@ -98,3 +98,53 @@ test('this is exactly what stops create-calendar-event\'s "client" choice from b
   const fields = m.syncedEventFields(guessedInternal, 'conn-1', 'default', true);
   assert.ok(!('kind' in fields), 'the "client" already in the database is never overwritten with "internal"');
 });
+
+/* ── syncedEventFields: 0068's extra columns ──────────────────────────── */
+
+test('0068\'s series, reminder, zone and reply columns ride along with the upsert', () => {
+  const extras = {
+    recurrence_type: 'occurrence', series_master_id: 'master-1',
+    recurrence_summary: 'Every week on Monday', reminder_on: true, reminder_minutes: 15,
+    time_zone_iana: 'Europe/Lisbon', response_status: 'notResponded', is_organizer: false
+  };
+  const fields = m.syncedEventFields(ROW, 'conn-1', 'default', false, extras);
+  for (const [key, value] of Object.entries(extras)) assert.equal(fields[key], value, key);
+});
+
+test('the extras are written on EVERY run, unlike kind — Graph is their only source, so there is no choice to protect', () => {
+  const fields = m.syncedEventFields(ROW, 'conn-1', 'default', true, { response_status: 'accepted' });
+  assert.ok(!('kind' in fields), 'kind is still the one exception');
+  assert.equal(fields.response_status, 'accepted',
+    'a reply answered in Outlook must reach the row, whether or not the sync has seen the event before');
+});
+
+test('no extras at all leaves the upsert exactly as it was before 0068', () => {
+  assert.deepEqual(m.syncedEventFields(ROW, 'conn-1', 'default', false, {}),
+    m.syncedEventFields(ROW, 'conn-1', 'default', false));
+});
+
+/* ── seriesMasterIds ──────────────────────────────────────────────────── */
+
+test('twelve stand-ups are one series, asked about once', () => {
+  const page = Array.from({ length: 12 }, () => ({ seriesMasterId: 'master-1' }));
+  assert.deepEqual(m.seriesMasterIds(page), ['master-1'],
+    'one GET per distinct series, not one per occurrence — the whole point of collecting them first');
+});
+
+test('distinct series come back in the order they were first seen', () => {
+  assert.deepEqual(
+    m.seriesMasterIds([{ seriesMasterId: 'b' }, { seriesMasterId: 'a' }, { seriesMasterId: 'b' }]),
+    ['b', 'a']);
+});
+
+test('a single meeting belongs to no series and is asked about not at all', () => {
+  assert.deepEqual(m.seriesMasterIds([{ id: 'one-off' }, { seriesMasterId: '' }, { seriesMasterId: '   ' }]), []);
+  assert.deepEqual(m.seriesMasterIds([]), []);
+  assert.deepEqual(m.seriesMasterIds(undefined), []);
+});
+
+test('a window that is nothing but distinct series stops at the caller\'s ceiling', () => {
+  const page = Array.from({ length: 80 }, (_, i) => ({ seriesMasterId: `master-${i}` }));
+  assert.equal(m.seriesMasterIds(page, 50).length, 50,
+    'past the ceiling those events still read as repeating — their own type says so, at no extra request');
+});
