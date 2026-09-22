@@ -1,5 +1,5 @@
 VEYAGO · PRESS NOTES
-Updated 18 September 2026 | Based on the studio website
+Updated 22 September 2026 | Based on the studio website
 
 COMPANY
 Veyago Inc. is an independent New York software studio founded by Cassian Drefke in April 2026. The two-person studio builds privacy-first apps and fast, hand-written websites for small businesses. Provisum is in development for a November 2026 launch; Veyago travel for a planned Q4 2026 launch.
@@ -28,8 +28,12 @@ ASSET GUIDE
 Veyago-Press-Kit.pdf · Designed press booklet
 brand/veyago-icon.png · Veyago icon (original full-size artwork)
 brand/favicon.svg · Veyago mark (vector)
+brand/provisum-icon.png · Provisum app icon (1024 px)
 brand/og-studio.png · Studio social image
 people/cassian-drefke.png · Cassian Drefke, Founder & CEO
+provisum/provisum-binder-home.png · The binder home for one parent
+provisum/provisum-emergency-card.png · The emergency card as it is read
+provisum/provisum-er-packet.png · The finished ER packet, ready to hand over
 veyago/veyago-discover.jpg · Discover preview
 veyago/veyago-bracket.jpg · Article preview (legacy filename)
 veyago/veyago-wellbeing.jpg · Travel photograph, aircraft wing above clouds
@@ -39,7 +43,9 @@ Veyago travel images show a product in development. Features and launch timing
 are plans, not a statement that the app or every feature is available today.
 Provisum and Veyago travel are separate products; Provisum's no-account and
 on-device storage descriptions should not be applied to Veyago travel.
-Provisum images and screenshots are not yet available.
+Provisum screenshots show a product in development, ahead of its November 2026
+launch. The parent in them, Eleanor Hughes, is invented, as is every document,
+date and telephone number on her card: no real person's records appear.
 For interviews, product questions, image credits, or additional assets,
 contact hello@veyago.cloud.
 

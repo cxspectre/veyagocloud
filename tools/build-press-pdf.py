@@ -66,7 +66,7 @@ with TemporaryDirectory() as tmp:
     for i in range(3):c.setFillColor(BLUE if i==2 else GREY);c.circle(W-29*mm+i*5*mm,H-TOP+2,2.3,fill=1,stroke=0)
     label('Press & media',LEFT,H-75*mm,BLUE)
     y=para('Independent software.\nUseful by design.',LEFT,H-90*mm,150*mm,30,32.4,'Inter-700',white)
-    para('The studio behind Kept and Veyago travel. Company facts, product descriptions, and images for your story.',LEFT,y-22,COL,11.5,16.1,color=white)
+    para('The studio behind Provisum and Veyago travel. Company facts, product descriptions, and images for your story.',LEFT,y-22,COL,11.5,16.1,color=white)
     label('Prepared for · Journalists & editors',LEFT,66*mm,white)
     label('September 2026',LEFT,54*mm,white)
     label('By Veyago Inc.',LEFT,42*mm,white)
@@ -74,19 +74,21 @@ with TemporaryDirectory() as tmp:
     c.linkURL('https://www.veyago.cloud/company/#press',(LEFT,20*mm,LEFT+150*mm,30*mm),relative=0)
     c.showPage()
     # Studio and shipped product.
-    y=header('01 · The studio & Kept',2)
+    y=header('01 · The studio & Provisum',2)
     y=title('A small studio building software for everyday life.',y)
     y=para('Privacy-first apps and fast, hand-written websites for small businesses.',LEFT,y,COL,11.5,16.1)-22
-    y=para(description('COMPANY','KEPT'),LEFT,y)-26
-    y=para('Kept puts the next deadline first.',LEFT,y,COL,14,16.8,'Inter-600')-12
-    y=para(description('KEPT','VEYAGO TRAVEL'),LEFT,y)-22
-    note('Kept is available now. Veyago travel is a separate product in development.',y)
+    y=para(description('COMPANY','PROVISUM'),LEFT,y)-26
+    y=para('One parent. One binder.',LEFT,y,COL,14,16.8,'Inter-600')-12
+    y=para(description('PROVISUM','VEYAGO TRAVEL'),LEFT,y)-22
+    note('Provisum arrives in November 2026; these images show a product in development. Veyago travel is a separate product, also in development. The parent shown, Eleanor Hughes, is invented.',y)
     label('Founded',RIGHT,H-61*mm);para('28 April 2026',RIGHT,H-66*mm,SIDE,9,12.6)
     label('Company',RIGHT,H-82*mm);para('New York C-Corporation. Founder & CEO: Cassian Drefke.',RIGHT,H-87*mm,SIDE,9,12.6)
-    image_fit('kept-screen-upcoming.png',RIGHT,H-115*mm,SIDE,100*mm)
-    para('Kept · Upcoming items',RIGHT,H-220*mm,SIDE,9,12.6,color=GREY)
-    para('Product details: www.veyago.cloud/kept/',LEFT,48*mm,COL,9,12.6,color=GREY)
-    c.linkURL('https://www.veyago.cloud/kept/',(LEFT,38*mm,LEFT+COL,50*mm),relative=0)
+    image_fit('provisum-binder-home.png',RIGHT,H-112*mm,SIDE,80*mm)
+    para('Provisum · The binder home',RIGHT,H-196*mm,SIDE,9,12.6,color=GREY)
+    image_fit('provisum-er-packet.png',RIGHT,H-205*mm,SIDE,55*mm)
+    para('Provisum · The finished ER packet',RIGHT,H-264*mm,SIDE,9,12.6,color=GREY)
+    para('Product details: www.veyago.cloud/provisum/',LEFT,48*mm,COL,9,12.6,color=GREY)
+    c.linkURL('https://www.veyago.cloud/provisum/',(LEFT,38*mm,LEFT+COL,50*mm),relative=0)
     c.showPage()
     # Travel: distinguish planned capabilities from availability.
     y=header('02 · Veyago travel',3)
@@ -107,18 +109,20 @@ with TemporaryDirectory() as tmp:
     y=header('03 · Assets & contact',4)
     y=title('The people and pictures behind the story.',y)
     y=para('The downloadable kit brings the source images and ready-to-use copy together.',LEFT,y,COL,11.5,16.1)-24
-    for heading,body in [('Brand artwork','Veyago icon and vector mark, Kept vector icon, and the studio social image.'),('Product images','Kept: upcoming items, items, and insights. Veyago travel: Discover and article previews, plus a travel photograph.'),('Press enquiries','For interviews, product questions, image credits, or additional assets: hello@veyago.cloud.')]:
+    for heading,body in [('Brand artwork','Veyago icon and vector mark, the Provisum app icon, and the studio social image.'),('Product images','Provisum: the binder home, the emergency card, and the finished ER packet. Veyago travel: Discover and article previews, plus a travel photograph.'),('Press enquiries','For interviews, product questions, image credits, or additional assets: hello@veyago.cloud.')]:
         y=para(heading,LEFT,y,COL,14,16.8,'Inter-600')-9
         body_top = y
         y=para(body,LEFT,y)-20
         if heading == 'Press enquiries':
             c.linkURL('mailto:hello@veyago.cloud',(LEFT,y+20,LEFT+COL,body_top),relative=0)
     y=para('About this edition',LEFT,y,COL,14,16.8,'Inter-600')-10
-    y=para('Prepared by Veyago Inc. on 18 September 2026 from the existing studio and product pages. This edition updates the legacy press kit’s contact details and planned travel launch date, and adds Kept images and a founder portrait. No new traction or funding figures have been introduced.',LEFT,y,COL,9,12.6)-14
+    y=para('Prepared by Veyago Inc. on 22 September 2026 from the existing studio and product pages. This edition introduces Provisum with its first screenshots and app icon, and carries the founder portrait forward. No new traction or funding figures have been introduced.',LEFT,y,COL,9,12.6)-14
     y=para('Set in Inter and IBM Plex Mono, using the Veyago document system. Refresh the descriptions and asset captions when product availability changes. Veyago Inc. · New York.',LEFT,y,COL,9,12.6,color=GREY)
     image_fit('cassian-drefke.png',RIGHT,H-62*mm,SIDE,56*mm)
     para('Cassian Drefke\nFounder & CEO',RIGHT,H-122*mm,SIDE,9,12.6,color=GREY)
     label('Full kit',RIGHT,H-152*mm)
     para('Logos, portrait, product images, press notes, and this PDF.',RIGHT,H-158*mm,SIDE,9,12.6)
+    image_fit('provisum-emergency-card.png',RIGHT,H-182*mm,SIDE,68*mm)
+    para('Provisum · The emergency card',RIGHT,H-254*mm,SIDE,9,12.6,color=GREY)
     c.showPage();c.save()
 print('Built assets/veyago-press-kit.pdf (4 pages)')
