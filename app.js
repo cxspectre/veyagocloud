@@ -4,9 +4,9 @@
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------------------------------------------------------------------------
-     Launch announcement bar - temporary notice for the Kept launch slip.
-     Injected here so one source of truth covers every page. To retire it once
-     Kept ships, delete this block and the matching ".launch-bar" CSS block.
+     Launch announcement bar - a site-wide notice, off unless an announcement is
+     active. Injected here so one source of truth covers every page. To retire it
+     for good, delete this block and the matching ".launch-bar" CSS block.
      Bump LB_KEY when the copy materially changes (re-shows for past dismissers).
      The fixed bar reserves space via --lb-h, which shifts the page + nav down
      uniformly on every page type (hero / policy / legal). See styles.css.

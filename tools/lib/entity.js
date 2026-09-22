@@ -36,7 +36,6 @@ var ORG_SAME_AS = [
   'https://instagram.com/veyago_cloud',
   'https://wefunder.com/veyago',
   'https://veyago.app',
-  'https://apps.apple.com/app/id6776402520',
   'https://github.com/cxspectre/veyagocloud'
 ];
 
@@ -147,7 +146,7 @@ function founder() {
     jobTitle: 'Founder & CEO',
     description:
       'Cassian Drefke founded Veyago Inc. in New York in April 2026 and leads product ' +
-      'strategy, design and engineering. He wrote the briefs that became Kept and the ' +
+      'strategy, design and engineering. He wrote the briefs that became Provisum and the ' +
       'Veyago travel app, and builds the studio’s client websites himself.',
     image: {
       '@type': 'ImageObject',

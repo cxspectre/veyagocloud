@@ -11,12 +11,12 @@ FILES = {
     'Veyago-Press-Kit.pdf': 'veyago-press-kit.pdf',
     'brand/veyago-icon.png': 'veyago-icon.png',
     'brand/favicon.svg': 'favicon.svg',
-    'brand/kept-icon.svg': 'kept-icon.svg',
+    'brand/provisum-icon.png': 'provisum-icon.png',
     'brand/og-studio.png': 'og-studio.png',
     'people/cassian-drefke.png': 'cassian-drefke.png',
-    'kept/kept-screen-upcoming.png': 'kept-screen-upcoming.png',
-    'kept/kept-items.png': 'kept-items.png',
-    'kept/kept-insights.png': 'kept-insights.png',
+    'provisum/provisum-binder-home.png': 'provisum-binder-home.png',
+    'provisum/provisum-emergency-card.png': 'provisum-emergency-card.png',
+    'provisum/provisum-er-packet.png': 'provisum-er-packet.png',
     'veyago/veyago-discover.jpg': 'veyago-discover.jpg',
     'veyago/veyago-bracket.jpg': 'veyago-bracket.jpg',
     'veyago/veyago-wellbeing.jpg': 'veyago-wellbeing.jpg',
@@ -28,7 +28,7 @@ def main():
     target = ROOT / 'assets/veyago-press-kit.zip'
     with ZipFile(target, 'w', compression=ZIP_DEFLATED) as archive:
         for name, content in entries:
-            info = ZipInfo(name, date_time=(2026, 9, 18, 0, 0, 0))
+            info = ZipInfo(name, date_time=(2026, 9, 22, 0, 0, 0))
             info.compress_type = ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, content)

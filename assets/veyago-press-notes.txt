@@ -1,11 +1,11 @@
 VEYAGO · PRESS NOTES
-Updated 18 September 2026 | Based on the studio website
+Updated 22 September 2026 | Based on the studio website
 
 COMPANY
-Veyago Inc. is an independent New York software studio founded by Cassian Drefke in April 2026. The two-person studio builds privacy-first apps and fast, hand-written websites for small businesses. Kept is available on the App Store; Veyago travel is in development for a planned Q4 2026 launch.
+Veyago Inc. is an independent New York software studio founded by Cassian Drefke in April 2026. The two-person studio builds privacy-first apps and fast, hand-written websites for small businesses. Provisum is in development for a November 2026 launch; Veyago travel for a planned Q4 2026 launch.
 
-KEPT
-Kept helps people organise warranties, documents, subscriptions, and expiry dates, with reminders before anything lapses. Available on the App Store, it requires no account and stores data on the device. It is free to download, with a $29.99 one-time unlock.
+PROVISUM
+Provisum keeps the documents, deadlines, contacts and bills for an ageing parent in one place, and turns them into the packet a hospital, a doctor, an attorney or a bank asks for. It requires no account and stores everything on the device and the owner's own iCloud. One parent's binder is free; a single payment unlocks the rest. Arriving on iPhone and iPad in November 2026.
 
 VEYAGO TRAVEL
 Veyago travel is being built to help people decide where to go, alone or together. Its Bracket narrows up to 80 destinations to one choice through four rounds. Planned features include group sessions, AI-generated itineraries, and a wellbeing layer. The app is in development for iOS and Android, with launch planned for Q4 2026.
@@ -20,7 +20,7 @@ Work: Consumer apps and websites for small businesses
 Press contact: hello@veyago.cloud
 Studio: https://www.veyago.cloud/
 Press: https://www.veyago.cloud/company/#press
-Kept: https://www.veyago.cloud/kept/
+Provisum: https://www.veyago.cloud/provisum/
 Veyago travel: https://www.veyago.cloud/veyago/
 Team: https://www.veyago.cloud/team/
 
@@ -28,12 +28,12 @@ ASSET GUIDE
 Veyago-Press-Kit.pdf · Designed press booklet
 brand/veyago-icon.png · Veyago icon (original full-size artwork)
 brand/favicon.svg · Veyago mark (vector)
-brand/kept-icon.svg · Kept icon (vector)
+brand/provisum-icon.png · Provisum app icon (1024 px)
 brand/og-studio.png · Studio social image
 people/cassian-drefke.png · Cassian Drefke, Founder & CEO
-kept/kept-screen-upcoming.png · Upcoming items
-kept/kept-items.png · Items
-kept/kept-insights.png · Insights
+provisum/provisum-binder-home.png · The binder home for one parent
+provisum/provisum-emergency-card.png · The emergency card as it is read
+provisum/provisum-er-packet.png · The finished ER packet, ready to hand over
 veyago/veyago-discover.jpg · Discover preview
 veyago/veyago-bracket.jpg · Article preview (legacy filename)
 veyago/veyago-wellbeing.jpg · Travel photograph, aircraft wing above clouds
@@ -41,8 +41,11 @@ veyago/veyago-wellbeing.jpg · Travel photograph, aircraft wing above clouds
 EDITORIAL NOTES
 Veyago travel images show a product in development. Features and launch timing
 are plans, not a statement that the app or every feature is available today.
-Kept and Veyago travel are separate products; Kept's no-account and on-device
-storage descriptions should not be applied to Veyago travel.
+Provisum and Veyago travel are separate products; Provisum's no-account and
+on-device storage descriptions should not be applied to Veyago travel.
+Provisum screenshots show a product in development, ahead of its November 2026
+launch. The parent in them, Eleanor Hughes, is invented, as is every document,
+date and telephone number on her card: no real person's records appear.
 For interviews, product questions, image credits, or additional assets,
 contact hello@veyago.cloud.
 

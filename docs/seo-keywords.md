@@ -107,9 +107,9 @@ variants worth tracking against it.
 
 | Query | Target | Status |
 | --- | --- | --- |
-| private warranty tracker app ios | `/kept/` | live |
-| track warranties and receipts offline iphone | `/kept/` | live |
-| receipt tracker no account no cloud | `/kept/` | live |
+| app to organise elderly parent paperwork | `/provisum/` | pre-launch |
+| what to take to the hospital for a parent | `/provisum/guides/` | gap (guide not written) |
+| share caring for a parent with siblings app | `/provisum/` | pre-launch |
 
 ## Brand — defensive, not growth
 
@@ -122,7 +122,7 @@ name is being lost rather than the pages.
 | veyago cloud | `/` |
 | veyago studio | `/company/` |
 | veyago websites | `/websites/` |
-| kept app veyago | `/kept/` |
+| provisum app veyago | `/provisum/` |
 
 ## The gaps, in the order worth writing them
 

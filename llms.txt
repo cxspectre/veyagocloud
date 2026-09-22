@@ -23,14 +23,16 @@ another, not separate offers.
 - People: Cassian Drefke (Founder & CEO) and Wessel Gelderblom (Vice President).
 - Contact: hello@veyago.cloud · +1 (518) 913 2531 (US) · +1 (943) 273 6579 (international).
   A person replies within one working day; outages are acknowledged the same working day.
-- Kept: on the Apple App Store since 29 June 2026. Free to download, with a single
-  $29.99 Lifetime unlock. No subscription. iPhone only - there is no Android version.
+- Provisum: arriving November 2026 on iPhone and iPad, iOS 26 and later. One parent's
+  binder is free, up to 15 documents, including the emergency packet; a single payment
+  unlocks everything else and the price is announced at launch. No subscription.
+  There is no Android version and no web app.
 - Veyago travel: in build, launching Q4 2026 for iPhone and Android. Free to download,
   with optional Premium at €4.99 a month or €29.99 a year.
 - Websites: fixed price from $699 / €750 excluding tax. Launch $699/€750, Business
   $1,690/€1,790, Back office from $3,900/€4,100. Care plan $49/€49 a month, optional.
 - "Veyago" names three things: Veyago Inc. (the company), Veyago travel (the travel app,
-  at veyago.app), and veyago.cloud (this site). Kept is a separate product.
+  at veyago.app), and veyago.cloud (this site). Provisum is a separate product.
 
 ## Services
 
@@ -40,14 +42,14 @@ another, not separate offers.
 
 ## Apps
 
-- [Kept](https://www.veyago.cloud/kept/): A private, on-device tracker for warranties, receipts, documents, subscriptions and expiry dates. iPhone. Free, with a $29.99 one-time unlock. No accounts, no servers, nothing leaves the device.
+- [Provisum](https://www.veyago.cloud/provisum/): An admin binder for an ageing parent's paperwork - documents, deadlines, contacts and bills in one place, and the packet a hospital, doctor, attorney or bank asks for, as a PDF. iPhone and iPad, November 2026. No accounts, no servers, nothing leaves the device.
 - [Veyago travel](https://www.veyago.cloud/veyago/): A trip-decision app - a bracket tournament that narrows up to 80 destinations to one, solo or with a group - then plans the trip. iPhone and Android, Q4 2026.
 - [All apps](https://www.veyago.cloud/apps/): Both apps side by side, and what every app in the catalogue is held to.
 
 ## Research and writing
 
 - [Projects](https://www.veyago.cloud/projects/): The research that comes before a build, and where each idea sits in the pipeline.
-- [The Unkept Life](https://www.veyago.cloud/projects/the-unkept-life/): The research behind Kept - the cognitive cost of personal life administration, and why a private, on-device answer is now possible. 5,000 words, 12 cited sources, by Cassian Drefke.
+- [The Unkept Life](https://www.veyago.cloud/projects/the-unkept-life/): The cognitive cost of personal life administration, and why a private, on-device answer is now possible. 5,000 words, 12 cited sources, by Cassian Drefke.
 - [The Edge Moves In](https://www.veyago.cloud/projects/the-edge-moves-in/): On-device inference and what moves off the cloud as consumer hardware catches up. 3,700 words, 15 cited sources, by Cassian Drefke.
 - [Field notes](https://www.veyago.cloud/journal/): Articles on fast, private websites - why builder sites are slow, what a fixed-price website includes, and taking an AI prototype to production.
 - [Feed](https://www.veyago.cloud/feed.xml): RSS for the field notes and the research papers.
@@ -63,6 +65,6 @@ another, not separate offers.
 
 - [Wallpapers](https://www.veyago.cloud/wallpapers/): Free downloads made for the brand. Nothing tracked, nothing sold.
 - [Privacy Policy](https://www.veyago.cloud/privacy/): For this website and Veyago travel.
-- [Kept Privacy Policy](https://www.veyago.cloud/kept-privacy/): Kept holds no data off your device; this says so precisely.
+- [Provisum Privacy Policy](https://www.veyago.cloud/provisum-privacy/): Provisum holds no data off your device; this says so precisely.
 - [Terms of Use](https://www.veyago.cloud/terms/): Including the general terms for client website work.
 - [Legal / Imprint](https://www.veyago.cloud/legal/): Company details, registered address, and the imprint required in the EU.
