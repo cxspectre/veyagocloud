@@ -63,7 +63,7 @@ test('links, anchors, mailto, tel, canonical/alternate and same-origin assets ar
     '<a href="#main">Skip</a>',
     '<form action="mailto:hello@veyago.cloud?subject=Hi" method="post"></form>',
     '<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="">',
-    '<img src="/assets/kept-items-330w.webp" srcset="/assets/kept-items-330w.webp 1x, /assets/kept-items-660w.webp 2x" alt="">'
+    '<img src="/assets/provisum-binder-home-330w.webp" srcset="/assets/provisum-binder-home-330w.webp 1x, /assets/provisum-binder-home-660w.webp 2x" alt="">'
   ].join('\n')));
   assert.deepEqual(found, []);
 });

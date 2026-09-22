@@ -148,10 +148,10 @@ chain, which they do. The marketing URL is `https://www.veyago.cloud/provisum/`.
   `/`, `/apps/` and `/company/`, is a CSS-drawn phone frame with a `<!-- SCREENSHOT: … -->`
   comment naming the file it expects (`assets/provisum-*.webp`). Drop the real captures in and
   replace the placeholder divs with `<picture>` elements using the alt text in each comment.
-- **DM Sans is not self-hosted.** The Provisum pages ask for it first and fall back to
-  Helvetica; add a woff2 to `assets/fonts/` with an `@font-face` to guarantee the render.
-  Apple's San Francisco is deliberately absent from that stack — its licence does not cover
-  general web use.
+- **DM Sans is self-hosted** at `assets/fonts/dm-sans-latin.woff2` (SIL Open Font 1.1,
+  `assets/fonts/DMSans-OFL.txt`), declared with an `@font-face` in `styles.css`. One variable
+  file covers 400-700, and nothing is fetched from a font host at runtime. Apple's San
+  Francisco is deliberately absent from that stack — its licence does not cover general web use.
 
 ## Press kit
 

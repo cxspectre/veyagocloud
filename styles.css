@@ -1287,10 +1287,19 @@ ol.steps > li, ol.proc > li { margin: 0; }
    passages. Apple's San Francisco is deliberately absent from both stacks:
    its licence does not cover general web use.
    ========================================================================= */
+/* DM Sans, self-hosted: the licence is SIL Open Font 1.1 (assets/fonts/DMSans-OFL.txt)
+   and the file is served from this origin, so the page still loads nothing from
+   anyone else. One variable file covers 400-700. */
+@font-face {
+  font-family: "DM Sans";
+  src: url("/assets/fonts/dm-sans-latin.woff2") format("woff2");
+  font-weight: 100 1000;
+  font-style: normal;
+  font-display: swap;
+}
+
 body.pv-page {
-  /* DM Sans is not self-hosted in this repo yet. Until a woff2 lands in
-     assets/fonts/ with an @font-face, the stack falls back to Helvetica -
-     never to -apple-system, which is what would pull in San Francisco. */
+  /* The fallbacks never reach -apple-system, which is what would pull in San Francisco. */
   --pv-font:   "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --pv-read:   Cambria, Georgia, "Times New Roman", serif;
   --pv-air:    clamp(72px, 10vw, 140px);
@@ -1335,17 +1344,24 @@ body.pv-page {
 .pv-secondary:hover { text-decoration-color: currentColor; }
 .pv-actions a:focus-visible { outline: 3px solid rgba(11,99,184,.55); outline-offset: 4px; border-radius: 6px; }
 
-/* ---------- Placeholder art -------------------------------------------
-   No screenshots exist yet, so each slot is a plain CSS-drawn device at the
-   right aspect ratio with an empty screen. Nothing is invented on it: a fake
-   screen would be a claim about a build nobody has seen. Each slot carries a
-   SCREENSHOT comment in the markup naming the file it is waiting for. */
+/* ---------- The device frames -----------------------------------------
+   .pv-phone is the bezel; the screen inside is either a real screenshot or,
+   where one is still missing, an empty panel. A frame holding a screenshot
+   takes .has-shot: the drawn notch goes (the capture has its own status bar)
+   and the image, not the ratio, sets the height. */
 .pv-shot { display: flex; justify-content: center; align-items: center; gap: clamp(16px, 3vw, 34px); }
 .pv-phone { position: relative; width: min(268px, 66vw); aspect-ratio: 1170 / 2532; flex: 0 0 auto; padding: 9px; border-radius: 12.5% / 5.8%; background: var(--pv-frame, #2b2d31); box-shadow: 0 34px 70px -34px rgba(0,0,0,.5); }
 .pv-phone::after { content: ""; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 30%; height: 16px; border-radius: 999px; background: var(--pv-frame, #2b2d31); }
 .pv-screen { height: 100%; border-radius: 11% / 5.2%; background: var(--pv-screen, #e7e6e2); }
 /* The packet section pairs the phone with the page it produced: A4 proportions. */
 .pv-doc { width: min(210px, 40vw); aspect-ratio: 1 / 1.414; flex: 0 0 auto; border-radius: 4px; background: var(--pv-paper, #fbfbf9); border: 1px solid var(--hair); box-shadow: 0 26px 54px -30px rgba(0,0,0,.42); }
+.pv-phone.has-shot { aspect-ratio: auto; }
+.pv-phone.has-shot::after { content: none; }
+.pv-phone.has-shot .pv-screen { overflow: hidden; height: auto; line-height: 0; }
+.pv-phone.has-shot img { width: 100%; height: auto; border-radius: inherit; }
+/* The packet section stands the packet next to the screen it came from, so the
+   pair reads as one picture rather than two unrelated phones. */
+.pv-pair .pv-phone:last-child { width: min(216px, 52vw); align-self: flex-end; margin-bottom: clamp(10px, 2vw, 26px); }
 /* Where the placeholder stands in for a screenshot the rest of the site already
    sizes (the home hero, the home tiles, the /apps/ cards), it takes the same
    width .device does, so swapping a real <picture> back in changes nothing. */
