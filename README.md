@@ -1,14 +1,15 @@
 # veyago.cloud
 
-The Veyago studio portfolio — a fast, static site showcasing our apps (Kept and the
+The Veyago studio portfolio — a fast, static site showcasing our apps (Provisum and the
 Veyago travel app) with the privacy policies.
 
 ## Structure
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Studio home — hero, apps, Kept showcase (screenshots), studio values |
-| `kept-privacy/` | **Kept** privacy policy (on-device, no data collection) — use `/kept-privacy/` for Kept's App Store listing |
+| `index.html` | Studio home — hero, apps, product showcase (screenshots), studio values |
+| `provisum/` | **Provisum** product page, in its pre-launch form — see the LAUNCH DAY comment in it for the one line that changes when the app ships |
+| `provisum-privacy/` | **Provisum** privacy notice (on-device, no data collection) — use `/provisum-privacy/` for Provisum's App Store listing |
 | `privacy/` | **Veyago Inc.** company / travel-app privacy policy |
 | `styles.css` | Shared design system (navy `#09111F` + parchment `#D4C9A8`) |
 | `assets/` | App screenshots + favicon |
@@ -131,10 +132,10 @@ go back into Supabase (or into `data/journal/drafts/`) or the next `npm run buil
 
 ## App Store privacy URL
 
-Use **`https://www.veyago.cloud/kept-privacy/`** as Kept's privacy policy URL in App Store
-Connect — it accurately reflects Kept's on-device, no-collection model. The older
-`/kept-privacy.html` form still resolves (308 → `/kept-privacy`), so a listing that already
-points there keeps working.
+Use **`https://www.veyago.cloud/provisum-privacy/`** as Provisum's privacy policy URL in App
+Store Connect, and **`https://www.veyago.cloud/support/`** as the support URL — the page has a
+Provisum block with an anchor at `/support/#provisum`. Both must resolve without a redirect
+chain, which they do. The marketing URL is `https://www.veyago.cloud/provisum/`.
 
 ## ⚠️ Please review before going live
 
@@ -143,8 +144,14 @@ points there keeps working.
   sections are written to be accurate for a typical destination-discovery app. Confirm they
   match what the Veyago app actually does (e.g., location, analytics provider) and adjust.
 - **Veyago app links** point to `https://veyago.app` — update if that domain differs.
-- Screenshots are from the Kept demo build; swap in real App Store captures any time
-  (`assets/kept-*-{330,660}w.webp`).
+- **Provisum has no screenshots yet.** Every image slot on `/provisum/`, plus the tiles on
+  `/`, `/apps/` and `/company/`, is a CSS-drawn phone frame with a `<!-- SCREENSHOT: … -->`
+  comment naming the file it expects (`assets/provisum-*.webp`). Drop the real captures in and
+  replace the placeholder divs with `<picture>` elements using the alt text in each comment.
+- **DM Sans is not self-hosted.** The Provisum pages ask for it first and fall back to
+  Helvetica; add a woff2 to `assets/fonts/` with an `@font-face` to guarantee the render.
+  Apple's San Francisco is deliberately absent from that stack — its licence does not cover
+  general web use.
 
 ## Press kit
 

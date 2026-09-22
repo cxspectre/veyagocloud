@@ -28,7 +28,9 @@ const ESSAYS = {
   'the-unkept-life': {
     description: 'Why personal life admin fails - and the case for a private, on-device system of record. The research behind Kept.',
     accent: '#0071e3',
-    related: { label: 'Kept', href: '/apps/#kept' },
+    /* The product this paper was written for is no longer on the site, so the
+       cross-link is gone. The paper itself is dated writing and stands as it is. */
+    related: null,
     published: '2026-06-12',
     ogImage: '/assets/og-paper-unkept-life.png',
   },

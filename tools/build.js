@@ -211,10 +211,10 @@ function writePage(relDir, html) {
   fs.writeFileSync(path.join(dir, 'index.html'), html);
 }
 
-// Slugs that already have a hand-authored bespoke product page (top-level /kept/,
+// Slugs that already have a hand-authored bespoke product page (top-level /provisum/,
 // /veyago/). We never generate /apps/<slug>/ for these — their catalogue card points
 // at the bespoke page, and a generated twin would be duplicate content.
-var BESPOKE_SLUGS = ['kept', 'veyago'];
+var BESPOKE_SLUGS = ['provisum', 'veyago'];
 
 // An app gets a generated /apps/<slug>/ page only when it's published, has a real
 // layout to render, and isn't one of the bespoke-page apps.
