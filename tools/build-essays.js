@@ -26,11 +26,9 @@ const OUT_DIR = 'projects';
 // publication date (the day the paper first landed on the site — git 941db4d).
 const ESSAYS = {
   'the-unkept-life': {
-    description: 'Why personal life admin fails - and the case for a private, on-device system of record. The research behind Kept.',
+    description: 'Why personal life admin fails - and the case for a private, on-device system of record. The research behind Provisum.',
     accent: '#0071e3',
-    /* The product this paper was written for is no longer on the site, so the
-       cross-link is gone. The paper itself is dated writing and stands as it is. */
-    related: null,
+    related: { label: 'Provisum', href: '/apps/#provisum' },
     published: '2026-06-12',
     ogImage: '/assets/og-paper-unkept-life.png',
   },

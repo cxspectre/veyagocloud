@@ -144,14 +144,18 @@ chain, which they do. The marketing URL is `https://www.veyago.cloud/provisum/`.
   sections are written to be accurate for a typical destination-discovery app. Confirm they
   match what the Veyago app actually does (e.g., location, analytics provider) and adjust.
 - **Veyago app links** point to `https://veyago.app` — update if that domain differs.
-- **Provisum has no screenshots yet.** Every image slot on `/provisum/`, plus the tiles on
-  `/`, `/apps/` and `/company/`, is a CSS-drawn phone frame with a `<!-- SCREENSHOT: … -->`
-  comment naming the file it expects (`assets/provisum-*.webp`). Drop the real captures in and
-  replace the placeholder divs with `<picture>` elements using the alt text in each comment.
-- **DM Sans is self-hosted** at `assets/fonts/dm-sans-latin.woff2` (SIL Open Font 1.1,
-  `assets/fonts/DMSans-OFL.txt`), declared with an `@font-face` in `styles.css`. One variable
-  file covers 400-700, and nothing is fetched from a font host at runtime. Apple's San
-  Francisco is deliberately absent from that stack — its licence does not cover general web use.
+- **Provisum screenshots are pre-composited device frames.** `assets/provisum-<slug>-{330,660}w.webp`
+  and the matching `-dark-` pair are the app screen already sitting inside Apple's Design
+  Resources frame (iPhone 18 Pro Max, Silver for light, Black for dark), 1470x3000 with
+  everything outside the device transparent. Use them as supplied: no crop, no recolour, no
+  CSS filter or shadow. `.pv-device` sizes them; there is no drawn bezel any more.
+- **Type.** The Provisum pages use the site-wide `--font` stack for headlines and reading
+  passages alike, so veyago.cloud is set in one face throughout. That stack begins
+  `-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text"`, which the Provisum
+  page brief (section 5.1) had asked the product pages to avoid on licence grounds; the
+  one-typeface decision supersedes it. If that licence question is revisited, drop the two
+  explicitly named `SF Pro` families from `--font` and the system keywords still resolve to
+  the platform UI font.
 
 ## Press kit
 
