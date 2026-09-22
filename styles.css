@@ -1273,3 +1273,163 @@ ol.steps > li, ol.proc > li { margin: 0; }
 .faq-inline { max-width: 760px; margin-top: clamp(18px, 2.4vw, 28px); }
 @media (prefers-reduced-motion: reduce) { .faq summary::after { transition: none; } }
 
+
+/* =========================================================================
+   PROVISUM  -  /provisum/ and /provisum-privacy/
+   Everything here is scoped to body.pv-page, so the rest of veyago.cloud is
+   untouched. The rules come straight out of the page brief, section 5.1:
+   one idea per section, two background tones and no more, about 140px of air
+   above and below on desktop and about 72 on a phone, a single accent colour
+   that appears on the one primary action and nowhere else, a 12px rise on
+   entry that stops entirely when the visitor asks for no motion, and a dark
+   mode - the audience is on iPhones and a lot of them keep dark mode on.
+   Type is DM Sans for headlines and interface, Cambria for the longer
+   passages. Apple's San Francisco is deliberately absent from both stacks:
+   its licence does not cover general web use.
+   ========================================================================= */
+body.pv-page {
+  /* DM Sans is not self-hosted in this repo yet. Until a woff2 lands in
+     assets/fonts/ with an @font-face, the stack falls back to Helvetica -
+     never to -apple-system, which is what would pull in San Francisco. */
+  --pv-font:   "DM Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --pv-read:   Cambria, Georgia, "Times New Roman", serif;
+  --pv-air:    clamp(72px, 10vw, 140px);
+  --pv-accent: #0b63b8;
+  --pv-panel:  #f4f3ef;   /* the one soft neutral */
+  /* Secondary text. --muted clears AA on white but lands at 4.4:1 on the neutral
+     panel, so the page carries its own grey that passes on both tones. */
+  --pv-ink-2:  #5c5f66;
+  --pv-frame:  #2b2d31;
+  --pv-screen: #e7e6e2;
+  --pv-paper:  #fbfbf9;
+  --font:      var(--pv-font);   /* the shared nav and footer follow the page */
+  --bg-soft:   var(--pv-panel);
+  font-family: var(--pv-font);
+}
+
+/* ---------- Sections: one idea each, two tones alternating ---------- */
+.pv-sec { padding: var(--pv-air) 0; background: var(--bg); }
+.pv-sec.alt { background: var(--pv-panel); }
+.pv-sec .wrap { max-width: 1060px; }
+.pv-hero { padding-top: clamp(40px, 6vw, 76px); }
+
+/* ---------- The two-column block: words on one side, the screen on the other ---------- */
+.pv-block { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .82fr); gap: clamp(36px, 6vw, 88px); align-items: center; }
+.pv-block.flip .pv-copy { order: 2; }
+.pv-copy { min-width: 0; }
+
+/* ---------- Type ---------- */
+.pv-eyebrow { font-family: var(--pv-font); font-size: .95rem; font-weight: 600; letter-spacing: .005em; color: var(--pv-ink-2); margin-bottom: 20px; }
+.pv-h1 { font-family: var(--pv-font); font-size: clamp(2.35rem, 1.3rem + 3.7vw, 3.9rem); font-weight: 700; letter-spacing: -.032em; line-height: 1.03; color: var(--ink); max-width: 15ch; }
+.pv-h2 { font-family: var(--pv-font); font-size: clamp(1.95rem, 1.3rem + 2.3vw, 3rem); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; color: var(--ink); max-width: 16ch; }
+.pv-body { font-family: var(--pv-read); font-size: clamp(1.06rem, 1rem + .38vw, 1.26rem); line-height: 1.58; color: var(--pv-ink-2); max-width: 46ch; margin-top: 22px; }
+.pv-body strong { color: var(--ink); font-weight: 600; }
+.pv-fine { font-family: var(--pv-font); font-size: .95rem; line-height: 1.5; color: var(--pv-ink-2); max-width: 46ch; margin-top: 20px; }
+
+/* ---------- The one primary action ---------- */
+.pv-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 26px; margin-top: 34px; }
+/* Before launch the App Store badge is a line of text. It is still the primary
+   action slot, so it is the one place the accent appears. */
+.pv-primary { font-family: var(--pv-font); font-size: 1.08rem; font-weight: 600; letter-spacing: -.01em; color: var(--pv-accent); }
+.pv-secondary { font-family: var(--pv-font); font-size: 1.02rem; font-weight: 500; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1px; text-decoration-color: var(--hair); }
+.pv-secondary:hover { text-decoration-color: currentColor; }
+.pv-actions a:focus-visible { outline: 3px solid rgba(11,99,184,.55); outline-offset: 4px; border-radius: 6px; }
+
+/* ---------- Placeholder art -------------------------------------------
+   No screenshots exist yet, so each slot is a plain CSS-drawn device at the
+   right aspect ratio with an empty screen. Nothing is invented on it: a fake
+   screen would be a claim about a build nobody has seen. Each slot carries a
+   SCREENSHOT comment in the markup naming the file it is waiting for. */
+.pv-shot { display: flex; justify-content: center; align-items: center; gap: clamp(16px, 3vw, 34px); }
+.pv-phone { position: relative; width: min(268px, 66vw); aspect-ratio: 1170 / 2532; flex: 0 0 auto; padding: 9px; border-radius: 12.5% / 5.8%; background: var(--pv-frame, #2b2d31); box-shadow: 0 34px 70px -34px rgba(0,0,0,.5); }
+.pv-phone::after { content: ""; position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 30%; height: 16px; border-radius: 999px; background: var(--pv-frame, #2b2d31); }
+.pv-screen { height: 100%; border-radius: 11% / 5.2%; background: var(--pv-screen, #e7e6e2); }
+/* The packet section pairs the phone with the page it produced: A4 proportions. */
+.pv-doc { width: min(210px, 40vw); aspect-ratio: 1 / 1.414; flex: 0 0 auto; border-radius: 4px; background: var(--pv-paper, #fbfbf9); border: 1px solid var(--hair); box-shadow: 0 26px 54px -30px rgba(0,0,0,.42); }
+/* Where the placeholder stands in for a screenshot the rest of the site already
+   sizes (the home hero, the home tiles, the /apps/ cards), it takes the same
+   width .device does, so swapping a real <picture> back in changes nothing. */
+.hero-media .pv-phone,
+.af-media .pv-phone { width: clamp(240px, 30vw, 300px); }
+.tiles2 .tile-media .pv-phone { width: clamp(196px, 21vw, 224px); }
+
+/* ---------- Privacy: type only, and it should feel different ---------- */
+.pv-statement { max-width: 22ch; }
+.pv-statement + .pv-body { max-width: 54ch; }
+
+/* ---------- Price and the foot of the page: type only, centred ---------- */
+.pv-centre { text-align: center; }
+.pv-centre .pv-h2, .pv-centre .pv-body, .pv-centre .pv-fine { margin-inline: auto; }
+.pv-centre .pv-actions { justify-content: center; }
+
+/* ---------- Questions: quiet, small, no accordion games ---------- */
+.pv-qa { max-width: 720px; margin-top: clamp(26px, 3.4vw, 44px); }
+.pv-qa h3 { font-family: var(--pv-font); font-size: 1.02rem; font-weight: 600; letter-spacing: -.012em; line-height: 1.4; color: var(--ink); margin-top: 30px; }
+.pv-qa h3:first-child { margin-top: 0; }
+.pv-qa p { font-family: var(--pv-read); font-size: .99rem; line-height: 1.6; color: var(--pv-ink-2); margin-top: 8px; max-width: 62ch; }
+.pv-qa a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- Foot of the page: three text links, nothing else ---------- */
+.pv-foot-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 26px; margin-top: 26px; }
+.pv-foot-links a { font-family: var(--pv-font); font-size: 1rem; color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--hair); }
+.pv-foot-links a:hover { text-decoration-color: currentColor; }
+
+/* ---------- The privacy notice reads as a document ---------- */
+.pv-page .policy h2 { font-family: var(--pv-font); font-size: 1.4rem; letter-spacing: -.02em; margin: 38px 0 10px; }
+.pv-page .policy p, .pv-page .policy li { font-family: var(--pv-read); line-height: 1.62; }
+.pv-page .policy a { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+.pv-page .policy ul { margin: 14px 0 14px 20px; }
+.pv-page .policy li { margin-bottom: 8px; }
+.pv-page .tldr { background: var(--pv-panel); border: 1px solid var(--hair-soft); border-radius: 16px; padding: 20px 22px; margin-bottom: 30px; }
+
+/* ---------- Phone ---------- */
+@media (max-width: 860px) {
+  .pv-block { grid-template-columns: 1fr; gap: clamp(34px, 8vw, 52px); }
+  .pv-block.flip .pv-copy { order: 0; }
+  .pv-h1, .pv-h2, .pv-body, .pv-fine, .pv-statement { max-width: none; }
+  .pv-shot { flex-wrap: wrap; }
+}
+
+/* ---------- Motion: a fade and a 12px rise, once, and never when asked ---------- */
+body.pv-page .reveal { opacity: 0; transform: translateY(12px); transition: opacity .36s var(--ease), transform .36s var(--ease); }
+body.pv-page .reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  body.pv-page .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ---------- Dark mode -------------------------------------------------
+   The page variables and the shared chrome's variables are both redefined,
+   so the nav, the breadcrumb and the footer come with the page rather than
+   sitting on it as a white band. */
+@media (prefers-color-scheme: dark) {
+  body.pv-page {
+    color-scheme: dark;
+    --bg: #0d0e11;
+    --bg-soft: #15171b;
+    --bg-card: #15171b;
+    --ink: #f3f3f5;
+    --text: #f3f3f5;
+    --muted: #a7aab2;
+    --muted-2: #8e919a;
+    --hair: #2d3037;
+    --hair-soft: #24272c;
+    --blue: #7fb8ff;
+    --pv-panel: #15171b;
+    --pv-ink-2: #a7aab2;
+    --pv-accent: #7fb8ff;
+    --pv-frame: #2d3037;
+    --pv-screen: #1c1f24;
+    --pv-paper: #1c1f24;
+  }
+  body.pv-page .nav { background: rgba(13,14,17,.72); }
+  body.pv-page .nav.scrolled { background: rgba(13,14,17,.9); border-bottom-color: rgba(255,255,255,.1); }
+  body.pv-page .nav-dropdown { background: rgba(21,23,27,.97); border-color: rgba(255,255,255,.12); box-shadow: 0 20px 56px -12px rgba(0,0,0,.6); }
+  body.pv-page .nav-dropdown a + a { border-top-color: rgba(255,255,255,.08); }
+  body.pv-page .nav-dropdown a:hover,
+  body.pv-page .nav-toggle:hover,
+  body.pv-page .nav-drawer-close:hover { background: rgba(255,255,255,.08); }
+  body.pv-page .nav-drawer { background: rgba(17,19,23,.94); border-left-color: rgba(255,255,255,.1); }
+  body.pv-page .nav-toggle span { background-color: #f3f3f5; }
+  body.pv-page .skip-link { background: #f3f3f5; color: #0d0e11; }
+  body.pv-page .pv-actions a:focus-visible { outline-color: rgba(127,184,255,.6); }
+}

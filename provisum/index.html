@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Provisum, a parent’s paperwork in one place</title>
+  <meta name="description" content="Documents, deadlines, contacts and bills for the parent you look after. On your iPhone, shared with your siblings, ready when an office asks." />
+  <meta name="theme-color" content="#ffffff" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="/styles.css?v=c8953842f9" />
+  <meta property="og:title" content="Provisum, a parent’s paperwork in one place" />
+  <meta property="og:description" content="Documents, deadlines, contacts and bills for the parent you look after. On your iPhone, shared with your siblings, ready when an office asks." />
+  <meta property="og:image" content="https://www.veyago.cloud/assets/og-provisum.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:type" content="website" />
+
+  <link rel="canonical" href="https://www.veyago.cloud/provisum/" />
+  <meta name="robots" content="index,follow" />
+  <meta property="og:url" content="https://www.veyago.cloud/provisum/" />
+  <meta property="og:site_name" content="Veyago" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:image:alt" content="Provisum - a parent’s paperwork in one place" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Provisum, a parent’s paperwork in one place" />
+  <meta name="twitter:description" content="Documents, deadlines, contacts and bills for the parent you look after. On your iPhone, shared with your siblings, ready when an office asks." />
+  <meta name="twitter:image" content="https://www.veyago.cloud/assets/og-provisum.png" />
+  <meta name="twitter:image:alt" content="Provisum - a parent’s paperwork in one place" />
+  <!-- LAUNCH DAY: add <meta name="apple-itunes-app" content="app-id=XXXXXXXXXX"> here
+       so an iPhone visitor gets the App Store smart banner. See the launch block
+       further down, which is the only other line that changes. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.veyago.cloud/#organization",
+        "name": "Veyago Inc.",
+        "alternateName": "Veyago",
+        "legalName": "Veyago Inc.",
+        "url": "https://www.veyago.cloud/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.veyago.cloud/assets/apple-touch-icon.png",
+          "width": 512,
+          "height": 512
+        },
+        "image": "https://www.veyago.cloud/assets/og.png",
+        "description": "Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps and fast, hand-written websites for small businesses.",
+        "slogan": "Software for the journey.",
+        "foundingDate": "2026-04-28",
+        "foundingLocation": {
+          "@type": "Place",
+          "name": "New York, United States"
+        },
+        "founder": {
+          "@id": "https://www.veyago.cloud/team/#cassian-drefke"
+        },
+        "employee": [
+          {
+            "@id": "https://www.veyago.cloud/team/#cassian-drefke"
+          },
+          {
+            "@id": "https://www.veyago.cloud/team/#wessel-gelderblom"
+          }
+        ],
+        "numberOfEmployees": {
+          "@type": "QuantitativeValue",
+          "value": 2
+        },
+        "knowsAbout": [
+          "iOS app development",
+          "on-device machine learning",
+          "privacy by design",
+          "website design and development",
+          "technical SEO",
+          "small business websites"
+        ],
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "54 State Street, Ste 804 #17055",
+          "addressLocality": "Albany",
+          "addressRegion": "NY",
+          "postalCode": "12207",
+          "addressCountry": "US"
+        },
+        "email": "hello@veyago.cloud",
+        "telephone": "+1-518-913-2531",
+        "contactPoint": [
+          {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "telephone": "+1-518-913-2531",
+            "email": "hello@veyago.cloud",
+            "areaServed": "US",
+            "availableLanguage": [
+              "en",
+              "nl",
+              "de"
+            ]
+          },
+          {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "telephone": "+1-943-273-6579",
+            "email": "hello@veyago.cloud",
+            "areaServed": "Worldwide",
+            "availableLanguage": [
+              "en",
+              "nl",
+              "de"
+            ]
+          },
+          {
+            "@type": "ContactPoint",
+            "contactType": "sales",
+            "email": "hello@veyago.cloud",
+            "url": "https://www.veyago.cloud/websites/#quote",
+            "areaServed": "Worldwide",
+            "availableLanguage": [
+              "en",
+              "nl",
+              "de"
+            ]
+          }
+        ],
+        "areaServed": "Worldwide",
+        "sameAs": [
+          "https://instagram.com/veyago_cloud",
+          "https://wefunder.com/veyago",
+          "https://veyago.app",
+          "https://github.com/cxspectre/veyagocloud"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.veyago.cloud/#website",
+        "url": "https://www.veyago.cloud/",
+        "name": "Veyago",
+        "alternateName": "Veyago Inc.",
+        "description": "Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps and fast, hand-written websites for small businesses.",
+        "inLanguage": [
+          "en",
+          "nl",
+          "de"
+        ],
+        "publisher": {
+          "@id": "https://www.veyago.cloud/#organization"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://www.veyago.cloud/provisum/#app",
+        "name": "Provisum",
+        "description": "Provisum keeps the documents, deadlines, contacts and bills for an ageing parent in one place on your iPhone, shared with the siblings you invite, and turns them into the packet an office asks for.",
+        "url": "https://www.veyago.cloud/provisum/",
+        "operatingSystem": "iOS 26 or later",
+        "applicationCategory": "UtilitiesApplication",
+        "applicationSubCategory": "Family paperwork and deadlines",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "description": "Free for one parent's binder, up to fifteen documents, including the emergency packet. One payment unlocks everything else, for good. No subscription. The price is announced at launch.",
+          "url": "https://www.veyago.cloud/provisum/"
+        },
+        "isAccessibleForFree": true,
+        "image": "https://www.veyago.cloud/assets/og-provisum.png",
+        "featureList": "One binder for a parent, expiry and renewal reminders on the Lock Screen and in a widget, four ready-made packets as PDFs, an emergency card that stays on the device, sharing with siblings through iCloud, export at any time",
+        "storageRequirements": "Everything is stored on the device, and in the owner's own iCloud if sync or family sharing is turned on. Veyago operates no server for this app.",
+        "permissions": "Camera (to photograph a document), notifications (to tell you before a date)",
+        "publisher": {
+          "@id": "https://www.veyago.cloud/#organization"
+        },
+        "author": {
+          "@id": "https://www.veyago.cloud/#organization"
+        },
+        "maintainer": {
+          "@id": "https://www.veyago.cloud/team/#cassian-drefke"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://www.veyago.cloud/provisum/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does it work on Android?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Not yet. Provisum is an iPhone app. A sibling without an iPhone can still receive any packet you send as a PDF."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What happens to my information if Veyago disappears?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Nothing. Everything is already on your own iPhone and in your own iCloud, and you can export a copy at any time. There is no service to switch off."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can my parent see their own binder?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes, if you invite them the same way you invite a sibling. Provisum does not need your parent to own an iPhone or set anything up."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does Provisum tell me what to do about my parent’s care?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. It organises the paperwork and reminds you of dates. Decisions about care, money and legal matters belong with your parent’s doctor, attorney or advisor."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How do I get help?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Write to hello@veyago.cloud or use the support page. A person answers."
+            }
+          }
+        ]
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://www.veyago.cloud/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Apps",
+            "item": "https://www.veyago.cloud/apps/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Provisum"
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+  <noscript><style>.reveal{opacity:1;transform:none}</style></noscript>
+</head>
+<body class="pv-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="nav" id="site-nav">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/assets/veyago-icon-44.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
+      <nav class="nav-links">
+        <a href="/apps/">Apps</a>
+        <a href="/projects/">Projects</a>
+        <a href="/journal/">Articles</a>
+        <a href="/websites/">Websites</a>
+        <a href="/services/">Services</a>
+        <div class="nav-item" id="company-nav">
+          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="/company/"><span class="dd-title">About</span><span class="dd-sub">The studio and our story</span></a>
+            <a href="/team/"><span class="dd-title">Team</span><span class="dd-sub">The people building it</span></a>
+            <a href="/approach/"><span class="dd-title">Approach</span><span class="dd-sub">How we think and build</span></a>
+          </div>
+        </div>
+      </nav>
+      <div class="nav-right">
+        <a class="nav-login" href="/login/">Log in</a>
+        <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile navigation drawer -->
+  <div class="nav-scrim" id="nav-scrim"></div>
+  <aside class="nav-drawer" id="nav-drawer" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
+    <div class="nav-drawer-top">
+      <button class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <nav class="nav-drawer-links" aria-label="Primary">
+      <a href="/apps/">Apps</a>
+      <a href="/projects/">Projects</a>
+      <a href="/journal/">Articles</a>
+      <a href="/websites/">Websites</a>
+      <a href="/services/">Services</a>
+      <p class="nm-label">Company</p>
+      <a class="nm-sub" href="/company/">About</a>
+      <a class="nm-sub" href="/team/">Team</a>
+      <a class="nm-sub" href="/approach/">Approach</a>
+      <a class="nm-sub" href="/login/">Log in</a>
+      <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
+    </nav>
+  </aside>
+
+  <nav class="crumbs" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li><a href="/apps/">Apps</a></li>
+      <li><span aria-current="page">Provisum</span></li>
+    </ol>
+  </nav>
+
+  <main id="main">
+
+  <!-- 6.1 Hero ------------------------------------------------------------ -->
+  <section class="pv-sec pv-hero">
+    <div class="wrap">
+      <div class="pv-block">
+        <div class="pv-copy">
+          <p class="pv-eyebrow">Coming November 2026</p>
+          <h1 class="pv-h1">A parent’s paperwork, in one place.</h1>
+          <p class="pv-body">Documents, deadlines, contacts and bills for the parent you look after. On your iPhone, shared with your siblings, ready when an office asks.</p>
+          <div class="pv-actions">
+            <!-- ======================================================================
+                 LAUNCH DAY, THE ONE LINE.
+                 Replace the <p class="pv-primary"> below with the official badge:
+
+                   <a class="badge-as" href="https://apps.apple.com/app/idXXXXXXXXXX">
+                     <img src="/assets/app-store-badge.svg" alt="Download on the App Store" width="150" height="50" decoding="async">
+                   </a>
+
+                 Then: the eyebrow above goes back to plain "Provisum", the price
+                 section gets the figure, the smart-banner meta tag goes in the head,
+                 and the Apps list entry flips to "On the App Store". The App Store
+                 URL lives here and nowhere else on the site.
+                 ====================================================================== -->
+            <p class="pv-primary">On the App Store in November</p>
+            <a class="pv-secondary" href="#binder">See how it works</a>
+          </div>
+        </div>
+        <div class="pv-shot">
+          <!-- SCREENSHOT: /assets/provisum-binder-home.webp (light) and
+               /assets/provisum-binder-home-dark.webp (dark), 1170x2532.
+               alt: "The Provisum binder home for one parent, showing their name and the two things that need attention this week." -->
+          <div class="pv-phone" role="img" aria-label="Placeholder for a screenshot of the Provisum binder home for one parent, showing their name and the two things that need attention this week.">
+            <div class="pv-screen"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6.2 The binder ------------------------------------------------------ -->
+  <section class="pv-sec alt" id="binder">
+    <div class="wrap">
+      <div class="pv-block flip">
+        <div class="pv-copy reveal">
+          <h2 class="pv-h2">One parent. One binder.</h2>
+          <p class="pv-body">Their passport and insurance cards, the power of attorney, the physician’s number, the bills you took over. Everything you keep track of for them lives in one place, and you can find any of it in seconds.</p>
+        </div>
+        <div class="pv-shot reveal">
+          <!-- SCREENSHOT: /assets/provisum-binder-detail.webp (light) and
+               /assets/provisum-binder-detail-dark.webp (dark), 1170x2532.
+               alt: "The binder home showing the parent's name and the few things that need attention this week." -->
+          <div class="pv-phone" role="img" aria-label="Placeholder for a screenshot of the binder home showing the parent’s name and the few things that need attention this week.">
+            <div class="pv-screen"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6.3 Deadlines ------------------------------------------------------- -->
+  <section class="pv-sec">
+    <div class="wrap">
+      <div class="pv-block">
+        <div class="pv-copy reveal">
+          <h2 class="pv-h2">Nothing slips.</h2>
+          <p class="pv-body">The card that expires, the plan that renews, Thursday’s appointment at eleven, the bill due on the fourth. Provisum knows what each one is and tells you in time, on your Lock Screen and in a widget.</p>
+        </div>
+        <div class="pv-shot reveal">
+          <!-- SCREENSHOT: /assets/provisum-deadlines.webp (light) and
+               /assets/provisum-deadlines-dark.webp (dark), 1170x2532.
+               alt: "The deadlines screen, with a widget on a Lock Screen beside it." -->
+          <div class="pv-phone" role="img" aria-label="Placeholder for a screenshot of the deadlines screen, with a widget on a Lock Screen beside it.">
+            <div class="pv-screen"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6.4 Packets --------------------------------------------------------- -->
+  <section class="pv-sec alt">
+    <div class="wrap">
+      <div class="pv-block flip">
+        <div class="pv-copy reveal">
+          <h2 class="pv-h2">Ready before anyone asks.</h2>
+          <p class="pv-body">One tap makes the packet an office actually needs. The emergency packet for a hospital, a packet for a new doctor, one for an attorney, one for a bank. It comes out as a PDF you can hand over, print or send.</p>
+        </div>
+        <div class="pv-shot reveal">
+          <!-- SCREENSHOT: /assets/provisum-packet-pdf.webp, 1240x1754 (A4 at 150dpi),
+               paired with /assets/provisum-packet-phone.webp, 1170x2532.
+               alt: "A finished packet PDF, first page visible, next to the phone it came from." -->
+          <div class="pv-doc" role="img" aria-label="Placeholder for an image of a finished packet PDF, first page visible."></div>
+          <div class="pv-phone" role="img" aria-label="Placeholder for a screenshot of the phone the packet came from.">
+            <div class="pv-screen"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6.5 Family ---------------------------------------------------------- -->
+  <section class="pv-sec">
+    <div class="wrap">
+      <div class="pv-block">
+        <div class="pv-copy reveal">
+          <h2 class="pv-h2">Your siblings, on the same page.</h2>
+          <p class="pv-body">Invite a brother or a sister and they see the same binder, take a task and tick it off. Everyone can see what was done and when. They pay nothing.</p>
+        </div>
+        <div class="pv-shot reveal">
+          <!-- SCREENSHOT: /assets/provisum-family.webp (light) and
+               /assets/provisum-family-dark.webp (dark), 1170x2532.
+               alt: "The people tab showing two co-managers and an assignment completed yesterday." -->
+          <div class="pv-phone" role="img" aria-label="Placeholder for a screenshot of the people tab showing two co-managers and an assignment completed yesterday.">
+            <div class="pv-screen"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6.6 Privacy — type only, and it reads differently on purpose -------- -->
+  <section class="pv-sec alt">
+    <div class="wrap">
+      <div class="reveal">
+        <h2 class="pv-h2 pv-statement">It stays on your phone.</h2>
+        <p class="pv-body">There is no account to create and no Provisum server holding your parent’s documents. Share the binder with family and it syncs through your own iCloud. The emergency card never leaves your device at all.</p>
+        <p class="pv-fine">Nothing about you or your parent is sent to Veyago. This page loads no trackers either.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6.7 Price ----------------------------------------------------------- -->
+  <section class="pv-sec pv-centre" id="price">
+    <div class="wrap">
+      <div class="reveal">
+        <h2 class="pv-h2">Buy it once.</h2>
+        <p class="pv-body">Free for one parent’s binder, including the emergency packet. One payment unlocks everything else, for good. Siblings you invite use it free.</p>
+        <p class="pv-fine">One payment, no subscription. Price at launch.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6.8 Questions ------------------------------------------------------- -->
+  <section class="pv-sec alt" id="questions">
+    <div class="wrap">
+      <h2 class="pv-h2">Questions.</h2>
+      <div class="pv-qa">
+        <h3>Does it work on Android?</h3>
+        <p>Not yet. Provisum is an iPhone app. A sibling without an iPhone can still receive any packet you send as a PDF.</p>
+        <h3>What happens to my information if Veyago disappears?</h3>
+        <p>Nothing. Everything is already on your own iPhone and in your own iCloud, and you can export a copy at any time. There is no service to switch off.</p>
+        <h3>Can my parent see their own binder?</h3>
+        <p>Yes, if you invite them the same way you invite a sibling. Provisum does not need your parent to own an iPhone or set anything up.</p>
+        <h3>Does Provisum tell me what to do about my parent’s care?</h3>
+        <p>No. It organises the paperwork and reminds you of dates. Decisions about care, money and legal matters belong with your parent’s doctor, attorney or advisor.</p>
+        <h3>How do I get help?</h3>
+        <p>Write to <a href="mailto:hello@veyago.cloud?subject=Provisum">hello@veyago.cloud</a> or use the <a href="/support/#provisum">support page</a>. A person answers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6.9 Foot of the page ------------------------------------------------ -->
+  <section class="pv-sec pv-centre">
+    <div class="wrap">
+      <!-- LAUNCH DAY: the badge repeats here. Until then the same quiet line. -->
+      <p class="pv-primary">On the App Store in November</p>
+      <div class="pv-foot-links">
+        <a href="/provisum-privacy/">Privacy</a>
+        <a href="/support/#provisum">Support</a>
+        <a href="/">Veyago</a>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
+      <div class="footer-cols">
+        <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/provisum/">Provisum</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/services/">Services</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/provisum-privacy/">Provisum Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
+        <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15189132531">+1 (518) 913 2531 (US customers)</a><a href="tel:+19432736579">+1 (943) 273 6579 (international customers)</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
+      </div>
+      <p class="footer-press">Press &amp; investors: <a href="mailto:hello@veyago.cloud?subject=Press%20%26%20investors">hello@veyago.cloud</a> · <a href="https://wefunder.com/veyago" target="_blank" rel="noopener">Invest on Wefunder ↗</a></p>
+      <div class="footer-base">
+        <span>© <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
+        <span>Private apps and proper websites · New York</span>
+      </div>
+    </div>
+  </footer>
+  <script src="/assets/js/site-config.js?v=20260911"></script>
+  <script src="/app.js?v=0711feadd4" defer></script>
+</body>
+</html>

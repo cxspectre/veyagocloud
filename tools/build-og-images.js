@@ -3,10 +3,10 @@
  *
  *   node tools/build-og-images.js              write the cards that are missing
  *   node tools/build-og-images.js --force      redraw every card
- *   node tools/build-og-images.js kept         just the cards whose slug matches
+ *   node tools/build-og-images.js provisum     just the cards whose slug matches
  *
  * Before this, three pages had a bespoke og:image and everything else — both
- * research papers, all four articles, the Kept product page — shared one generic
+ * research papers, all four articles, the product page — shared one generic
  * assets/og.png. A link to a 5,000-word paper previewed identically to a link to
  * the homepage, on LinkedIn, Slack and everywhere else a share card is the whole
  * first impression.
@@ -44,11 +44,11 @@ var BROWSERS = [
    says where it came from. */
 var CARDS = [
   {
-    file: 'og-kept.png',
-    eyebrow: 'Veyago · Kept',
-    headline: 'Keep track of anything with a date.',
-    subline: 'Warranties, receipts, renewals. On-device. Free.',
-    footer: 'www.veyago.cloud/kept · on the App Store'
+    file: 'og-provisum.png',
+    eyebrow: 'Veyago · Provisum',
+    headline: 'A parent’s paperwork, in one place.',
+    subline: 'Documents, deadlines, contacts and bills. On your iPhone.',
+    footer: 'www.veyago.cloud/provisum · November 2026'
   },
   {
     file: 'og-team.png',
