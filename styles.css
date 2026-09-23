@@ -1428,3 +1428,30 @@ body.pv-page .reveal.in { opacity: 1; transform: none; }
   body.pv-page .skip-link { background: #f3f3f5; color: #0d0e11; }
   body.pv-page .pv-actions a:focus-visible { outline-color: rgba(127,184,255,.6); }
 }
+
+/* =========================================================================
+   COCKPIT  -  /cockpit/ and the homepage section that points at it
+   The screenshots are wide app windows, not phones, so they get the same
+   browser frame as the portfolio cards (.work-frame) and a column of their
+   own: the full content width under a headline, or beside it in a feature row.
+   ========================================================================= */
+.cp-shot { max-width: var(--maxw-wide); margin: clamp(34px, 5vw, 60px) auto 0; padding: 0 var(--gutter); }
+.cp-shot .work-frame { box-shadow: 0 30px 70px -34px rgba(0,0,0,.45); }
+.cp-shot figcaption { margin-top: 14px; font-size: .86rem; color: var(--muted-2); text-align: center; }
+.cp-hero { padding-bottom: clamp(56px, 8vw, 104px); }
+
+.cp-row { display: grid; grid-template-columns: minmax(0, .62fr) minmax(0, 1.38fr); gap: clamp(32px, 4.5vw, 64px); align-items: center; }
+.cp-row.flip { grid-template-columns: minmax(0, 1.38fr) minmax(0, .62fr); }
+.cp-row.flip .cp-copy { order: 2; }
+.cp-copy .lead { margin-top: 14px; max-width: 34ch; }
+.cp-media .work-frame { box-shadow: 0 22px 50px -30px rgba(0,0,0,.42); }
+
+.cp-price .lead { max-width: 52ch; margin-top: 12px; }
+.biz-device { display: flex; justify-content: center; }
+.biz-device .pv-device { width: clamp(220px, 24vw, 290px); }
+
+@media (max-width: 900px) {
+  .cp-row, .cp-row.flip { grid-template-columns: 1fr; }
+  .cp-row.flip .cp-copy { order: 0; }
+  .cp-copy .lead { max-width: none; }
+}

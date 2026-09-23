@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="stylesheet" href="/styles.css?v=c386fed0bc">
+  <link rel="stylesheet" href="/styles.css?v=53d95d94da">
   <meta property="og:title" content="Het team achter Veyago - twee mensen | Veyago">
   <meta property="og:description" content="Maak kennis met de twee mensen achter Veyago: Cassian Drefke, oprichter en CEO, en Wessel Gelderblom, vice-president. Geen accountmanagers.">
   <meta property="og:image" content="https://www.veyago.cloud/assets/og-team.png">
@@ -278,8 +278,15 @@
         <a href="/apps/">Apps</a>
         <a href="/projects/">Projecten</a>
         <a href="/journal/">Artikelen</a>
-        <a href="/nl/websites/">Websites</a>
-        <a href="/nl/services/">Diensten</a>
+        <div class="nav-item" id="business-nav">
+          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Business <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+          <div class="nav-dropdown">
+            <a href="/nl/business/"><span class="dd-title">Alle diensten</span><span class="dd-sub">Wat we voor bedrijven bouwen</span></a>
+            <a href="/nl/websites/"><span class="dd-title">Websites</span><span class="dd-sub">Vaste prijs vanaf € 750</span></a>
+            <a href="/nl/cockpit/"><span class="dd-title">Veyago Cockpit</span><span class="dd-sub">Ons eigen systeem, voor jou gebouwd</span></a>
+            <a href="/nl/services/"><span class="dd-title">Productwerk</span><span class="dd-sub">Apps en producten, een paar per jaar</span></a>
+          </div>
+        </div>
         <div class="nav-item" id="company-nav">
           <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Bedrijf <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
           <div class="nav-dropdown">
@@ -311,8 +318,11 @@
       <a href="/apps/">Apps</a>
       <a href="/projects/">Projecten</a>
       <a href="/journal/">Artikelen</a>
-      <a href="/nl/websites/">Websites</a>
-      <a href="/nl/services/">Diensten</a>
+      <p class="nm-label">Business</p>
+      <a class="nm-sub" href="/nl/business/">Alle diensten</a>
+      <a class="nm-sub" href="/nl/websites/">Websites</a>
+      <a class="nm-sub" href="/nl/cockpit/">Veyago Cockpit</a>
+      <a class="nm-sub" href="/nl/services/">Productwerk</a>
       <p class="nm-label">Bedrijf</p>
       <a class="nm-sub" href="/nl/company/">Over</a>
       <a class="nm-sub" href="/nl/team/">Team</a>
@@ -423,7 +433,7 @@
       <p class="legal-top">Veyago Inc. is een New York C-Corporation. App Store is een handelsmerk van Apple Inc. De beschikbaarheid van Apple Intelligence verschilt per apparaat en regio.</p>
       <div class="footer-cols">
         <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/provisum/">Provisum</a></div>
-        <div><h3>Bedrijf</h3><a href="/nl/company/">Over</a><a href="/nl/team/">Team</a><a href="/nl/approach/">Aanpak</a><a href="/nl/websites/">Websites</a><a href="/nl/services/">Diensten</a><a href="/projects/">Projecten</a><a href="/journal/">Artikelen</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Bedrijf</h3><a href="/nl/company/">Over</a><a href="/nl/team/">Team</a><a href="/nl/approach/">Aanpak</a><a href="/nl/websites/">Websites</a><a href="/nl/services/">Diensten</a><a href="/nl/cockpit/">Cockpit</a><a href="/projects/">Projecten</a><a href="/journal/">Artikelen</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
         <div><h3>Juridisch</h3><a href="/privacy/">Privacybeleid</a><a href="/provisum-privacy/">Provisum-privacy</a><a href="/terms/">Voorwaarden</a><a href="/legal/">Juridisch / Colofon</a></div>
         <div><h3>Neem contact op</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15189132531">+1 (518) 913 2531 (klanten in de VS)</a><a href="tel:+19432736579">+1 (943) 273 6579 (internationale klanten)</a><a href="/support/">Ondersteuning</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
@@ -435,7 +445,7 @@
     </div>
   </footer>
   <script src="/assets/js/site-config.js?v=20260911"></script>
-  <script src="/app.js?v=859b6ab775" defer=""></script>
+  <script src="/app.js?v=8fa27ff837" defer=""></script>
 
 
 </body></html>

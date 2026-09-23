@@ -51,6 +51,20 @@ var CARDS = [
     footer: 'www.veyago.cloud/provisum · November 2026'
   },
   {
+    file: 'og-business.png',
+    eyebrow: 'Veyago · Business',
+    headline: 'Software for the business side.',
+    subline: 'Websites, Veyago Cockpit and product work.',
+    footer: 'www.veyago.cloud/business · priced in writing'
+  },
+  {
+    file: 'og-cockpit.png',
+    eyebrow: 'Veyago · Cockpit',
+    headline: 'One place to run your business.',
+    subline: 'Mail, clients, deals, projects and invoices, together.',
+    footer: 'www.veyago.cloud/cockpit · built around yours'
+  },
+  {
     file: 'og-team.png',
     eyebrow: 'Veyago · Team',
     headline: 'Two people. No account managers.',

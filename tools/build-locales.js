@@ -33,7 +33,9 @@ var PAGES = [
   { src: 'index.html', path: '/', locales: ['nl', 'de'] },
   { src: 'company/index.html', path: '/company/', locales: ['nl', 'de'] },
   { src: 'team/index.html', path: '/team/', locales: ['nl', 'de'] },
-  { src: 'approach/index.html', path: '/approach/', locales: ['nl', 'de'] }
+  { src: 'approach/index.html', path: '/approach/', locales: ['nl', 'de'] },
+  { src: 'cockpit/index.html', path: '/cockpit/', locales: ['nl', 'de'] },
+  { src: 'business/index.html', path: '/business/', locales: ['nl', 'de'] }
 ];
 
 /* Which paths have a twin in a given locale - so a twin's internal links can

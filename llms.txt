@@ -36,8 +36,10 @@ another, not separate offers.
 
 ## Services
 
+- [Veyago for business](https://www.veyago.cloud/business/): The three ways Veyago works with businesses side by side - fixed-price websites, Veyago Cockpit, and product work on apps - and what all three share: one written price, yours to own, a reply within one working day.
 - [Websites for business](https://www.veyago.cloud/websites/): Fixed-price websites for small business - landing pages from $699 / €750 excl. tax, multi-page business sites, SEO, and the dashboards, CRMs and admin tools behind them. Packages, what costs extra, process and FAQ are all on the page.
 - [Product and app work](https://www.veyago.cloud/services/): Design and engineering for people building a product rather than a marketing site. Quoted per project; how an engagement runs is answered on the page.
+- [Veyago Cockpit](https://www.veyago.cloud/cockpit/): The private workspace Veyago runs its own business on - Microsoft 365 mail and calendar, CRM and deals, projects, support tickets and invoicing on one database - built around a client's business as part of the Back office package, from $3,900 / €4,100 excl. tax. The client owns the code and the data; no licence fee.
 - [Our approach](https://www.veyago.cloud/approach/): The principles the work is held to - privacy by design, on-device where it can be, no dark patterns, fair pricing, yours to own.
 
 ## Apps

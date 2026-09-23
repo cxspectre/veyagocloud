@@ -14,6 +14,7 @@
     "build:locales": "node tools/build-locales.js",
     "sitemap:lastmod": "node tools/sitemap-lastmod.js",
     "shots:work": "node tools/capture-work-shots.js",
+    "shots:cockpit": "node tools/capture-cockpit-shots.js",
     "test": "node --test \"tools/lib/*.test.js\" \"tools/*.test.js\" \"admin/js/*.test.js\" \"assets/js/*.test.js\" \"supabase/functions/_shared/*.test.js\" \"supabase/functions/sync-mercury/*.test.js\" \"supabase/functions/invoice-pdf/*.test.js\"",
     "check": "node tools/check.js",
     "sync:entities": "node tools/sync-entities.js",

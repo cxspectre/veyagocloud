@@ -431,26 +431,30 @@
     }
   });
 
-  /* Company dropdown (click / keyboard - hover handled by CSS) */
-  var companyNav = document.getElementById('company-nav');
-  if (companyNav) {
-    var dropBtn = companyNav.querySelector('.nav-drop-btn');
-    function closeDropdown() {
-      companyNav.classList.remove('open');
-      if (dropBtn) dropBtn.setAttribute('aria-expanded', 'false');
-    }
-    if (dropBtn) {
-      dropBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var open = companyNav.classList.toggle('open');
-        dropBtn.setAttribute('aria-expanded', String(open));
-      });
-    }
+  /* Header dropdowns - Business and Company (click / keyboard - hover handled
+     by CSS). Opening one closes the other, so two menus never overlap. */
+  var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-links .nav-item'));
+  function closeDropdown(item) {
+    item.classList.remove('open');
+    var btn = item.querySelector('.nav-drop-btn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+  navItems.forEach(function (item) {
+    var dropBtn = item.querySelector('.nav-drop-btn');
+    if (!dropBtn) return;
+    dropBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      navItems.filter(function (other) { return other !== item; }).forEach(closeDropdown);
+      var open = item.classList.toggle('open');
+      dropBtn.setAttribute('aria-expanded', String(open));
+    });
+  });
+  if (navItems.length) {
     document.addEventListener('click', function (e) {
-      if (!companyNav.contains(e.target)) closeDropdown();
+      navItems.filter(function (item) { return !item.contains(e.target); }).forEach(closeDropdown);
     });
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeDropdown();
+      if (e.key === 'Escape') navItems.forEach(closeDropdown);
     });
   }
 

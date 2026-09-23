@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="/styles.css?v=c386fed0bc" />
+  <link rel="stylesheet" href="/styles.css?v=53d95d94da" />
   <meta property="og:title" content="Provisum, a parent’s paperwork in one place" />
   <meta property="og:description" content="Documents, deadlines, contacts and bills for the parent you look after. On your iPhone, shared with your siblings, ready when an office asks." />
   <meta property="og:image" content="https://www.veyago.cloud/assets/og-provisum.png" />
@@ -263,8 +263,15 @@
         <a href="/apps/">Apps</a>
         <a href="/projects/">Projects</a>
         <a href="/journal/">Articles</a>
-        <a href="/websites/">Websites</a>
-        <a href="/services/">Services</a>
+        <div class="nav-item" id="business-nav">
+          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Business <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="/business/"><span class="dd-title">All offers</span><span class="dd-sub">What we build for businesses</span></a>
+            <a href="/websites/"><span class="dd-title">Websites</span><span class="dd-sub">Fixed-price sites from $699</span></a>
+            <a href="/cockpit/"><span class="dd-title">Veyago Cockpit</span><span class="dd-sub">The system we run on, built for you</span></a>
+            <a href="/services/"><span class="dd-title">Product work</span><span class="dd-sub">Apps and products, a few a year</span></a>
+          </div>
+        </div>
         <div class="nav-item" id="company-nav">
           <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <div class="nav-dropdown">
@@ -296,8 +303,11 @@
       <a href="/apps/">Apps</a>
       <a href="/projects/">Projects</a>
       <a href="/journal/">Articles</a>
-      <a href="/websites/">Websites</a>
-      <a href="/services/">Services</a>
+      <p class="nm-label">Business</p>
+      <a class="nm-sub" href="/business/">All offers</a>
+      <a class="nm-sub" href="/websites/">Websites</a>
+      <a class="nm-sub" href="/cockpit/">Veyago Cockpit</a>
+      <a class="nm-sub" href="/services/">Product work</a>
       <p class="nm-label">Company</p>
       <a class="nm-sub" href="/company/">About</a>
       <a class="nm-sub" href="/team/">Team</a>
@@ -507,7 +517,7 @@
       <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
         <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/provisum/">Provisum</a></div>
-        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/services/">Services</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/services/">Services</a><a href="/cockpit/">Cockpit</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
         <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/provisum-privacy/">Provisum Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
         <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15189132531">+1 (518) 913 2531 (US customers)</a><a href="tel:+19432736579">+1 (943) 273 6579 (international customers)</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
@@ -519,6 +529,6 @@
     </div>
   </footer>
   <script src="/assets/js/site-config.js?v=20260911"></script>
-  <script src="/app.js?v=859b6ab775" defer></script>
+  <script src="/app.js?v=8fa27ff837" defer></script>
 </body>
 </html>
