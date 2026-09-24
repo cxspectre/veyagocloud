@@ -91,7 +91,10 @@ function harness(opts = {}) {
     mfaVerify: async () => ({ data: { session }, error: null }),
   };
   window.sb = {
-    auth: { onAuthStateChange: (cb) => { listener = cb; return { data: { subscription: {} } }; } },
+    auth: {
+      onAuthStateChange: (cb) => { listener = cb; return { data: { subscription: {} } }; },
+      updateUser: async () => ({ data: { user: session.user }, error: null }),
+    },
     functions: { invoke: async () => ({ error: null }) },
     rpc: async () => ({}),
   };
@@ -294,4 +297,39 @@ test('a working invite link still lands on choose-a-password', async () => {
   const h = harness({ url: '#access_token=t&type=invite', inviteSession: true });
   await h.settle();
   assert.equal(h.view(), 'set-password');
+});
+
+/* ── A reset link for an account with a second factor ─────────────────────
+   The link signs in without the code. Revealing the admin after the new
+   password was saved opened a shell that looked normal while the database
+   (0040) refused the session every query. */
+
+async function setNewPassword(h) {
+  h.$('new-password').value = 'a-new-password';
+  h.$('new-password-2').value = 'a-new-password';
+  h.$('set-password-form').dispatchEvent(new h.window.Event('submit', { bubbles: true, cancelable: true }));
+  await h.settle();
+}
+
+test('a reset link for an MFA account asks for the code once the password is set', async () => {
+  const h = harness({ url: '#access_token=t&type=recovery', inviteSession: true, mfaEnrolled: true, aalVisibleAt: 'always' });
+  await h.settle();
+  assert.equal(h.view(), 'set-password');
+  await setNewPassword(h);
+  assert.equal(h.view(), 'totp', 'the code, not an admin every query refuses');
+});
+
+test('a reset link for an account without MFA goes straight into the admin', async () => {
+  const h = harness({ url: '#access_token=t&type=recovery', inviteSession: true });
+  await h.settle();
+  await setNewPassword(h);
+  assert.equal(h.view(), 'shell');
+});
+
+test('after a reset, a two-factor check that errors fails closed and says what to do', async () => {
+  const h = harness({ url: '#access_token=t&type=recovery', inviteSession: true, factorsThrow: true });
+  await h.settle();
+  await setNewPassword(h);
+  assert.equal(h.view(), 'password');
+  assert.match(h.$('login-msg').textContent, /could not be checked/i);
 });

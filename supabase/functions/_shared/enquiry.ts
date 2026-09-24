@@ -7,6 +7,26 @@
 
 export type EnquiryKind = 'website' | 'product';
 
+/* The three packages on /websites/, plus "not sure yet". The labels are the
+   ONE place a package value becomes words: the notification email, the
+   follow-up task and the admin all print from here (the admin mirrors it —
+   it cannot import a Deno module). */
+export type EnquiryPackage = 'launch' | 'business' | 'backoffice' | 'unsure';
+
+export const PACKAGE_LABEL: Record<EnquiryPackage, string> = {
+  launch: 'Launch',
+  business: 'Business',
+  backoffice: 'Back office',
+  unsure: 'Not sure yet',
+};
+
+/* '' for null, unknown, or anything inherited from Object.prototype. */
+export function packageLabel(p: string | null | undefined): string {
+  return p && Object.prototype.hasOwnProperty.call(PACKAGE_LABEL, p)
+    ? PACKAGE_LABEL[p as EnquiryPackage]
+    : '';
+}
+
 export interface Enquiry {
   kind: EnquiryKind;
   name: string;
@@ -16,6 +36,7 @@ export interface Enquiry {
   message: string;
   locale: string;         // two-letter, defaults to 'en'
   page: string;           // path the form was on, for context only
+  package: EnquiryPackage | null;  // what they picked on /websites/; null when not asked or not chosen
 }
 
 export type ParseResult =
@@ -42,6 +63,7 @@ const CONTROL_RE = new RegExp(
   '[' + String.fromCharCode(0) + '-' + String.fromCharCode(31) +
   String.fromCharCode(127) + '-' + String.fromCharCode(159) + ']', 'g');
 const KINDS = new Set<EnquiryKind>(['website', 'product']);
+const PACKAGES = new Set<string>(Object.keys(PACKAGE_LABEL));
 
 /* Strip control characters (a pasted NUL or a stray CR can break email
    headers and makes log lines lie), collapse whitespace, clip to a length. */
@@ -109,6 +131,16 @@ export function parseEnquiry(body: unknown, now: number = Date.now()): ParseResu
   const site = normaliseWebsite(b.website);
   if (!site.ok) return { ok: false, error: 'That website address does not look right.', field: 'website' };
 
+  /* Optional: the /services/ form has no package field at all. A value that
+     is not one of ours is refused rather than guessed at, the same rule as
+     the website — the CHECK constraint would refuse it anyway, and a silent
+     null would hide a form/function mismatch. */
+  const packageRaw = clean(b.package, 16).toLowerCase();
+  if (packageRaw && !PACKAGES.has(packageRaw)) {
+    return { ok: false, error: 'Pick one of the packages.', field: 'package' };
+  }
+  const pkg = packageRaw ? (packageRaw as EnquiryPackage) : null;
+
   const localeRaw = clean(b.locale, 8).toLowerCase();
   const locale = /^[a-z]{2}$/.test(localeRaw) ? localeRaw : 'en';
 
@@ -126,6 +158,7 @@ export function parseEnquiry(body: unknown, now: number = Date.now()): ParseResu
       message: cleanMultiline(b.message, LIMITS.message),
       locale,
       page,
+      package: pkg,
     },
   };
 }

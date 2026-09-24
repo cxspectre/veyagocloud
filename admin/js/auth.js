@@ -503,6 +503,29 @@
            Best-effort: never block sign-in on it. */
         try { await window.sb.rpc('activate_self'); } catch (err) { /* non-fatal */ }
 
+        /* A reset link signs in with the link alone — no code. For an account
+           with a second factor that is not a way in: the database refuses such a
+           session everything (0040), so revealing the shell here opened an admin
+           that looked normal while every query failed. The same gate as
+           everywhere else, and it fails closed the same way. */
+        var outstanding;
+        try {
+          outstanding = await mfaOutstanding();
+        } catch (mfaErr) {
+          mfaPending = true;
+          showLogin();
+          showStep(step1);
+          setMsg(loginMsg, 'Your new password is saved, but two-factor status could not be checked. ' +
+                           'Sign in with the new password.', 'err');
+          return;
+        }
+        if (outstanding) {
+          mfaPending = true;
+          pendingFactorId = outstanding.id;
+          showTotpStep();
+          return;
+        }
+
         var sess = await window.admin.session();
         showShell(sess);
       } catch (err) {

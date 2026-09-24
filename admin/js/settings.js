@@ -87,7 +87,10 @@
   /* ── Recent email ─────────────────────────────────────────────────── */
   var KIND_LABEL = {
     invite: 'Invite', password_reset: 'Password reset',
-    task_assigned: 'Task assigned', digest: 'Digest'
+    task_assigned: 'Task assigned', digest: 'Digest',
+    /* The Get-a-quote form (website-enquiry): the lead relayed to us, and the
+       fixed acknowledgement sent to the visitor. */
+    enquiry_notify: 'Enquiry', enquiry_ack: 'Enquiry acknowledgement'
   };
 
   async function loadEmail() {

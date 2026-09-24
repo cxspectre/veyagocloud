@@ -1,0 +1,59 @@
+VEYAGO · PRESS NOTES
+Updated 22 September 2026 | Based on the studio website
+
+COMPANY
+Veyago Inc. is an independent New York software studio founded by Cassian Drefke in April 2026. The two-person studio builds privacy-first apps and fast, hand-written websites for small businesses. Provisum is in development for a November 2026 launch; Veyago travel for a planned Q4 2026 launch.
+
+PROVISUM
+Provisum keeps the documents, deadlines, contacts and bills for an ageing parent in one place, and turns them into the packet a hospital, a doctor, an attorney or a bank asks for. It requires no account and stores everything on the device and the owner's own iCloud. One parent's binder is free; a single payment unlocks the rest. Arriving on iPhone and iPad in November 2026.
+
+VEYAGO TRAVEL
+Veyago travel is being built to help people decide where to go, alone or together. Its Bracket narrows up to 80 destinations to one choice through four rounds. Planned features include group sessions, AI-generated itineraries, and a wellbeing layer. The app is in development for iOS and Android, with launch planned for Q4 2026.
+
+QUICK FACTS
+Legal name: Veyago Inc.
+Company type: New York C-Corporation
+Incorporated: 28 April 2026
+Founder & CEO: Cassian Drefke
+Team: Two people
+Work: Consumer apps and websites for small businesses
+Press contact: hello@veyago.cloud
+Studio: https://www.veyago.cloud/
+Press: https://www.veyago.cloud/company/#press
+Provisum: https://www.veyago.cloud/provisum/
+Veyago travel: https://www.veyago.cloud/veyago/
+Team: https://www.veyago.cloud/team/
+
+ASSET GUIDE
+Veyago-Press-Kit.pdf · Designed press booklet
+brand/veyago-icon.png · Veyago icon (original full-size artwork)
+brand/favicon.svg · Veyago mark (vector)
+brand/provisum-icon.png · Provisum app icon (1024 px)
+brand/og-studio.png · Studio social image
+people/cassian-drefke.png · Cassian Drefke, Founder & CEO
+provisum/provisum-binder-home.png · The binder home for one parent
+provisum/provisum-emergency-card.png · The emergency card as it is read
+provisum/provisum-er-packet.png · The finished ER packet, ready to hand over
+veyago/veyago-discover.jpg · Discover preview
+veyago/veyago-bracket.jpg · Article preview (legacy filename)
+veyago/veyago-wellbeing.jpg · Travel photograph, aircraft wing above clouds
+
+EDITORIAL NOTES
+Veyago travel images show a product in development. Features and launch timing
+are plans, not a statement that the app or every feature is available today.
+Provisum and Veyago travel are separate products; Provisum's no-account and
+on-device storage descriptions should not be applied to Veyago travel.
+Provisum screenshots show a product in development, ahead of its November 2026
+launch. The parent in them, Eleanor Hughes, is invented, as is every document,
+date and telephone number on her card: no real person's records appear.
+For interviews, product questions, image credits, or additional assets,
+contact hello@veyago.cloud.
+
+DOCUMENT STYLE
+Typefaces: Inter for reading; IBM Plex Mono for labels.
+Title: Inter 700, 24 pt. Section: Inter 600, 14 pt.
+Lede: Inter 400, 11.5 pt. Body: Inter 400, 10 pt.
+Details: Inter 400, 9 pt. Labels: IBM Plex Mono 400, 7.5 pt.
+Ink #111315 · Grey #6B7075 · Rule #E3E5E7 · Tint #F2F3F4
+Marker #2F6BFF, used sparingly for labels and key figures.
+These are the studio document styles; product artwork retains its own colours.

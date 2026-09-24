@@ -16,11 +16,11 @@ const { stripTypeScriptTypes } = require('node:module');
 
 /* Same trick as the other _shared tests: the module is ESM TypeScript written
    for Deno, so strip the types and import it as a data: URL. */
-let parseEnquiry, normaliseWebsite, clean, cleanMultiline, LIMITS, MIN_FILL_SECONDS;
+let parseEnquiry, normaliseWebsite, clean, cleanMultiline, LIMITS, MIN_FILL_SECONDS, packageLabel;
 test.before(async () => {
   const src = fs.readFileSync(path.join(__dirname, 'enquiry.ts'), 'utf8');
   const m = await import('data:text/javascript,' + encodeURIComponent(stripTypeScriptTypes(src)));
-  ({ parseEnquiry, normaliseWebsite, clean, cleanMultiline, LIMITS, MIN_FILL_SECONDS } = m);
+  ({ parseEnquiry, normaliseWebsite, clean, cleanMultiline, LIMITS, MIN_FILL_SECONDS, packageLabel } = m);
 });
 
 const NUL = String.fromCharCode(0);
@@ -111,4 +111,27 @@ test('the acknowledgement greeting can never carry a URL, a demand, or anything 
   assert.equal(m.greetingName('   '), 'there');
   assert.equal(m.greetingName('Zoë-Marie O\'Neil'), 'Zoë-Marie');
   assert.ok(m.greetingName('x'.repeat(200)).length <= 24);
+});
+
+/* The package is the one field the /websites/ form has that /services/ does
+   not, so absent must be fine — and a value that is not ours must not be. */
+test('the package is optional, normalised, and refused when it is not one of ours', () => {
+  assert.equal(parseEnquiry(human(), NOW).value.package, null, 'not sent at all');
+  assert.equal(parseEnquiry(human({ package: '' }), NOW).value.package, null, 'sent empty');
+  assert.equal(parseEnquiry(human({ package: ' Business ' }), NOW).value.package, 'business');
+  for (const p of ['launch', 'business', 'backoffice', 'unsure']) {
+    assert.equal(parseEnquiry(human({ package: p }), NOW).value.package, p);
+  }
+  const r = parseEnquiry(human({ package: 'enterprise' }), NOW);
+  assert.equal(r.ok, false);
+  assert.equal(r.field, 'package', 'named, so the form can point at the control');
+});
+
+test('packageLabel names the four values and nothing else', () => {
+  assert.equal(packageLabel('launch'), 'Launch');
+  assert.equal(packageLabel('backoffice'), 'Back office');
+  assert.equal(packageLabel('unsure'), 'Not sure yet');
+  assert.equal(packageLabel(null), '');
+  assert.equal(packageLabel(''), '');
+  assert.equal(packageLabel('constructor'), '', 'prototype keys are not packages');
 });

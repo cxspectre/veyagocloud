@@ -10,13 +10,16 @@ const {
   checkSitemapCoverage,
   summarize,
   verifyBuild,
+  generatedArticleSlugs,
   findLeakedTokens,
   maskCodeRegions,
   decodeEntities,
   expectedSitemapUrls,
   MIN_PAGE_BYTES,
   SITE,
-  GENERATED_APP_MARKER, checkNoCatastrophicShrink } = require('./verify-build');
+  GENERATED_APP_MARKER, checkNoCatastrophicShrink,
+  forbiddenSitemapUrls
+} = require('./verify-build');
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -446,7 +449,7 @@ test('checkSitemapCoverage passes an empty managed block when nothing is expecte
 // ---------------------------------------------------------------------------
 
 test('expectedSitemapUrls mirrors what build.js writes into the managed block', () => {
-  const urls = expectedSitemapUrls(SITE, [{ slug: 'post' }], [{ slug: 'app' }]);
+  const urls = expectedSitemapUrls(SITE, [{ slug: 'post' }], [{ slug: 'app' }], [{ title: 'A set' }]);
   assert.deepStrictEqual(urls, [
     SITE + '/journal/',
     SITE + '/journal/post/',
@@ -455,10 +458,15 @@ test('expectedSitemapUrls mirrors what build.js writes into the managed block', 
   ]);
 });
 
-test('expectedSitemapUrls always includes both index pages, even when empty', () => {
-  assert.deepStrictEqual(expectedSitemapUrls(SITE, [], []), [
+test('an empty index is expected OUT of the sitemap, because it renders noindex', () => {
+  assert.deepStrictEqual(expectedSitemapUrls(SITE, [], [], []), []);
+  assert.deepStrictEqual(forbiddenSitemapUrls(SITE, [], []), [
     SITE + '/journal/', SITE + '/wallpapers/'
   ]);
+});
+
+test('an index with something on it is expected IN the sitemap and not forbidden', () => {
+  assert.deepStrictEqual(forbiddenSitemapUrls(SITE, [{ slug: 'post' }], [{ title: 'A set' }]), []);
 });
 
 // ---------------------------------------------------------------------------
@@ -536,7 +544,7 @@ function makeBuildRoot(t) {
     body: '<main>' + GENERATED_APP_MARKER + '<h1>Ledger</h1><p>' + FILLER + '</p></main>'
   }));
   writeFile(root, 'apps/index.html', '<!DOCTYPE html><html><body>hand-authored catalogue</body></html>');
-  writeFile(root, 'sitemap.xml', makeSitemap(expectedSitemapUrls(SITE, ARTICLES, APP_PAGES)));
+  writeFile(root, 'sitemap.xml', makeSitemap(expectedSitemapUrls(SITE, ARTICLES, APP_PAGES, WALLPAPERS)));
   writeFile(root, 'assets/js/site-config.js',
     'window.VEYAGO_SITE_CONFIG = {\n  "announcement": {\n    "active": false\n  }\n};\n');
   return root;
@@ -735,9 +743,10 @@ test('verifyBuild reports an expected app page with no slug', (t) => {
 test('verifyBuild tolerates a missing/!array expected block', (t) => {
   const root = makeBuildRoot(t);
   const result = verifyBuild({ root, expected: { articles: null, wallpapers: 'nope', appPages: undefined } });
-  // Only sitemap drift for the pages it no longer expects; nothing should throw.
+  // Nothing throws, and a value that is not a list is treated as "not supplied"
+  // rather than "expect nothing" — so a healthy tree is not reported as drift.
   assert.strictEqual(typeof result.ok, 'boolean');
-  assert.match(result.report, /stale entry/);
+  assert.doesNotMatch(result.report, /stale entry/);
 });
 
 test('verifyBuild returns a report string usable by a non-technical operator', (t) => {
@@ -830,4 +839,52 @@ test('shrink guard: threshold is configurable for a deliberate purge', () => {
 test('shrink guard: missing/undefined after-counts read as zero, not as pass', () => {
   assert.strictEqual(checkNoCatastrophicShrink({ articles: 5 }, {}).length, 1);
   assert.strictEqual(checkNoCatastrophicShrink({ articles: 5 }, undefined).length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// verifyBuild — expectations derived from the tree
+//
+// `npm run check` runs the verifier with no build log and no expectations: it is
+// asking "is the tree on disk sound?", not "did this build render what Supabase
+// returned?". Before the fix below, an absent article list was read as "nothing
+// should be published", so every real journal URL in the sitemap's managed block
+// came back as a stale entry. The check passed only while the journal was empty
+// and started failing the moment the first article shipped.
+// ---------------------------------------------------------------------------
+
+test('verifyBuild with no expectations reads the published set off the tree', (t) => {
+  const root = makeBuildRoot(t);
+  const result = verifyBuild({ root });
+  assert.deepStrictEqual(result.problems, []);
+  assert.strictEqual(result.ok, true);
+});
+
+test('verifyBuild with no expectations still catches a sitemap entry with no page', (t) => {
+  const root = makeBuildRoot(t);
+  fs.rmSync(path.join(root, 'journal/first-post'), { recursive: true, force: true });
+  const result = verifyBuild({ root });
+  assert.ok(result.problems.some((p) => /stale entry.*first-post/.test(p)),
+    'a sitemap URL with nothing behind it must still be reported: ' + JSON.stringify(result.problems));
+});
+
+test('an explicitly empty article list still means "nothing should be listed"', (t) => {
+  const root = makeBuildRoot(t);
+  const result = verifyBuild({ root, expected: { articles: [], wallpapers: [], appPages: [] } });
+  assert.ok(result.problems.some((p) => /stale entry.*first-post/.test(p)),
+    'a build log reporting zero articles must not be softened by what is on disk');
+});
+
+test('generatedArticleSlugs lists article directories, not the index', (t) => {
+  const root = makeBuildRoot(t);
+  writeFile(root, 'journal/second-post/index.html', makePage({
+    title: 'Second Post | Veyago',
+    canonical: SITE + '/journal/second-post/'
+  }));
+  assert.deepStrictEqual(generatedArticleSlugs(root).sort(), ['first-post', 'second-post']);
+});
+
+test('generatedArticleSlugs is empty when the journal has no articles', (t) => {
+  const root = makeBuildRoot(t);
+  fs.rmSync(path.join(root, 'journal/first-post'), { recursive: true, force: true });
+  assert.deepStrictEqual(generatedArticleSlugs(root), []);
 });

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leads · Veyago Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/admin/admin.css" />
+</head>
+<body>
+  <div class="adm-shell" id="adm-shell" hidden>
+    <main class="adm-main">
+      <div class="adm-page-head">
+        <div>
+          <h1>Leads</h1>
+          <p>Every Get-a-quote enquiry from the site, newest first. We promise a reply within one working day.</p>
+        </div>
+      </div>
+      <p class="msg" id="msg" role="status" aria-live="polite"></p>
+
+      <div class="dash-stats dash-stats--4" id="lead-stats"></div>
+
+      <div class="adm-toolbar">
+        <label for="f-status">Show</label>
+        <!-- Open is new + replied + quoted: everything still being worked.
+             All adds won, lost and spam. -->
+        <select class="input input-sm" id="f-status">
+          <option value="open">Open</option>
+          <option value="all">All</option>
+        </select>
+        <span class="adm-toolbar-count" id="lead-count"></span>
+      </div>
+
+      <!-- Each row opens in place (adm-item--stack / adm-item-detail) rather
+           than on its own page: a lead is one screen of facts and three
+           small edits, and the point is to work through the list. -->
+      <ul class="adm-list" id="lead-list"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
+    </main>
+  </div>
+
+  <script src="/admin/vendor/supabase.js?v=13"></script>
+  <script src="/admin/supabase-config.js?v=13"></script>
+  <script src="/admin/js/client.js?v=13"></script>
+  <script src="/admin/js/auth.js?v=13"></script>
+  <script src="/admin/js/roles.js?v=13"></script>
+  <script src="/admin/js/nav.js?v=13"></script>
+  <script src="/admin/js/palette.js?v=13"></script>
+  <script src="/admin/js/leads.js?v=13"></script>
+</body>
+</html>

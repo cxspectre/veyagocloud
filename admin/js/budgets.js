@@ -4,14 +4,30 @@
 (function () {
   'use strict';
 
+  /* Where spending with no category is counted — the same word the ledger
+     shows for it (transactions.js, finance.js). */
+  var UNCATEGORISED = 'Uncategorised';
+
   var budgets  = [];   // rows from finance_budgets
-  var spending = {};   // category → negative amount sum for this month
-  var categories = []; // all known transaction categories for the datalist
+  var budgetsFailed = false;  // the budgets themselves could not be read
+  var spending = {};   // categoryKey(name) → money out this month
+  var categories = []; // names for the datalist: expense categories, then Uncategorised
+
+  /* Rows per request for this month's spending — see monthSpending. */
+  var SPEND_PAGE = 1000;
 
   var editingId = null;  // uuid of the budget currently being edited, or null
 
   function setMsg(t, k) {
     var el = document.getElementById('b-msg');
+    if (!el) return;
+    el.textContent = t || '';
+    el.className = 'msg' + (k ? ' ' + k : '');
+  }
+
+  /* The tab's own message line, above the tracker — for reads that failed. */
+  function setLoadMsg(t, k) {
+    var el = document.getElementById('msg-budgets');
     if (!el) return;
     el.textContent = t || '';
     el.className = 'msg' + (k ? ' ' + k : '');
@@ -38,42 +54,114 @@
     return t.slice(0, 8) + '01';
   }
 
+  /* A budget names its category in free text; a transaction points at a
+     finance_categories row by id. They meet on the category's name, compared
+     without regard to case or stray spaces. "Uncategorized" is taken for
+     Uncategorised: typed the American way, a budget would otherwise count
+     nothing, every month, without a word. */
+  function categoryKey(name) {
+    var key = String(name == null ? '' : name).trim().toLowerCase();
+    return key === 'uncategorized' ? UNCATEGORISED.toLowerCase() : key;
+  }
+
+  /* One query's outcome from allSettled: its rows, or why there are none. */
+  function outcome(r) {
+    if (r.status !== 'fulfilled') {
+      return { rows: [], error: String((r.reason && r.reason.message) || r.reason) };
+    }
+    if (r.value.error) return { rows: [], error: r.value.error.message };
+    return { rows: r.value.data || [], error: null };
+  }
+
+  /* Money out per category key. Spending with no category — everything the
+     syncs bring in, until someone files it — counts under Uncategorised.
+     Spending filed under a category whose name did not load is left out
+     rather than guessed at. */
+  function spendingByCategory(transactions, nameById) {
+    var totals = {};
+    transactions.forEach(function (t) {
+      var name = t.category_id == null ? UNCATEGORISED : nameById[t.category_id];
+      if (name == null) return;
+      var key = categoryKey(name);
+      totals[key] = (totals[key] || 0) + Math.abs(Number(t.amount));
+    });
+    return totals;
+  }
+
+  /* This month's money out, every row of it. PostgREST hands back at most its
+     max-rows setting per request — 1000 on Supabase unless raised — whatever
+     .limit() asks for. A list cut short can say so (transactions.js shows
+     "newest 200"); a total summed from one is just wrong. So it is read a page
+     at a time, in a fixed order, until the count the database reports is
+     reached. Resolves like a query, { data, error }, for outcome(). */
+  async function monthSpending(since) {
+    var rows = [];
+    for (;;) {
+      var res = await window.sb.from('finance_transactions')
+        .select('id,category_id,amount', { count: 'exact' })
+        .gte('posted_at', since)
+        .lt('amount', 0)  /* expenses only */
+        .order('id')
+        .range(rows.length, rows.length + SPEND_PAGE - 1);
+      if (res.error) return { data: null, error: res.error };
+      var got = res.data || [];
+      rows = rows.concat(got);
+      /* An empty page ends it too, so a missing or stale count cannot keep it asking. */
+      if (!got.length || (res.count != null && rows.length >= res.count)) {
+        return { data: rows, error: null };
+      }
+    }
+  }
+
+  /* The datalist: expense categories in their set order, then Uncategorised —
+     the one budget that counts spending nobody has filed, which is everything
+     the syncs bring in. */
+  function suggestions(categoryRows) {
+    var names = categoryRows
+      .filter(function (c) { return c.kind === 'expense'; })
+      .map(function (c) { return c.name; });
+    var key = categoryKey(UNCATEGORISED);
+    var listed = names.some(function (n) { return categoryKey(n) === key; });
+    return listed ? names : names.concat([UNCATEGORISED]);
+  }
+
   async function load() {
     if (!(await window.adminRoles.isManager())) return;
 
     var monthEl = document.getElementById('budget-month');
     if (monthEl) monthEl.textContent = monthLabel();
 
+    /* finance_transactions has no category column — only category_id, whose
+       name lives on finance_categories (0005). This used to select a
+       `category` that does not exist; both reads failed, silently, and every
+       budget showed $0 spent. */
     var rs = await Promise.allSettled([
       window.sb.from('finance_budgets').select('id,category,amount,period').order('category'),
-      window.sb.from('finance_transactions')
-        .select('category,amount')
-        .gte('posted_at', monthStart())
-        .lt('amount', 0)  /* expenses only */
-        .limit(5000),
-      window.sb.from('finance_transactions')
-        .select('category').not('category', 'is', null).limit(5000),
+      window.sb.from('finance_categories').select('id,name,kind,sort_order').order('sort_order'),
+      monthSpending(monthStart()),
     ]);
+    var budgetRes = outcome(rs[0]);
+    var categoryRes = outcome(rs[1]);
+    var spendRes = outcome(rs[2]);
 
-    if (rs[0].status === 'fulfilled' && !rs[0].value.error) {
-      budgets = rs[0].value.data || [];
-    }
+    var nameById = {};
+    categoryRes.rows.forEach(function (c) { nameById[c.id] = c.name; });
 
-    spending = {};
-    if (rs[1].status === 'fulfilled' && !rs[1].value.error) {
-      (rs[1].value.data || []).forEach(function (t) {
-        var cat = t.category || 'Uncategorised';
-        spending[cat] = (spending[cat] || 0) + Math.abs(Number(t.amount));
-      });
-    }
+    budgets = budgetRes.rows;
+    budgetsFailed = !!budgetRes.error;
+    spending = spendingByCategory(spendRes.rows, nameById);
+    categories = suggestions(categoryRes.rows);
 
-    var catSet = {};
-    if (rs[2].status === 'fulfilled' && !rs[2].value.error) {
-      (rs[2].value.data || []).forEach(function (t) {
-        if (t.category) catSet[t.category] = 1;
-      });
+    /* Said out loud: a read that failed looks exactly like a month with
+       nothing spent. */
+    var problems = [];
+    if (budgetRes.error) problems.push('Could not load budgets: ' + budgetRes.error + '.');
+    if (categoryRes.error) {
+      problems.push('Could not load categories, so spending filed under one is not counted: ' + categoryRes.error + '.');
     }
-    categories = Object.keys(catSet).sort();
+    if (spendRes.error) problems.push('Could not load this month’s spending: ' + spendRes.error + '.');
+    setLoadMsg(problems.join(' '), problems.length ? 'err' : '');
+
     fillDatalist();
     render();
   }
@@ -93,9 +181,9 @@
     var listEl = document.getElementById('budget-list');
     if (!listEl) return;
 
-    /* Merge: all budgeted categories + any spent-this-month categories without a budget */
-    var budgetMap = {};
-    budgets.forEach(function (b) { budgetMap[b.category] = b; });
+    /* The message above already says why; "No budgets set yet" would be a
+       second, wrong explanation. */
+    if (budgetsFailed) { listEl.innerHTML = ''; return; }
 
     /* Only show rows where a budget is set (spending-only rows have no target). */
     if (!budgets.length) {
@@ -109,7 +197,7 @@
 
     listEl.innerHTML = '';
     budgets.forEach(function (b) {
-      var spent  = spending[b.category] || 0;
+      var spent  = spending[categoryKey(b.category)] || 0;
       var limit  = Number(b.amount);
       var pct    = limit > 0 ? Math.min(spent / limit, 1) : 0;
       var over   = spent > limit;
@@ -181,6 +269,27 @@
       li.appendChild(rem);
       listEl.appendChild(li);
     });
+
+    renderUncategorisedNote(listEl);
+  }
+
+  /* Spending with no category counts only against a budget named
+     Uncategorised. Without one it counts against nothing and would vanish from
+     this page — and the syncs file nothing, so that is usually most of the
+     month. Say how much there is. */
+  function renderUncategorisedNote(listEl) {
+    var key = categoryKey(UNCATEGORISED);
+    var loose = spending[key] || 0;
+    var counted = budgets.some(function (b) { return categoryKey(b.category) === key; });
+    if (loose <= 0 || counted) return;
+
+    var note = document.createElement('li');
+    note.id = 'budget-uncategorised';
+    note.className = 'adm-item-sub';
+    note.style.cssText = 'list-style:none;padding:10px 2px 0';
+    note.textContent = fmt(loose) + ' spent this month has no category yet, so no budget counts it. ' +
+      'File it on the Transactions tab, or set a budget named ' + UNCATEGORISED + '.';
+    listEl.appendChild(note);
   }
 
   function startEdit(b) {

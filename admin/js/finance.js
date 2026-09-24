@@ -13,6 +13,7 @@
   var msg = document.getElementById('msg-overview');
 
   var accounts = [];
+  var studio = 'USD';      // the currency the figures are in (finance-figures.js studioCurrency)
   var catById = {};        // category id → name, for the recent-activity column
   var chartRows = [];      // 6-month unfiltered (posted_at, amount)
 
@@ -28,13 +29,16 @@
       .replace(/'/g, '&#39;');
   }
 
+  /* A currency that is not a code Intl takes — a transaction's currency is
+     free text (0005) — is written beside the number rather than thrown out of
+     the page being drawn (finance-figures.js). */
   function fmt(n, currency) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency', currency: currency || 'USD', maximumFractionDigits: 2
-    }).format(n);
+    return window.financeFigures.format(n, currency || 'USD');
   }
 
-  function mainCurrency() { return accounts.length ? accounts[0].currency : 'USD'; }
+  /* The studio's currency, as the workspace shows money in: its base_currency
+     setting, else the first active account's (finance-figures.js). */
+  function mainCurrency() { return studio; }
 
   function timeAgo(iso) {
     if (!iso) return 'never synced';
@@ -52,6 +56,7 @@
       .select('id,name,kind,provider,currency,last_synced_at').eq('active', true).order('name');
     if (acc.error) { setMsg('Could not load accounts: ' + acc.error.message, 'err'); return; }
     accounts = acc.data || [];
+    studio = await window.financeFigures.studioCurrency(window.sb, accounts);
 
     var cat = await window.sb.from('finance_categories')
       .select('id,name,kind').order('sort_order');
@@ -84,10 +89,14 @@
   async function loadOverview() {
     var since = ym(monthStart(5)) + '-01';
 
-    var res = await window.sb.from('finance_transactions')
-      .select('posted_at,amount').gte('posted_at', since).limit(5000);
+    /* By what each transaction is (finance-figures.js), as the workspace's
+       Overview counts it: a Stripe payout reaching the bank is not income a
+       second time, and a move between the studio's own accounts is neither. */
+    var res = await window.financeFigures.load(window.sb, function (query, columns) {
+      return query.select(columns).gte('posted_at', since);
+    });
     if (res.error) { setMsg('Could not load overview: ' + res.error.message, 'err'); return; }
-    chartRows = res.data || [];
+    chartRows = res.data;
 
     var inv = await window.sb.from('finance_invoices')
       .select('amount,status,due_on,paid_on').limit(500);
@@ -103,14 +112,12 @@
     var wrap = document.getElementById('fin-stats');
     if (!wrap) return;
     var thisMonth = ym(new Date());
-    var income = 0, expense = 0;
-    chartRows.forEach(function (t) {
-      if (t.posted_at.slice(0, 7) !== thisMonth) return;
-      var a = Number(t.amount);
-      if (a >= 0) income += a; else expense += Math.abs(a);
-    });
     var cur = mainCurrency();
-    var netAmt = income - expense;
+    var month = window.financeFigures.totals(chartRows.filter(function (t) { return t.posted_at.slice(0, 7) === thisMonth; }), cur);
+    var income = month.income, expense = month.expense;
+    var netAmt = month.net;
+    /* Another currency's money is named under the figures, never added in. */
+    var also = month.otherCurrencies.length ? esc('also ' + month.otherCurrencies.join(', ')) : null;
     /* The one card here whose sign changes what it MEANS, not just its value
        — a fixed blue told the same story whether the month was profitable or
        not. Green over zero, red under it, the existing blue for an exact
@@ -124,11 +131,11 @@
        these colors live; if admin.css's palette ever moves (a theme, a dark
        mode), this stat row moves with it instead of quietly going stale. */
     window.admin.statCards(wrap, [
-      { color: 'var(--ac-success)', label: 'Income this month',   n: fmt(income, cur),
+      { color: 'var(--ac-success)', label: 'Income this month',   n: fmt(income, cur), n2: also,
         icon: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>' },
-      { color: 'var(--ac-danger)', label: 'Expenses this month', n: fmt(expense, cur),
+      { color: 'var(--ac-danger)', label: 'Expenses this month', n: fmt(expense, cur), n2: also,
         icon: '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>' },
-      { color: netColor, label: 'Net this month',      n: fmt(netAmt, cur),
+      { color: netColor, label: 'Net this month',      n: fmt(netAmt, cur), n2: also,
         icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>' },
       { color: 'var(--ac-warn)', label: 'Outstanding invoices', n: fmt(outstanding, cur),
         href: '#invoices',
@@ -154,11 +161,11 @@
 
     var months = [];
     for (var i = 5; i >= 0; i--) months.push(ym(monthStart(i)));
+    /* Each month's income less its expenses, by what each transaction is and in
+       the studio's currency (finance-figures.js). */
     var net = {};
-    months.forEach(function (m) { net[m] = 0; });
-    chartRows.forEach(function (t) {
-      var m = t.posted_at.slice(0, 7);
-      if (m in net) net[m] += Number(t.amount);
+    months.forEach(function (m) {
+      net[m] = window.financeFigures.totals(chartRows.filter(function (t) { return t.posted_at.slice(0, 7) === m; }), mainCurrency()).net;
     });
 
     var maxAbs = 1;

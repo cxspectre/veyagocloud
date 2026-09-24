@@ -5,11 +5,14 @@
    Secrets: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 
    Caller must be a manager (owner/admin role, or on the admins allowlist) —
-   verified against their JWT before anything happens. */
+   verified against their JWT before anything happens. Only an owner may make
+   or re-invite an owner, and nobody re-invites themselves
+   (_shared/team-rules.ts). */
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { inviteEmail, sendEmail } from '../_shared/email.ts';
 import { mintSignInLink } from '../_shared/invite-link.ts';
+import { inviteRefusal, linkToHandBack, sameAddress, signInRefusal, statusAfterInvite } from '../_shared/team-rules.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -58,6 +61,39 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(url, serviceKey);
+
+    /* Who may give whom which role. This function writes with the service
+       role, which the database's guard on employees lets through (0042), so it
+       asks the guard's questions itself — before the dry run answers, so the
+       invite form hears a refusal on its first step, not after sending. */
+    const { data: callerRole } = await asCaller.rpc('employee_role');
+    /* Every row with this address in any case: GoTrue ignores case, and an
+       exact match alone missed an owner stored as Ana@… A team is small enough
+       to read whole. */
+    const { data: teamRows, error: teamErr } = await admin
+      .from('employees')
+      .select('email, role, status, user_id');
+    if (teamErr) return json({ error: 'Could not check the team: ' + teamErr.message }, 500);
+    const matches = (teamRows ?? []).filter((m) => sameAddress(m.email, email));
+    const existing = matches.find((m) => m.email === email) ?? null;
+    const refusal = inviteRefusal({
+      callerRole: typeof callerRole === 'string' ? callerRole : null,
+      callerUserId: userData.user.id,
+      email,
+      role,
+      existing: matches,
+    });
+    if (refusal) return json({ error: refusal }, 403);
+
+    /* A member who can already sign in keeps that sign-in: the invitation must
+       be for their own account, never a new one that would take over their
+       row (database review, 2026-09-14; 0042 refuses the write as well). */
+    if (existing?.user_id) {
+      const { data: linked, error: linkedErr } = await admin.auth.admin.getUserById(existing.user_id);
+      if (linkedErr) return json({ error: 'Could not check their sign-in: ' + linkedErr.message }, 500);
+      const moved = signInRefusal(existing, linked?.user?.email, email);
+      if (moved) return json({ error: moved }, 409);
+    }
 
     /* Who is inviting — makes the email read "Cassian has added you" rather
        than the passive "You have been added". Best-effort. */
@@ -151,8 +187,8 @@ Deno.serve(async (req) => {
           role,
           title,
           start_date: startDate,
-          user_id: authUserId,
-          status: 'invited',
+          user_id: existing?.user_id ?? authUserId,
+          status: statusAfterInvite(existing ?? null),
         },
         { onConflict: 'email' },
       )
@@ -191,7 +227,9 @@ Deno.serve(async (req) => {
        with an account nobody could reach and no way to fix it by hand. It is
        returned ONLY when the send failed: this is a single-use credential, so
        it should not be sitting in a response body that nothing needs it in.
-       The caller is already a verified manager (checked at the top). */
+       The caller is already a verified manager (checked at the top). Never for
+       an address that already had a login: that link resets someone else's
+       password, and no manager should hold one (_shared/team-rules.ts). */
     return json({
       ok: true,
       employee,
@@ -200,7 +238,11 @@ Deno.serve(async (req) => {
       emailError: sent.ok ? null : (sent.skipped
         ? 'Email is not configured yet (RESEND_API_KEY is not set), so no invite was delivered.'
         : sent.error),
-      actionLink: sent.ok ? null : minted.actionLink,
+      actionLink: linkToHandBack({
+        emailSent: sent.ok,
+        existingAccount: minted.existingAccount,
+        actionLink: minted.actionLink,
+      }),
       expiryHours,
       sentAt: new Date().toISOString(),
     });

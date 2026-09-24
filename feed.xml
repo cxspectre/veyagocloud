@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel>
+  <title>Veyago — field notes and research</title>
+  <link>https://www.veyago.cloud/</link>
+  <atom:link href="https://www.veyago.cloud/feed.xml" rel="self" type="application/rss+xml" />
+  <description>Writing from Veyago Inc., an independent New York software studio: field notes on fast, private websites and the working papers behind the apps.</description>
+  <language>en</language>
+  <copyright>Veyago Inc.</copyright>
+  <managingEditor>hello@veyago.cloud (Cassian Drefke)</managingEditor>
+  <webMaster>hello@veyago.cloud (Cassian Drefke)</webMaster>
+  <lastBuildDate>Mon, 07 Sep 2026 09:00:00 GMT</lastBuildDate>
+  <image>
+    <url>https://www.veyago.cloud/assets/apple-touch-icon.png</url>
+    <title>Veyago — field notes and research</title>
+    <link>https://www.veyago.cloud/</link>
+  </image>
+  <item>
+    <title>From an AI prototype to a production website</title>
+    <link>https://www.veyago.cloud/journal/from-ai-prototype-to-production/</link>
+    <guid isPermaLink="true">https://www.veyago.cloud/journal/from-ai-prototype-to-production/</guid>
+    <description>An AI-built site fails in production for four predictable reasons: no real SEO, no structure, no owner of the code, and no plan for the month after launch.</description>
+    <dc:creator>Cassian Drefke</dc:creator>
+    <pubDate>Mon, 07 Sep 2026 09:00:00 GMT</pubDate>
+    <category>Field notes</category>
+  </item>
+  <item>
+    <title>What a $699 website includes, line by line.</title>
+    <link>https://www.veyago.cloud/journal/what-a-699-website-includes/</link>
+    <guid isPermaLink="true">https://www.veyago.cloud/journal/what-a-699-website-includes/</guid>
+    <description>A $699 Veyago website is one page of up to five sections, live in 7 to 10 working days, with hosting in your own account and the code yours. Line by line.</description>
+    <dc:creator>Cassian Drefke</dc:creator>
+    <pubDate>Mon, 07 Sep 2026 09:00:00 GMT</pubDate>
+    <category>Field notes</category>
+  </item>
+  <item>
+    <title>Why your Wix site is slow (and how to fix it)</title>
+    <link>https://www.veyago.cloud/journal/why-your-wix-site-is-slow/</link>
+    <guid isPermaLink="true">https://www.veyago.cloud/journal/why-your-wix-site-is-slow/</guid>
+    <description>A Wix or Squarespace site is slow because the builder ships one runtime for every feature, whether your page uses them or not. Here is where the weight is.</description>
+    <dc:creator>Cassian Drefke</dc:creator>
+    <pubDate>Mon, 07 Sep 2026 09:00:00 GMT</pubDate>
+    <category>Field notes</category>
+  </item>
+  <item>
+    <title>The Unkept Life</title>
+    <link>https://www.veyago.cloud/projects/the-unkept-life/</link>
+    <guid isPermaLink="true">https://www.veyago.cloud/projects/the-unkept-life/</guid>
+    <description>Why personal life admin fails - and the case for a private, on-device system of record. The research behind Kept.</description>
+    <dc:creator>Cassian Drefke</dc:creator>
+    <pubDate>Mon, 07 Sep 2026 09:00:00 GMT</pubDate>
+    <category>Research</category>
+  </item>
+  <item>
+    <title>On your side of the line</title>
+    <link>https://www.veyago.cloud/journal/on-your-side-of-line/</link>
+    <guid isPermaLink="true">https://www.veyago.cloud/journal/on-your-side-of-line/</guid>
+    <description>Most software gets smarter by taking your life to a server. I'm building the opposite, and 2026 is the year that bet finally makes sense.</description>
+    <dc:creator>Cassian Drefke</dc:creator>
+    <pubDate>Thu, 06 Aug 2026 09:00:00 GMT</pubDate>
+    <category>Field notes</category>
+  </item>
+  <item>
+    <title>The Edge Moves In</title>
+    <link>https://www.veyago.cloud/projects/the-edge-moves-in/</link>
+    <guid isPermaLink="true">https://www.veyago.cloud/projects/the-edge-moves-in/</guid>
+    <description>How intelligence is migrating to the device, WWDC 2026 as its consumer inflection point, and what it means for privacy-first software.</description>
+    <dc:creator>Cassian Drefke</dc:creator>
+    <pubDate>Fri, 12 Jun 2026 09:00:00 GMT</pubDate>
+    <category>Research</category>
+  </item>
+</channel>
+</rss>

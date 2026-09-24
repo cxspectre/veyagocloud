@@ -1,0 +1,33 @@
+@font-face { font-family: "Inter Press"; src: url("/assets/fonts/inter-latin.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Plex Press"; src: url("/assets/fonts/ibm-plex-mono.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+.press-room { --bg: #fff; --bg-card: #f2f3f4; --ink: #111315; --text: #111315; --muted: #6b7075; --hair: #e3e5e7; --hair-soft: #e3e5e7; --blue: #2f6bff; --radius: 6px; --press-section: 1.5rem; --press-body: 1rem; --press-detail: .9rem; --press-label: .75rem; background: var(--bg); color: var(--ink); font-family: "Inter Press", sans-serif; font-variant-numeric: tabular-nums; }
+.press-room .eyebrow { font-family: "Plex Press", monospace; font-size: var(--press-label); font-weight: 400; text-transform: uppercase; letter-spacing: .08em; color: var(--blue); }
+.press-room .section-headline { font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 700; line-height: 1.08; }
+.press-room .btn-blue { background: var(--ink); color: #fff; border-radius: 6px; }
+.press-room .btn-blue:hover { background: #33373b; }
+.press-room .link { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+/* Press section on the Company page. */
+.press-room .press-note { margin: 16px auto 0; color: var(--muted); font-size: .875rem; max-width: 58ch; }
+.press-copy-grid { display: grid; grid-template-columns: 1fr; gap: 0; margin-top: 40px; text-align: left; }
+.press-copy { border-top: 1px solid var(--hair); padding: 28px 0; display: grid; grid-template-columns: minmax(150px, 1fr) minmax(0, 2.68fr); column-gap: 28px; }
+.press-copy .eyebrow { grid-column: 1; margin: 0 0 10px; }
+.press-copy h3 { margin-top: 10px; }
+.press-identity { grid-column: 1; grid-row: 1 / span 2; }
+.press-copy h3, .press-assets h3, .press-contact h3 { font-size: var(--press-section); font-weight: 600; line-height: 1.2; letter-spacing: -.025em; }
+.press-copy p:not(.eyebrow) { grid-column: 2; grid-row: 1; margin-top: 0; font-size: var(--press-body); line-height: 1.6; color: var(--muted); }
+.press-copy .link { grid-column: 2; padding-top: 16px; font-size: var(--press-body); }
+.press-assets { margin-top: 56px; text-align: left; }
+.press-assets > p { margin-top: 12px; color: var(--muted); }
+.press-image-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 24px; }
+.press-preview { height: 250px; padding: 20px; display: flex; justify-content: center; background: var(--bg-card); border: 1px solid var(--hair-soft); border-radius: var(--radius); overflow: hidden; }
+.press-preview img { width: auto; height: 100%; object-fit: contain; }
+.press-portrait { padding: 0; }
+.press-portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+.press-image-grid figcaption { margin-top: 12px; color: var(--muted); font-size: var(--press-detail); }
+.press-image-grid a:hover figcaption, .press-contact a:hover { text-decoration: underline; }
+.press-room a:focus-visible { outline: 3px solid var(--blue); outline-offset: 5px; border-radius: 4px; }
+.press-contact { border-top: 1px solid var(--hair); margin-top: 40px; padding-top: 28px; text-align: left; }
+.press-contact p { margin-top: 12px; color: var(--muted); }
+.press-contact a { color: var(--blue); overflow-wrap: anywhere; }
+@media (max-width: 800px) { .press-copy-grid { grid-template-columns: 1fr; } }
+@media (max-width: 540px) { .press-image-grid { grid-template-columns: 1fr; gap: 28px; } .press-preview { height: 280px; } .press-portrait img { object-fit: contain; } .press-copy { display: flex; flex-direction: column; padding: 24px 0; } .press-copy p:not(.eyebrow) { margin-top: 16px; } }
