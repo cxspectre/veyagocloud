@@ -98,7 +98,9 @@
      visitor sees exactly what will be sent. */
   function mailtoHref(form) {
     var p = payload(form);
-    var subject = (p.kind === 'product' ? 'Project enquiry' : 'Website enquiry') + (p.business ? ' - ' + p.business : '');
+    /* A form can name its own subject (data-subject), e.g. the audit scope call. */
+    var subject = (form.getAttribute('data-subject') || (p.kind === 'product' ? 'Project enquiry' : 'Website enquiry')) +
+      (p.business ? ' - ' + p.business : '');
     var lines = [
       'Name: ' + p.name,
       'Email: ' + p.email,

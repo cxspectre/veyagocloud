@@ -1,7 +1,8 @@
 /* Shared site chrome for the static-export builders (essays + journal + wallpapers).
    One source of truth for the <head> meta, the header/nav/drawer, and the footer,
-   so generated pages stay identical to the hand-authored pages. The matching markup
-   in the hand-authored index.html pages is kept in sync by hand (see plan section F).
+   so generated pages stay identical to the hand-authored pages. The hand-authored
+   pages get the same header and footer tagline from tools/sync-chrome.js, and
+   `npm run check` fails if one of them drifts.
 
    app.js injects the launch bar, the language picker, and the drawer language list
    at runtime — those are NOT part of this static chrome. */
@@ -33,6 +34,8 @@ function headTags(opts) {
   var ogImageAlt = opts.ogImageAlt || (title.replace(/ \| Veyago$/, '') + ' — Veyago');
   var robots = opts.robots || 'index,follow';
   var extra = opts.extra || '';
+  /* A shared page settles its side before it paints (see sideSwitch above). */
+  var sideScript = opts.shared ? '<script src="' + assets.versioned('assets/js/side.js') + '"></script>' : '';
   return [
     '<meta charset="UTF-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1.0" />',
@@ -44,6 +47,7 @@ function headTags(opts) {
     /* Content-hashed: vercel.json caches this for a day and serves it stale
        for a week, so an unversioned link pairs new HTML with old CSS. */
     '<link rel="stylesheet" href="' + assets.versioned('styles.css') + '" />',
+    sideScript,
     '<noscript><style>.reveal{opacity:1;transform:none}</style></noscript>',
     '<meta property="og:title" content="' + attr(ogTitle) + '" />',
     '<meta property="og:description" content="' + attr(ogDescription) + '" />',
@@ -64,36 +68,128 @@ function headTags(opts) {
   ].filter(Boolean).join('\n  ');
 }
 
-/* The header / nav / mobile drawer. Keep this in lockstep with the hand-authored pages. */
-function header() {
+/* ---------------------------------------------------------------------------
+   Two sides, one header. Every page belongs to Private (the apps), to Business
+   (what Veyago does for companies), or to both (About, Team, Legal...). A page
+   with a side of its own carries only that side's menu. A shared page carries
+   both, each item tagged data-for, and the side the visitor was last on decides
+   which one shows: styles.css hides the other by html[data-side], which
+   assets/js/side.js sets before the first paint.
+
+   The hand-authored pages get the same markup from tools/sync-chrome.js, so
+   this is the one place to change a menu.
+--------------------------------------------------------------------------- */
+var SIDES = {
+  private: {
+    label: 'Private',
+    home: '/',
+    links: [['/apps/', 'Apps'], ['/projects/', 'Projects'], ['/journal/', 'Articles'], ['/wallpapers/', 'Wallpapers']],
+    cta: ['/apps/', 'See our apps'],
+    tagline: 'Private apps, made with care · New York'
+  },
+  business: {
+    label: 'Business',
+    home: '/business/',
+    links: [['/websites/', 'Websites'], ['/audits/', 'Audits'], ['/cockpit/', 'Cockpit'], ['/services/', 'Product work']],
+    cta: ['/business/#talk', 'Get a quote'],
+    tagline: 'Proper websites, honest audits, one place to run it all · New York'
+  }
+};
+var SIDE_NAMES = ['private', 'business'];
+
+var COMPANY = [
+  ['/company/', 'About', 'The studio and our story'],
+  ['/team/', 'Team', 'The people building it'],
+  ['/approach/', 'Approach', 'How we think and build']
+];
+
+var CHEVRON = '<svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+/* Which sides a page's header carries: its own, or both for a shared page. */
+function sidesFor(side) {
+  if (side == null) return SIDE_NAMES;
+  if (!SIDES[side]) throw new Error('Unknown side "' + side + '" - expected private, business or null (shared)');
+  return [side];
+}
+
+/* data-for is only needed where both sides share one header. */
+function forAttr(side, shared) {
+  return shared ? ' data-for="' + side + '"' : '';
+}
+
+/* The Private | Business switch: two links in a small nav of their own, the
+   side on show marked aria-current. Links rather than a radio group on
+   purpose - each option loads another page, and a radio that navigates when
+   you arrow through it is a change of context nobody asked for. Written here
+   as the page's own side, or Private on a shared page; app.js moves the mark
+   when side.js has shown the other side. */
+function sideSwitch(side) {
+  var current = side || 'private';
+  var opts = SIDE_NAMES.map(function (name) {
+    return '<a class="side-opt" href="' + SIDES[name].home + '" data-side="' + name + '"' +
+      (name === current ? ' aria-current="true"' : '') + '>' + SIDES[name].label + '</a>';
+  }).join('');
+  return '<nav class="side-switch" aria-label="Veyago for">' + opts + '</nav>';
+}
+
+/* The header / nav / mobile drawer.
+   opts.side   'private' | 'business' | null (a shared page: both menus)
+   opts.quote  the page's own quote form ('#quote'): the header button then
+               scrolls to it and stays visible at every width. */
+function header(opts) {
+  opts = opts || {};
+  var side = opts.side === undefined ? 'private' : opts.side;
+  var names = sidesFor(side);
+  var shared = names.length > 1;
+
+  var rowLinks = names.map(function (name) {
+    return SIDES[name].links.map(function (l) {
+      return '        <a' + forAttr(name, shared) + ' href="' + l[0] + '">' + l[1] + '</a>';
+    }).join('\n');
+  }).join('\n');
+
+  var drawerLinks = names.map(function (name) {
+    return SIDES[name].links.map(function (l) {
+      return '      <a' + forAttr(name, shared) + ' href="' + l[0] + '">' + l[1] + '</a>';
+    }).join('\n');
+  }).join('\n');
+
+  var company = COMPANY.map(function (c) {
+    return '            <a href="' + c[0] + '"><span class="dd-title">' + c[1] + '</span><span class="dd-sub">' + c[2] + '</span></a>';
+  }).join('\n');
+  var drawerCompany = COMPANY.map(function (c) {
+    return '      <a class="nm-sub" href="' + c[0] + '">' + c[1] + '</a>';
+  }).join('\n');
+
+  var ctas = opts.quote
+    ? ['        <a class="nav-quote" href="' + opts.quote + '">Get a quote</a>']
+    : names.map(function (name) {
+      return '        <a class="nav-cta"' + forAttr(name, shared) + ' href="' + SIDES[name].cta[0] + '">' + SIDES[name].cta[1] + '</a>';
+    });
+  var drawerCtas = opts.quote
+    ? ['      <a class="nav-cta nm-cta" href="' + opts.quote + '">Get a quote</a>']
+    : names.map(function (name) {
+      return '      <a class="nav-cta nm-cta"' + forAttr(name, shared) + ' href="' + SIDES[name].cta[0] + '">' + SIDES[name].cta[1] + '</a>';
+    });
+
+  var home = side ? SIDES[side].home : '/';
+
   return `<header class="nav" id="site-nav">
     <div class="wrap">
-      <a class="brand" href="/"><img src="/assets/veyago-icon-44.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
+      <a class="brand" href="${home}"><img src="/assets/veyago-icon-44.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
+      ${sideSwitch(side)}
       <nav class="nav-links">
-        <a href="/apps/">Apps</a>
-        <a href="/projects/">Projects</a>
-        <a href="/journal/">Articles</a>
-        <div class="nav-item" id="business-nav">
-          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Business <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="nav-dropdown">
-            <a href="/business/"><span class="dd-title">All offers</span><span class="dd-sub">What we build for businesses</span></a>
-            <a href="/websites/"><span class="dd-title">Websites</span><span class="dd-sub">Fixed-price sites from $699</span></a>
-            <a href="/cockpit/"><span class="dd-title">Veyago Cockpit</span><span class="dd-sub">The system we run on, built for you</span></a>
-            <a href="/services/"><span class="dd-title">Product work</span><span class="dd-sub">Apps and products, a few a year</span></a>
-          </div>
-        </div>
+${rowLinks}
         <div class="nav-item" id="company-nav">
-          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company ${CHEVRON}</button>
           <div class="nav-dropdown">
-            <a href="/company/"><span class="dd-title">About</span><span class="dd-sub">The studio and our story</span></a>
-            <a href="/team/"><span class="dd-title">Team</span><span class="dd-sub">The people building it</span></a>
-            <a href="/approach/"><span class="dd-title">Approach</span><span class="dd-sub">How we think and build</span></a>
+${company}
           </div>
         </div>
       </nav>
       <div class="nav-right">
         <a class="nav-login" href="/login/">Log in</a>
-        <a class="nav-cta" href="mailto:hello@veyago.cloud">Contact</a>
+${ctas.join('\n')}
         <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
           <span></span><span></span><span></span>
         </button>
@@ -109,38 +205,48 @@ function header() {
       </button>
     </div>
     <nav class="nav-drawer-links" aria-label="Primary">
-      <a href="/apps/">Apps</a>
-      <a href="/projects/">Projects</a>
-      <a href="/journal/">Articles</a>
-      <p class="nm-label">Business</p>
-      <a class="nm-sub" href="/business/">All offers</a>
-      <a class="nm-sub" href="/websites/">Websites</a>
-      <a class="nm-sub" href="/cockpit/">Veyago Cockpit</a>
-      <a class="nm-sub" href="/services/">Product work</a>
+${drawerLinks}
       <p class="nm-label">Company</p>
-      <a class="nm-sub" href="/company/">About</a>
-      <a class="nm-sub" href="/team/">Team</a>
-      <a class="nm-sub" href="/approach/">Approach</a>
+${drawerCompany}
       <a class="nm-sub" href="/login/">Log in</a>
-      <a class="nav-cta nm-cta" href="mailto:hello@veyago.cloud">Contact</a>
+${drawerCtas.join('\n')}
     </nav>
   </aside>`;
 }
 
+/* The right half of the footer's last line: one tagline per side. */
+function footerTagline(side) {
+  var names = sidesFor(side === undefined ? 'private' : side);
+  var shared = names.length > 1;
+  return names.map(function (name) {
+    return '<span' + forAttr(name, shared) + '>' + SIDES[name].tagline + '</span>';
+  }).join('');
+}
+
+/* The <html> attributes that say which side a page is on. A page with a side
+   of its own pins it (data-page-side); a shared page starts on Private and
+   assets/js/side.js moves it to the visitor's last side before it paints. */
+function htmlSideAttrs(side) {
+  if (side === undefined) side = 'private';
+  sidesFor(side);
+  return side ? ' data-side="' + side + '" data-page-side="' + side + '"' : ' data-side="private"';
+}
+
 /* The site footer. Keep in lockstep with the hand-authored pages. */
-function footer() {
+function footer(opts) {
+  opts = opts || {};
   return `<footer class="footer">
     <div class="wrap">
       <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
         <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/provisum/">Provisum</a></div>
-        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/services/">Services</a><a href="/cockpit/">Cockpit</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/audits/">Audits</a><a href="/services/">Services</a><a href="/cockpit/">Cockpit</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
         <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/provisum-privacy/">Provisum Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
         <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15189132531">+1 (518) 913 2531 (US customers)</a><a href="tel:+19432736579">+1 (943) 273 6579 (international customers)</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
       <div class="footer-base">
         <span>&copy; <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
-        <span>Private apps and proper websites · New York</span>
+        ${footerTagline(opts.side)}
       </div>
     </div>
   </footer>`;
@@ -155,23 +261,30 @@ function ensureMain(body) {
   return /\bid="main"/.test(body) ? body : '  <main id="main">\n' + body + '\n  </main>';
 }
 
-/* Assemble a full document. `scripts` is a list of extra <script src> appended after app.js. */
+/* Assemble a full document. `scripts` is a list of extra <script src> appended after app.js.
+   `side` is the page's side: 'private' (the default - wallpapers, papers, apps) or
+   null for a shared page (the journal, whose articles serve both sides). */
 function page(opts) {
   opts = opts || {};
   var lang = opts.lang || 'en';
+  var side = opts.side === undefined ? 'private' : opts.side;
+  var head = Object.assign({}, opts.head || {}, { shared: side === null });
   var scripts = (opts.scripts || [])
     .map(function (src) { return '  <script src="' + attr(src) + '" defer></script>'; })
     .join('\n');
   return '<!DOCTYPE html>\n' +
-    '<html lang="' + attr(lang) + '">\n' +
-    '<head>\n  ' + headTags(opts.head || {}) + '\n</head>\n' +
-    '<body>\n  ' + SKIP_LINK + '\n  ' + header() + '\n\n' +
+    '<html lang="' + attr(lang) + '"' + htmlSideAttrs(side) + '>\n' +
+    '<head>\n  ' + headTags(head) + '\n</head>\n' +
+    '<body>\n  ' + SKIP_LINK + '\n  ' + header({ side: side }) + '\n\n' +
     ensureMain(opts.body) + '\n\n' +
-    '  ' + footer() + '\n' +
+    '  ' + footer({ side: side }) + '\n' +
     '  <script src="' + SITE_CONFIG_SRC + '"></script>\n' +
     '  <script src="' + assets.versioned('app.js') + '" defer></script>\n' +
     (scripts ? scripts + '\n' : '') +
     '</body>\n</html>\n';
 }
 
-module.exports = { headTags, header, footer, page, ensureMain, SKIP_LINK, SITE, DEFAULT_OG_IMAGE };
+module.exports = {
+  headTags, header, footer, footerTagline, htmlSideAttrs, page, ensureMain,
+  SIDES, SKIP_LINK, SITE, DEFAULT_OG_IMAGE
+};

@@ -20,7 +20,11 @@
  *                         in tools/lib/entity.js, byte for byte
  *                         (tools/sync-entities.js --check). One entity, one
  *                         description, one set of contact details.
- *   6. on-page signals    tools/check-pages.js: titles under 60, descriptions
+ *   6. site chrome       every hand-authored page carries the header, the
+ *                         Private | Business side and the footer tagline that
+ *                         tools/lib/chrome.js makes for it
+ *                         (tools/sync-chrome.js --check).
+ *   7. on-page signals    tools/check-pages.js: titles under 60, descriptions
  *                         110-160 and unique, one H1, no H3 shipped twice, a
  *                         canonical, breadcrumbs that agree with their schema,
  *                         and structured data that parses with no @id declared
@@ -216,6 +220,13 @@ function checkGeneratedFresh() {
 
 /* The Organization and WebSite nodes are repeated on every page; this is what
    stops the copies drifting apart again. */
+/* The header comes in three versions (Private, Business, shared); every
+   hand-authored page must carry the one tools/lib/chrome.js makes for it. */
+function checkChrome() {
+  var r = runNode(['tools/sync-chrome.js', '--check']);
+  return { ok: r.ok, lines: r.lines };
+}
+
 function checkEntities() {
   var sync = require('./sync-entities');
   var drifted = sync.pages().reduce(function (acc, rel) {
@@ -255,6 +266,7 @@ var CHECKS = [
   { name: 'generated files are fresh — essays and locale twins', run: checkGeneratedFresh },
   { name: 'generated tree is sound — tools/verify-cli.js', run: checkGeneratedTree },
   { name: 'entity graph matches tools/lib/entity.js', run: checkEntities },
+  { name: 'site chrome matches tools/lib/chrome.js — header, side, footer', run: checkChrome },
   { name: 'asset versions — styles.css and app.js are cache-busted', run: checkAssetVersions },
   { name: 'on-page signals — titles, descriptions, headings, schema', run: checkPageSignals }
 ];

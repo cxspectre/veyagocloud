@@ -12,8 +12,15 @@ const vm = require('node:vm');
 const { JSDOM, VirtualConsole } = require('jsdom');
 
 const SRC = fs.readFileSync(path.join(__dirname, '..', '..', 'app.js'), 'utf8');
+const chrome = require('../../tools/lib/chrome');
 
-const NAV = '<header class="nav" id="site-nav"><div class="wrap"><a class="brand" href="/">Veyago</a>' +
+/* The real header of a shared page: both sides' menus, the Company dropdown,
+   the drawer. */
+const REAL = chrome.header({ side: null }) + '<main id="main"></main>';
+
+/* A header with two dropdowns, for the one behaviour the real header (one
+   dropdown since the Private | Business switch) cannot show. */
+const TWO_DROPDOWNS = '<header class="nav" id="site-nav"><div class="wrap"><a class="brand" href="/">Veyago</a>' +
   '<nav class="nav-links"><a href="/apps/">Apps</a>' +
   '<div class="nav-item" id="business-nav"><button class="nav-drop-btn">Business</button>' +
   '<div class="nav-dropdown"><a href="/business/">All offers</a><a href="/websites/">Websites</a><a href="/cockpit/">Veyago Cockpit</a><a href="/services/">Product work</a></div></div>' +
@@ -24,8 +31,8 @@ const NAV = '<header class="nav" id="site-nav"><div class="wrap"><a class="brand
   '<a href="/apps/">Apps</a><a href="/services/">Services</a><a href="/websites/">Websites</a><a class="nm-sub" href="/team/">Team</a></nav></aside>' +
   '<main id="main"></main>';
 
-function boot(pathname) {
-  const dom = new JSDOM('<!doctype html><html lang="en"><head><title>T</title></head><body>' + NAV + '</body></html>',
+function boot(pathname, body) {
+  const dom = new JSDOM('<!doctype html><html lang="en" data-side="private"><head><title>T</title></head><body>' + (body || REAL) + '</body></html>',
     { url: 'https://www.veyago.cloud' + pathname, runScripts: 'outside-only', virtualConsole: new VirtualConsole() });
   const { window } = dom;
   window.matchMedia = () => ({ matches: false, addEventListener() {}, addListener() {} });
@@ -56,21 +63,24 @@ test('a dropdown page lights its own link and the Company button', () => {
   const doc = boot('/team/');
   assert.deepEqual(current(doc), ['/team/', '/team/']);
   assert.ok(doc.querySelector('#company-nav .nav-drop-btn').classList.contains('active'));
-  assert.ok(!doc.querySelector('#business-nav .nav-drop-btn').classList.contains('active'));
 });
 
-test('a business offer lights the Business button, not Company', () => {
+test('a business offer lights its row link and its drawer link, and not Company', () => {
   const doc = boot('/cockpit/');
-  assert.deepEqual(current(doc), ['/cockpit/']);
-  assert.ok(doc.querySelector('#business-nav .nav-drop-btn').classList.contains('active'));
+  assert.deepEqual(current(doc), ['/cockpit/', '/cockpit/']);
   assert.ok(!doc.querySelector('#company-nav .nav-drop-btn').classList.contains('active'));
+});
+
+test('the side switch is never marked as the current page', () => {
+  const doc = boot('/business/');
+  assert.equal(doc.querySelector('.side-opt[aria-current="page"]'), null);
 });
 
 const isOpen = (doc, id) => doc.getElementById(id).classList.contains('open');
 const click = (doc, el) => el.dispatchEvent(new doc.defaultView.MouseEvent('click', { bubbles: true }));
 
 test('each dropdown opens on click, and opening one closes the other', () => {
-  const doc = boot('/');
+  const doc = boot('/', TWO_DROPDOWNS);
   click(doc, doc.querySelector('#business-nav .nav-drop-btn'));
   assert.ok(isOpen(doc, 'business-nav'));
   assert.equal(doc.querySelector('#business-nav .nav-drop-btn').getAttribute('aria-expanded'), 'true');
@@ -82,9 +92,10 @@ test('each dropdown opens on click, and opening one closes the other', () => {
 
 test('a click elsewhere or Escape closes an open dropdown', () => {
   const doc = boot('/');
-  click(doc, doc.querySelector('#business-nav .nav-drop-btn'));
+  click(doc, doc.querySelector('#company-nav .nav-drop-btn'));
+  assert.ok(isOpen(doc, 'company-nav'));
   click(doc, doc.getElementById('main'));
-  assert.ok(!isOpen(doc, 'business-nav'));
+  assert.ok(!isOpen(doc, 'company-nav'));
   click(doc, doc.querySelector('#company-nav .nav-drop-btn'));
   doc.dispatchEvent(new doc.defaultView.KeyboardEvent('keydown', { key: 'Escape' }));
   assert.ok(!isOpen(doc, 'company-nav'));

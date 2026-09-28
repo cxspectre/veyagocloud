@@ -54,8 +54,15 @@ var CARDS = [
     file: 'og-business.png',
     eyebrow: 'Veyago · Business',
     headline: 'Software for the business side.',
-    subline: 'Websites, Veyago Cockpit and product work.',
+    subline: 'Websites, audits, Veyago Cockpit and product work.',
     footer: 'www.veyago.cloud/business · priced in writing'
+  },
+  {
+    file: 'og-audits.png',
+    eyebrow: 'Veyago · Audits',
+    headline: 'What your software really costs.',
+    subline: 'Microsoft 365 and software audits. Fixed price, read-only.',
+    footer: 'www.veyago.cloud/audits · a written report'
   },
   {
     file: 'og-cockpit.png',

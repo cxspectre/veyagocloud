@@ -18,6 +18,7 @@
     "test": "node --test \"tools/lib/*.test.js\" \"tools/*.test.js\" \"admin/js/*.test.js\" \"assets/js/*.test.js\" \"supabase/functions/_shared/*.test.js\" \"supabase/functions/sync-mercury/*.test.js\" \"supabase/functions/invoice-pdf/*.test.js\"",
     "check": "node tools/check.js",
     "sync:entities": "node tools/sync-entities.js",
+    "sync:chrome": "node tools/sync-chrome.js",
     "build:og": "node tools/build-og-images.js",
     "journal:fixture": "node tools/journal-fixture.js",
     "check:db": "node tools/check-db.js",

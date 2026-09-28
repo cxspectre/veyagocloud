@@ -171,3 +171,24 @@ test('a 400 naming a field highlights that field and uses the translated generic
   assert.ok(form.elements.website.classList.contains('enq-invalid'));
   assert.equal(status(form).textContent, 'Check fields.');
 });
+
+test('a form can name its own subject for the email fallback', async () => {
+  const { window, form } = mount(() => Promise.reject(new Error('offline')));
+  form.setAttribute('data-subject', 'Audit enquiry');
+  fill(form, { name: 'Ann Lee', email: 'ann@example.com', business: 'Ann Bakes' });
+  await submit(window, form);
+  const href = decodeURIComponent(status(form).querySelector('a').getAttribute('href'));
+  assert.ok(href.startsWith('mailto:hello@veyago.cloud?subject=Audit enquiry - Ann Bakes'), href);
+});
+
+test('the audit scope form only sends what website-enquiry accepts', () => {
+  const doc = new JSDOM(fs.readFileSync(path.join(__dirname, '..', '..', 'audits/index.html'), 'utf8')).window.document;
+  const form = doc.querySelector('form[data-enquiry]');
+  /* The Edge Function knows two kinds and four packages; a value it does not
+     know is refused. The audit form sends no package at all, and the page it
+     came from (/audits/) tells us what the enquiry is about. */
+  assert.ok(['website', 'product'].includes(form.getAttribute('data-enquiry')));
+  const fields = [...new Set([...form.querySelectorAll('input, textarea')].map((el) => el.name))].sort();
+  assert.deepEqual(fields, ['business', 'email', 'hp_ref', 'message', 'name']);
+  assert.equal(form.querySelector('.enq-hp label').textContent, 'Leave this field empty');
+});

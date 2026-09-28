@@ -103,6 +103,7 @@ function renderArticlePage(a, next) {
   </article>`;
 
   return page({
+    side: null,   /* articles serve both sides: they keep the one the reader came from */
     lang: 'en',
     head: {
       title: a.title + ' | Veyago',
@@ -167,6 +168,7 @@ function renderJournalIndex(articles) {
   </main>`;
 
   return page({
+    side: null,   /* articles serve both sides: they keep the one the reader came from */
     lang: 'en',
     head: {
       title: 'Field notes on private software and fast sites | Veyago',

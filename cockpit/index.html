@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-side="business" data-page-side="business">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#ffffff" />
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
-  <link rel="stylesheet" href="/styles.css?v=53d95d94da" />
+  <link rel="stylesheet" href="/styles.css?v=d3087d5fe0" />
   <link rel="stylesheet" href="/assets/css/websites.css" />
   <meta property="og:title" content="Veyago Cockpit - one place to run your business" />
   <meta property="og:description" content="Mail, calendar, clients, deals, projects, support and invoices in one private workspace. We run Veyago on it, and we build one around your business." />
@@ -50,7 +50,7 @@
           "height": 512
         },
         "image": "https://www.veyago.cloud/assets/og.png",
-        "description": "Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps and fast, hand-written websites for small businesses.",
+        "description": "Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps and fast, hand-written websites for small businesses, and runs independent Microsoft 365 and software audits.",
         "slogan": "Software for the journey.",
         "foundingDate": "2026-04-28",
         "foundingLocation": {
@@ -78,7 +78,9 @@
           "privacy by design",
           "website design and development",
           "technical SEO",
-          "small business websites"
+          "small business websites",
+          "Microsoft 365 tenant audits",
+          "software license management"
         ],
         "address": {
           "@type": "PostalAddress",
@@ -119,7 +121,7 @@
             "@type": "ContactPoint",
             "contactType": "sales",
             "email": "hello@veyago.cloud",
-            "url": "https://www.veyago.cloud/websites/#quote",
+            "url": "https://www.veyago.cloud/business/#talk",
             "areaServed": "Worldwide",
             "availableLanguage": [
               "en",
@@ -142,7 +144,7 @@
         "url": "https://www.veyago.cloud/",
         "name": "Veyago",
         "alternateName": "Veyago Inc.",
-        "description": "Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps and fast, hand-written websites for small businesses.",
+        "description": "Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps and fast, hand-written websites for small businesses, and runs independent Microsoft 365 and software audits.",
         "inLanguage": [
           "en",
           "nl",
@@ -201,7 +203,7 @@
             "name": "Is Cockpit a subscription?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "No. We build your Cockpit as a project, on the same foundations we run Veyago on, and on final payment the code and the database are yours. It runs in hosting accounts in your name, so there is no licence fee to Veyago."
+              "text": "No. We build your Cockpit as a project, on the same foundations we run Veyago on, and on final payment the code and the database are yours. It runs in hosting accounts in your name, so there is no license fee to Veyago."
             }
           },
           {
@@ -238,6 +240,14 @@
           },
           {
             "@type": "Question",
+            "name": "Can you build a Cockpit for our industry?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Every Cockpit is built around the business in front of us: your pipeline stages, your kinds of project, your invoice layout. We don't sell an industry template, because two firms in the same trade rarely work the same way."
+            }
+          },
+          {
+            "@type": "Question",
             "name": "What does it cost?",
             "acceptedAnswer": {
               "@type": "Answer",
@@ -245,7 +255,7 @@
             }
           }
         ],
-        "dateModified": "2026-09-23"
+        "dateModified": "2026-09-28"
       },
       {
         "@type": "WebPage",
@@ -259,7 +269,7 @@
           "@id": "https://www.veyago.cloud/cockpit/#service"
         },
         "primaryImageOfPage": "https://www.veyago.cloud/assets/cockpit-overview-2400w.webp",
-        "dateModified": "2026-09-23",
+        "dateModified": "2026-09-28",
         "speakable": {
           "@type": "SpeakableSpecification",
           "cssSelector": [
@@ -277,20 +287,13 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="nav" id="site-nav">
     <div class="wrap">
-      <a class="brand" href="/"><img src="/assets/veyago-icon-44.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
+      <a class="brand" href="/business/"><img src="/assets/veyago-icon-44.png" alt="" aria-hidden="true" width="22" height="22" /> Veyago</a>
+      <nav class="side-switch" aria-label="Veyago for"><a class="side-opt" href="/" data-side="private">Private</a><a class="side-opt" href="/business/" data-side="business" aria-current="true">Business</a></nav>
       <nav class="nav-links">
-        <a href="/apps/">Apps</a>
-        <a href="/projects/">Projects</a>
-        <a href="/journal/">Articles</a>
-        <div class="nav-item" id="business-nav">
-          <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Business <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          <div class="nav-dropdown">
-            <a href="/business/"><span class="dd-title">All offers</span><span class="dd-sub">What we build for businesses</span></a>
-            <a href="/websites/"><span class="dd-title">Websites</span><span class="dd-sub">Fixed-price sites from $699</span></a>
-            <a href="/cockpit/"><span class="dd-title">Veyago Cockpit</span><span class="dd-sub">The system we run on, built for you</span></a>
-            <a href="/services/"><span class="dd-title">Product work</span><span class="dd-sub">Apps and products, a few a year</span></a>
-          </div>
-        </div>
+        <a href="/websites/">Websites</a>
+        <a href="/audits/">Audits</a>
+        <a href="/cockpit/">Cockpit</a>
+        <a href="/services/">Product work</a>
         <div class="nav-item" id="company-nav">
           <button class="nav-drop-btn" aria-expanded="false" aria-haspopup="true">Company <svg class="nav-chev" viewBox="0 0 10 6" fill="none" aria-hidden="true"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           <div class="nav-dropdown">
@@ -310,7 +313,6 @@
     </div>
   </header>
 
-  <!-- Mobile navigation drawer -->
   <div class="nav-scrim" id="nav-scrim"></div>
   <aside class="nav-drawer" id="nav-drawer" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true">
     <div class="nav-drawer-top">
@@ -319,14 +321,10 @@
       </button>
     </div>
     <nav class="nav-drawer-links" aria-label="Primary">
-      <a href="/apps/">Apps</a>
-      <a href="/projects/">Projects</a>
-      <a href="/journal/">Articles</a>
-      <p class="nm-label">Business</p>
-      <a class="nm-sub" href="/business/">All offers</a>
-      <a class="nm-sub" href="/websites/">Websites</a>
-      <a class="nm-sub" href="/cockpit/">Veyago Cockpit</a>
-      <a class="nm-sub" href="/services/">Product work</a>
+      <a href="/websites/">Websites</a>
+      <a href="/audits/">Audits</a>
+      <a href="/cockpit/">Cockpit</a>
+      <a href="/services/">Product work</a>
       <p class="nm-label">Company</p>
       <a class="nm-sub" href="/company/">About</a>
       <a class="nm-sub" href="/team/">Team</a>
@@ -473,6 +471,16 @@
     </div>
   </div></section>
 
+  <section class="section soft" id="audit-first"><div class="wrap">
+    <p class="eyebrow">Start with an audit</p>
+    <h2 class="section-headline">Not sure what you'd put in it?</h2>
+    <p class="lead">A Microsoft 365 or software audit maps who uses what, where the money goes and what slips through. If you build a Cockpit within three months, the audit price comes off.</p>
+    <div class="actions">
+      <a class="btn btn-blue" href="/audits/">See the audits</a>
+      <a class="link" href="/audits/#prices">Audit prices</a>
+    </div>
+  </div></section>
+
   <section class="section"><div class="wrap">
     <p class="eyebrow">How it works</p>
     <h2 class="section-headline">Built around how you work.</h2>
@@ -499,7 +507,7 @@
   <section class="section soft cp-price"><div class="wrap">
     <p class="eyebrow">Price</p>
     <h2 class="section-headline">One price, in writing.</h2>
-    <p class="lead">Cockpit is part of our Back office package: from $3,900 or €4,100 excluding tax, typically four to eight weeks. No licence fee afterwards.</p>
+    <p class="lead">Cockpit is part of our Back office package: from $3,900 or €4,100 excluding tax, typically four to eight weeks. No license fee afterwards.</p>
     <div class="actions">
       <a class="btn btn-blue" href="#quote">Get a quote</a>
       <a class="link" href="/websites/#packages">Compare the packages</a>
@@ -512,7 +520,7 @@
     <div class="faq faq-inline">
       <details open>
         <summary><h3>Is Cockpit a subscription?</h3></summary>
-        <p>No. We build your Cockpit as a project, on the same foundations we run Veyago on, and on final payment the code and the database are yours. It runs in hosting accounts in your name, so there is no licence fee to Veyago.</p>
+        <p>No. We build your Cockpit as a project, on the same foundations we run Veyago on, and on final payment the code and the database are yours. It runs in hosting accounts in your name, so there is no license fee to Veyago.</p>
       </details>
       <details>
         <summary><h3>Who can see our data?</h3></summary>
@@ -529,6 +537,10 @@
       <details>
         <summary><h3>Can we start with only part of it?</h3></summary>
         <p>Yes, and most businesses should. Start with clients and deals, or with projects and invoicing, and add the rest when you need it. Everything sits on one database, so a later module never means a migration.</p>
+      </details>
+      <details>
+        <summary><h3>Can you build a Cockpit for our industry?</h3></summary>
+        <p>Every Cockpit is built around the business in front of us: your pipeline stages, your kinds of project, your invoice layout. We don't sell an industry template, because two firms in the same trade rarely work the same way.</p>
       </details>
       <details>
         <summary><h3>What does it cost?</h3></summary>
@@ -598,7 +610,7 @@
 
   <section class="section">
     <div class="wrap">
-      <p class="page-updated">What this page says about Cockpit was last checked <time datetime="2026-09-23">23 September 2026</time>.</p>
+      <p class="page-updated">What this page says about Cockpit was last checked <time datetime="2026-09-28">28 September 2026</time>.</p>
     </div>
   </section>
   </main>
@@ -607,19 +619,19 @@
       <p class="legal-top">Veyago Inc. is a New York C-Corporation. App Store is a trademark of Apple Inc. Apple Intelligence availability varies by device and region.</p>
       <div class="footer-cols">
         <div><h3>Apps</h3><a href="/veyago/">Veyago travel</a><a href="/provisum/">Provisum</a></div>
-        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/services/">Services</a><a href="/cockpit/">Cockpit</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
+        <div><h3>Company</h3><a href="/company/">About</a><a href="/team/">Team</a><a href="/approach/">Approach</a><a href="/websites/">Websites</a><a href="/audits/">Audits</a><a href="/services/">Services</a><a href="/cockpit/">Cockpit</a><a href="/projects/">Projects</a><a href="/journal/">Articles</a><a href="/wallpapers/">Wallpapers</a><a href="mailto:hello@veyago.cloud">Contact</a></div>
         <div><h3>Legal</h3><a href="/privacy/">Privacy Policy</a><a href="/provisum-privacy/">Provisum Privacy</a><a href="/terms/">Terms</a><a href="/legal/">Legal / Imprint</a></div>
         <div><h3>Get in touch</h3><a href="mailto:hello@veyago.cloud">hello@veyago.cloud</a><a href="tel:+15189132531">+1 (518) 913 2531 (US customers)</a><a href="tel:+19432736579">+1 (943) 273 6579 (international customers)</a><a href="/support/">Support</a><a href="https://instagram.com/veyago_cloud" target="_blank" rel="noopener">Instagram ↗</a><a href="https://veyago.app" target="_blank" rel="noopener">veyago.app ↗</a></div>
       </div>
       <p class="footer-press">Press &amp; investors: <a href="mailto:hello@veyago.cloud?subject=Press%20%26%20investors">hello@veyago.cloud</a> · <a href="https://wefunder.com/veyago" target="_blank" rel="noopener">Invest on Wefunder ↗</a></p>
       <div class="footer-base">
         <span>© <span id="year">2026</span> Veyago Inc · New York C-Corp</span>
-        <span>Private apps and proper websites · New York</span>
+        <span>Proper websites, honest audits, one place to run it all · New York</span>
       </div>
     </div>
   </footer>
   <script src="/assets/js/site-config.js?v=20260911"></script>
-  <script src="/app.js?v=8fa27ff837" defer></script>
+  <script src="/app.js?v=338bd10687" defer></script>
   <script src="/assets/js/enquiry.js" defer></script>
 </body>
 </html>

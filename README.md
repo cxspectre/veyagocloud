@@ -20,6 +20,8 @@ Veyago travel app) with the privacy policies.
 | `tools/` | Build scripts and the `npm run check` gate, with their tests (see **Scripts and checks**) |
 | `supabase/tests/` | SQL suites run against the live database inside a rollback — `npm run check:db` |
 | `docs/workspace-backend.md` | The Veyago Workspace backend: schema, who can see what, connecting Gmail/Calendar |
+| `business/`, `audits/` | The Business side's home page, and the Microsoft 365 & software audits offer (Audit, Deep Audit, Software Spend Review; its scope-call form goes through `website-enquiry` with no package, so the `/audits/` page path is what marks it) |
+| `tools/lib/chrome.js` | The header, mobile drawer and footer tagline for both sides of the site — see **Private \| Business** below. `npm run sync:chrome` writes them into the hand-authored pages |
 | `tools/lib/entity.js` | The site-wide entity graph — the `Organization`, `WebSite` and `Person` JSON-LD nodes every page repeats. Change a company fact here, then `npm run sync:entities` |
 | `feed.xml` | Generated RSS for the journal and the research papers — written by `npm run build`, never by hand |
 | `docs/seo-keywords.md` | What the Position Tracking campaign should measure, and which page answers each query |
@@ -46,6 +48,34 @@ exists.
 
 Note that `tools/serve.py` resolves such a collision the *opposite* way (directory wins), so
 this class of bug is invisible on `npm start` — verify URL changes against a real deployment.
+
+## Private | Business
+
+The header has a two-way switch next to the logo. **Private** is the apps (home at `/`),
+**Business** is what Veyago does for companies (home at `/business/`). Both are real,
+indexable pages; the switch is two links.
+
+- **Every page has a side**, set once in `SIDE_OF` in `tools/sync-chrome.js`: Private
+  (`/`, apps, Provisum, papers, wallpapers), Business (`/business/`, websites, audits,
+  cockpit, services) or shared (`null`: company, team, approach, support, legal, terms,
+  privacy, and the journal, whose articles are read from both sides). The generated
+  journal gets the same from `tools/lib/journal-pages.js` (`side: null`). A new page with the site header must be added there, or the sync
+  refuses to guess.
+- The switch is two plain links in a `<nav>`, the side on show marked `aria-current`.
+  Not a radio group: each option loads another page, and arrowing through a radio group
+  must not do that.
+- A page with a side carries only that side's menu and writes the side to
+  `localStorage` (`veyago.side`) when visited. A **shared** page carries both menus,
+  tagged `data-for`, and `styles.css` hides the other one by `html[data-side]`.
+  `assets/js/side.js`, loaded blocking in the head of shared pages only, sets that
+  attribute from storage before the first paint, so the menu never flickers.
+- Nothing is sent anywhere and no cookie is set; without storage a page shows its own
+  side (shared pages: Private). The Privacy Policy lists the key.
+- On a phone the switch takes its own row under the logo; `--nav-extra` in `styles.css`
+  is that row's height, and everything that clears the fixed header adds it.
+
+To change a menu, edit `SIDES` in `tools/lib/chrome.js`, then `npm run sync:chrome`,
+`npm run build:essays` and `npm run build:locales`.
 
 ## Journal, Wallpapers & Admin (content tooling)
 
@@ -83,11 +113,12 @@ only and nothing here is shipped to the browser.
 | `npm run build:locales` | Writes the static `/nl/` and `/de/` twins of the pages listed in `tools/build-locales.js` (`PAGES`) from `i18n/<code>.js` | After editing `websites/index.html` or a dictionary; `npm run build:locales -- --check` only reports untranslated strings |
 | `npm run sitemap:lastmod` | Refreshes `<lastmod>` on the hand-written `sitemap.xml` entries from git history | Before committing a change to a hand-written page |
 | `npm run shots:work` | Retakes the portfolio screenshots on `/websites/` (`tools/capture-work-shots.js`) into `assets/work-*.webp`, driving a local Chromium; needs `cwebp` | When a site in the Recent work grid has been redesigned, or a new one joins it |
+| `npm run sync:chrome` | Writes the header, the page's side on `<html>`, `assets/js/side.js` (shared pages only) and the footer tagline from `tools/lib/chrome.js` into every hand-authored page | After changing a menu in `tools/lib/chrome.js`, or adding a page — `npm run check` fails if any page has drifted |
 | `npm run sync:entities` | Writes the canonical `Organization` and `WebSite` JSON-LD nodes from `tools/lib/entity.js` into every hand-authored page | After editing `tools/lib/entity.js` — `npm run check` fails if any page has drifted |
 | `npm run build:og` | Draws the missing share cards in `assets/og-*.png` from the template in `tools/build-og-images.js`, driving a local Chromium; `-- --force` redraws them all | When a page gets a headline worth its own link preview |
 | `npm run journal:fixture` | Rebuilds `data/journal/published.json` from the committed `/journal/` pages, so the journal can be rebuilt without Supabase; `-- --verify` proves the round trip is lossless | Before editing an article offline — see **Editing an article without Supabase** |
 | `npm test` | Unit tests (`node --test`) for the builders, sanitiser, verifier, admin and public scripts | Before every commit |
-| `npm run check` | The pre-merge gate (`tools/check.js`), six checks: no third-party requests on the public site, full locale coverage, generated essays and twins fresh, generated tree sound, one entity graph across every page, and the on-page signals below | Before opening a PR — `check.yml` runs `npm test` and `npm run check` on every PR and push to `main` |
+| `npm run check` | The pre-merge gate (`tools/check.js`), eight checks: no third-party requests on the public site, full locale coverage, generated essays and twins fresh, generated tree sound, one entity graph across every page, the site chrome from `tools/lib/chrome.js` on every page, cache-busted assets, and the on-page signals below | Before opening a PR — `check.yml` runs `npm test` and `npm run check` on every PR and push to `main` |
 
 `npm run check` names the file and the command that fixes it (for example
 `STALE  nl/websites/index.html — … regenerate with npm run build:locales`). The external-request

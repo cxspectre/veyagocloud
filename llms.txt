@@ -1,8 +1,9 @@
 # Veyago
 
 > Veyago Inc. is an independent New York software studio that builds privacy-first
-> iOS apps and fast, hand-written websites for small businesses. A New York
-> C-Corporation, two people, no account managers, fixed prices in writing.
+> iOS apps and fast, hand-written websites for small businesses, and runs independent
+> Microsoft 365 and software audits. A New York C-Corporation, two people, no account
+> managers, fixed prices in writing.
 
 Two lines of work sit under one bar. The apps are private by design: on-device where
 it can be, no ad trackers, no dark patterns, yours to own rather than to rent. The
@@ -31,15 +32,22 @@ another, not separate offers.
   with optional Premium at €4.99 a month or €29.99 a year.
 - Websites: fixed price from $699 / €750 excluding tax. Launch $699/€750, Business
   $1,690/€1,790, Back office from $3,900/€4,100. Care plan $49/€49 a month, optional.
+- Audits: fixed price, excluding tax, read-only access. Microsoft 365 tenant Audit (up to 150
+  users) $2,490/€2,650 in 10 working days; Deep Audit (150 to 500 users, several tenants or a
+  merger) from $5,900/€6,250; Software Spend Review Essentials (up to 25 tools) $1,290/€1,390;
+  Complete (up to 75 tools) $2,890/€3,090; Audit + Essentials $3,390/€3,590. Nonprofits 20% off.
+  Veyago sells no licenses and takes no commissions; audit data is deleted within 30 days of
+  the report.
 - "Veyago" names three things: Veyago Inc. (the company), Veyago travel (the travel app,
   at veyago.app), and veyago.cloud (this site). Provisum is a separate product.
 
 ## Services
 
-- [Veyago for business](https://www.veyago.cloud/business/): The three ways Veyago works with businesses side by side - fixed-price websites, Veyago Cockpit, and product work on apps - and what all three share: one written price, yours to own, a reply within one working day.
+- [Veyago for business](https://www.veyago.cloud/business/): The four ways Veyago works with businesses side by side - fixed-price websites, Microsoft 365 and software audits, Veyago Cockpit, and product work on apps - and what they share: one written price, your data always yours, a reply within one working day.
+- [Microsoft 365 & software audits](https://www.veyago.cloud/audits/): Independent, fixed-price audits of a Microsoft 365 tenant (licenses, accounts, identity, mail, sharing, apps, devices, logging - 24 checks, each with its data source) and of a business's paid software, from $1,290 / €1,390 excl. tax. Read-only access, a written report ranked by risk and savings, prices, the full check list and FAQ on the page.
 - [Websites for business](https://www.veyago.cloud/websites/): Fixed-price websites for small business - landing pages from $699 / €750 excl. tax, multi-page business sites, SEO, and the dashboards, CRMs and admin tools behind them. Packages, what costs extra, process and FAQ are all on the page.
 - [Product and app work](https://www.veyago.cloud/services/): Design and engineering for people building a product rather than a marketing site. Quoted per project; how an engagement runs is answered on the page.
-- [Veyago Cockpit](https://www.veyago.cloud/cockpit/): The private workspace Veyago runs its own business on - Microsoft 365 mail and calendar, CRM and deals, projects, support tickets and invoicing on one database - built around a client's business as part of the Back office package, from $3,900 / €4,100 excl. tax. The client owns the code and the data; no licence fee.
+- [Veyago Cockpit](https://www.veyago.cloud/cockpit/): The private workspace Veyago runs its own business on - Microsoft 365 mail and calendar, CRM and deals, projects, support tickets and invoicing on one database - built around a client's business as part of the Back office package, from $3,900 / €4,100 excl. tax. The client owns the code and the data; no license fee.
 - [Our approach](https://www.veyago.cloud/approach/): The principles the work is held to - privacy by design, on-device where it can be, no dark patterns, fair pricing, yours to own.
 
 ## Apps

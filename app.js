@@ -431,7 +431,40 @@
     }
   });
 
-  /* Header dropdowns - Business and Company (click / keyboard - hover handled
+  /* Private | Business. A page with a side of its own (data-page-side) makes
+     that the visitor's side, so a shared page visited next (About, Team,
+     Legal, an article...) keeps showing it; assets/js/side.js applies it
+     there before the first paint. The switch is two plain links; here the
+     side on show gets aria-current, and a click on either is remembered.
+     Stored in localStorage only - nothing leaves the browser. */
+  (function sides() {
+    var KEY = 'veyago.side';
+    var root = document.documentElement;
+    function valid(s) { return s === 'private' || s === 'business'; }
+    function remember(s) { try { localStorage.setItem(KEY, s); } catch (e) {} }
+
+    var own = root.getAttribute('data-page-side');
+    if (valid(own)) remember(own);
+    var side = root.getAttribute('data-side');
+    var group = document.querySelector('.side-switch');
+    if (!valid(side) || !group) return;
+
+    Array.prototype.forEach.call(group.querySelectorAll('.side-opt'), function (opt) {
+      if (opt.getAttribute('data-side') === side) opt.setAttribute('aria-current', 'true');
+      else opt.removeAttribute('aria-current');
+      opt.addEventListener('click', function () { remember(opt.getAttribute('data-side')); });
+    });
+
+    /* On a shared page the logo leads to the home of the side on show. The
+       switch already links there, in this page's language. */
+    if (!valid(own)) {
+      var brand = document.querySelector('#site-nav .brand');
+      var current = group.querySelector('.side-opt[data-side="' + side + '"]');
+      if (brand && current) brand.setAttribute('href', current.getAttribute('href'));
+    }
+  })();
+
+  /* Header dropdowns - Company, and any other (click / keyboard - hover handled
      by CSS). Opening one closes the other, so two menus never overlap. */
   var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-links .nav-item'));
   function closeDropdown(item) {

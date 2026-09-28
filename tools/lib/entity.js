@@ -27,7 +27,8 @@ var VP_ID = SITE + '/team/#wessel-gelderblom';
    same claim. Change it in all three places or in none. */
 var ORG_DEFINITION =
   'Veyago Inc. is an independent New York software studio that builds privacy-first iOS apps ' +
-  'and fast, hand-written websites for small businesses.';
+  'and fast, hand-written websites for small businesses, and runs independent Microsoft 365 ' +
+  'and software audits.';
 
 /* Profiles the company actually controls and already links to from the footer or
    the body of a page. Nothing aspirational: an unverifiable sameAs is worse than
@@ -73,7 +74,7 @@ var CONTACT_POINTS = [
     '@type': 'ContactPoint',
     contactType: 'sales',
     email: 'hello@veyago.cloud',
-    url: SITE + '/websites/#quote',
+    url: SITE + '/business/#talk',
     areaServed: 'Worldwide',
     availableLanguage: LANGUAGES
   }
@@ -109,7 +110,9 @@ function organization() {
       'privacy by design',
       'website design and development',
       'technical SEO',
-      'small business websites'
+      'small business websites',
+      'Microsoft 365 tenant audits',
+      'software license management'
     ],
     address: POSTAL_ADDRESS,
     email: 'hello@veyago.cloud',
@@ -147,7 +150,8 @@ function founder() {
     description:
       'Cassian Drefke founded Veyago Inc. in New York in April 2026 and leads product ' +
       'strategy, design and engineering. He wrote the briefs that became Provisum and the ' +
-      'Veyago travel app, and builds the studio’s client websites himself.',
+      'Veyago travel app, builds the studio’s client websites himself, and leads every ' +
+      'Microsoft 365 and software audit.',
     image: {
       '@type': 'ImageObject',
       url: SITE + '/assets/cassian-drefke-480w.webp',
@@ -164,7 +168,9 @@ function founder() {
       'on-device machine learning',
       'privacy-first product design',
       'technical SEO',
-      'static site architecture'
+      'static site architecture',
+      'Microsoft 365 administration',
+      'Microsoft 365 tenant consolidation'
     ],
     knowsLanguage: ['en', 'nl', 'de']
   };
