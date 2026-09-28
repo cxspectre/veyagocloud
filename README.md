@@ -8,7 +8,7 @@ Veyago travel app) with the privacy policies.
 | File | Purpose |
 |------|---------|
 | `index.html` | Studio home — hero, apps, product showcase (screenshots), studio values |
-| `provisum/` | **Provisum** product page, in its pre-launch form — see the LAUNCH DAY comment in it for the one line that changes when the app ships |
+| `provisum/` | **Provisum** product page. The App Store link (`id6814971530`) sits in the hero badge, the badge at the foot, the smart-banner meta tag and the structured data |
 | `provisum-privacy/` | **Provisum** privacy notice (on-device, no data collection) — use `/provisum-privacy/` for Provisum's App Store listing |
 | `privacy/` | **Veyago Inc.** company / travel-app privacy policy |
 | `styles.css` | Shared design system (navy `#09111F` + parchment `#D4C9A8`) |

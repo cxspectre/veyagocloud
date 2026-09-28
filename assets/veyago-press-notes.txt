@@ -2,10 +2,10 @@ VEYAGO · PRESS NOTES
 Updated 22 September 2026 | Based on the studio website
 
 COMPANY
-Veyago Inc. is an independent New York software studio founded by Cassian Drefke in April 2026. The two-person studio builds privacy-first apps and fast, hand-written websites for small businesses. Provisum is in development for a November 2026 launch; Veyago travel for a planned Q4 2026 launch.
+Veyago Inc. is an independent New York software studio founded by Cassian Drefke in April 2026. The two-person studio builds privacy-first apps and fast, hand-written websites for small businesses. Provisum has been on the App Store since September 2026; Veyago travel is planned for Q4 2026.
 
 PROVISUM
-Provisum keeps the documents, deadlines, contacts and bills for an ageing parent in one place, and turns them into the packet a hospital, a doctor, an attorney or a bank asks for. It requires no account and stores everything on the device and the owner's own iCloud. One parent's binder is free; a single payment unlocks the rest. Arriving on iPhone and iPad in November 2026.
+Provisum keeps the documents, deadlines, contacts and bills for an ageing parent in one place, and turns them into the packet a hospital, a doctor, an attorney or a bank asks for. It requires no account and stores everything on the device and the owner's own iCloud. One parent's binder is free; a single payment unlocks the rest. On the App Store for iPhone and iPad since September 2026.
 
 VEYAGO TRAVEL
 Veyago travel is being built to help people decide where to go, alone or together. Its Bracket narrows up to 80 destinations to one choice through four rounds. Planned features include group sessions, AI-generated itineraries, and a wellbeing layer. The app is in development for iOS and Android, with launch planned for Q4 2026.
@@ -43,8 +43,7 @@ Veyago travel images show a product in development. Features and launch timing
 are plans, not a statement that the app or every feature is available today.
 Provisum and Veyago travel are separate products; Provisum's no-account and
 on-device storage descriptions should not be applied to Veyago travel.
-Provisum screenshots show a product in development, ahead of its November 2026
-launch. The parent in them, Eleanor Hughes, is invented, as is every document,
+Provisum screenshots show the app as released. The parent in them, Eleanor Hughes, is invented, as is every document,
 date and telephone number on her card: no real person's records appear.
 For interviews, product questions, image credits, or additional assets,
 contact hello@veyago.cloud.

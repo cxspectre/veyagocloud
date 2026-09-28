@@ -80,7 +80,7 @@ with TemporaryDirectory() as tmp:
     y=para(description('COMPANY','PROVISUM'),LEFT,y)-26
     y=para('One parent. One binder.',LEFT,y,COL,14,16.8,'Inter-600')-12
     y=para(description('PROVISUM','VEYAGO TRAVEL'),LEFT,y)-22
-    note('Provisum arrives in November 2026; these images show a product in development. Veyago travel is a separate product, also in development. The parent shown, Eleanor Hughes, is invented.',y)
+    note('Provisum is on the App Store; these images show the released app. Veyago travel is a separate product, still in development. The parent shown, Eleanor Hughes, is invented.',y)
     label('Founded',RIGHT,H-61*mm);para('28 April 2026',RIGHT,H-66*mm,SIDE,9,12.6)
     label('Company',RIGHT,H-82*mm);para('New York C-Corporation. Founder & CEO: Cassian Drefke.',RIGHT,H-87*mm,SIDE,9,12.6)
     image_fit('provisum-binder-home.png',RIGHT,H-112*mm,SIDE,80*mm)

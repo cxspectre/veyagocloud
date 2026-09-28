@@ -23,9 +23,9 @@ another, not separate offers.
 - People: Cassian Drefke (Founder & CEO) and Wessel Gelderblom (Vice President).
 - Contact: hello@veyago.cloud · +1 (518) 913 2531 (US) · +1 (943) 273 6579 (international).
   A person replies within one working day; outages are acknowledged the same working day.
-- Provisum: arriving November 2026 on iPhone and iPad, iOS 26 and later. One parent's
+- Provisum: on the App Store (https://apps.apple.com/app/id6814971530) for iPhone and iPad, iOS 26 and later. One parent's
   binder is free, up to 15 documents, including the emergency packet; a single payment
-  unlocks everything else and the price is announced at launch. No subscription.
+  unlocks everything else: Provisum Full, $39.99 in the US. No subscription.
   There is no Android version and no web app.
 - Veyago travel: in build, launching Q4 2026 for iPhone and Android. Free to download,
   with optional Premium at €4.99 a month or €29.99 a year.
@@ -44,7 +44,7 @@ another, not separate offers.
 
 ## Apps
 
-- [Provisum](https://www.veyago.cloud/provisum/): An admin binder for an ageing parent's paperwork - documents, deadlines, contacts and bills in one place, and the packet a hospital, doctor, attorney or bank asks for, as a PDF. iPhone and iPad, November 2026. No accounts, no servers, nothing leaves the device.
+- [Provisum](https://www.veyago.cloud/provisum/): An admin binder for an ageing parent's paperwork - documents, deadlines, contacts and bills in one place, and the packet a hospital, doctor, attorney or bank asks for, as a PDF. iPhone and iPad, on the App Store. No accounts, no servers, nothing leaves the device.
 - [Veyago travel](https://www.veyago.cloud/veyago/): A trip-decision app - a bracket tournament that narrows up to 80 destinations to one, solo or with a group - then plans the trip. iPhone and Android, Q4 2026.
 - [All apps](https://www.veyago.cloud/apps/): Both apps side by side, and what every app in the catalogue is held to.
 

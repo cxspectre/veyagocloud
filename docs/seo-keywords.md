@@ -107,9 +107,9 @@ variants worth tracking against it.
 
 | Query | Target | Status |
 | --- | --- | --- |
-| app to organise elderly parent paperwork | `/provisum/` | pre-launch |
+| app to organise elderly parent paperwork | `/provisum/` | live |
 | what to take to the hospital for a parent | `/provisum/guides/` | gap (guide not written) |
-| share caring for a parent with siblings app | `/provisum/` | pre-launch |
+| share caring for a parent with siblings app | `/provisum/` | live |
 
 ## Brand — defensive, not growth
 

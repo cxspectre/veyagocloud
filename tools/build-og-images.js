@@ -48,7 +48,7 @@ var CARDS = [
     eyebrow: 'Veyago · Provisum',
     headline: 'A parent’s paperwork, in one place.',
     subline: 'Documents, deadlines, contacts and bills. On your iPhone.',
-    footer: 'www.veyago.cloud/provisum · November 2026'
+    footer: 'www.veyago.cloud/provisum · On the App Store'
   },
   {
     file: 'og-business.png',
